@@ -97,23 +97,6 @@ export function Sidebar({ role, userName, userContext, avatarInitials, navItems,
           </div>
         </Link>
 
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-3 w-full min-h-[40px] rounded-lg text-white/[0.72] text-[0.86rem] font-[800] px-3 py-2 bg-transparent border border-white/[0.14] hover:bg-white/[0.1] hover:text-white transition-all cursor-pointer"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              className="w-[16px] h-[16px] fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round] shrink-0"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Sign out
-          </button>
-        )}
       </div>
     </aside>
   );
