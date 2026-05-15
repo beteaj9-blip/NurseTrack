@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | CI Appeal Recommendations</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+
+    <style>
+      .appeal-card-list {
+        counter-reset: none !important;
+      }
+
+      .appeal-card-list .appeal-card {
+        counter-increment: none !important;
+        padding-left: 24px !important;
+      }
+
+      .appeal-card-list .appeal-card::before {
+        display: none !important;
+        content: "" !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+      }
+
+      .appeal-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .appeal-student-cell {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+      }
+
+      .appeal-select-control {
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 24px;
+      }
+
+      .appeal-select-control input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .appeal-student-cell .small-avatar {
+        flex: 0 0 auto;
+      }
+
+      .appeal-student-cell strong {
+        display: block;
+        font-size: 1rem;
+        line-height: 1.25;
+      }
+
+      .appeal-student-cell p {
+        margin: 4px 0 0;
+      }
+
+      .appeal-card-badges {
+        flex: 0 0 auto;
+      }
+
+      .appeal-filters {
+        grid-template-columns: minmax(150px, 0.65fr) minmax(240px, 1fr) max-content !important;
+        align-items: end !important;
+        gap: 14px !important;
+      }
+
+      .appeal-bulk-actions {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        align-self: end !important;
+        flex-wrap: nowrap !important;
+        gap: 14px !important;
+        width: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+      }
+
+      .appeal-bulk-actions .ghost-button,
+      .appeal-approve-button {
+        width: auto !important;
+        min-height: 46px !important;
+        height: 46px !important;
+        padding: 10px 22px !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        flex: 0 0 auto !important;
+      }
+
+      .appeal-bulk-actions .ghost-button {
+        min-width: 156px !important;
+        max-width: max-content !important;
+      }
+
+      .appeal-approve-button {
+        min-width: 232px !important;
+        max-width: 232px !important;
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #ffffff !important;
+        box-shadow: 0 12px 24px rgba(138, 37, 44, 0.24) !important;
+      }
+
+      .appeal-approve-button:hover:not(:disabled) {
+        background: var(--primary-dark) !important;
+        border-color: var(--primary-dark) !important;
+        color: #ffffff !important;
+      }
+
+      .appeal-approve-button:focus-visible {
+        outline: 3px solid rgba(138, 37, 44, 0.35) !important;
+        outline-offset: 3px !important;
+      }
+
+      .appeal-approve-button:disabled {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #ffffff !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+      }
+
+      .appeal-card .primary-button,
+      .appeal-card .appeal-approve-button,
+      .appeal-card button[data-action="approve"],
+      .appeal-card button[data-decision="approve"],
+      .appeal-card button[data-appeal-action="approve"] {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #ffffff !important;
+        box-shadow: 0 12px 24px rgba(138, 37, 44, 0.24) !important;
+      }
+
+      .appeal-card .primary-button:hover,
+      .appeal-card .appeal-approve-button:hover,
+      .appeal-card button[data-action="approve"]:hover,
+      .appeal-card button[data-decision="approve"]:hover,
+      .appeal-card button[data-appeal-action="approve"]:hover {
+        background: var(--primary-dark) !important;
+        border-color: var(--primary-dark) !important;
+        color: #ffffff !important;
+      }
+
+      #appeal-selected-count {
+        color: #475569;
+        font-size: 0.9rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .ci-recommendation-history-item .status-badge,
+      .approved-appeal-item .status-badge,
+      .appeal-card .status-badge {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: auto !important;
+        min-width: 5.9rem !important;
+        max-width: max-content !important;
+        min-height: 2.1rem !important;
+        height: 2.1rem !important;
+        padding: 0.42rem 0.9rem !important;
+        border-radius: 999px !important;
+        font-size: 0.84rem !important;
+        font-weight: 800 !important;
+        line-height: 1 !important;
+        letter-spacing: 0 !important;
+        white-space: nowrap !important;
+      }
+
+      .ci-recommendation-history-item .status-badge.status-verified,
+      .approved-appeal-item .status-badge.status-verified,
+      .appeal-card .status-badge.status-verified {
+        background: #e8f7ee !important;
+        color: #078033 !important;
+      }
+
+      .ci-recommendation-history-item .status-badge.status-rejected,
+      .approved-appeal-item .status-badge.status-rejected,
+      .appeal-card .status-badge.status-rejected {
+        background: #fdecec !important;
+        color: #d11f1f !important;
+      }
+
+      .ci-recommendation-history-item {
+        grid-template-columns: 44px minmax(0, 1fr) auto !important;
+        align-items: center !important;
+        gap: 1.25rem !important;
+      }
+
+      .ci-recommendation-history-item .status-badge {
+        justify-self: end !important;
+      }
+
+      .ci-recommendation-history-list .avatar,
+      .ci-recommendation-history-item .avatar,
+      .approved-appeal-item .avatar,
+      .appeal-student-cell .avatar,
+      .appeal-student-cell .small-avatar,
+      .sidebar-account .avatar {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        line-height: 1 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+      }
+
+      @media (max-width: 768px) {
+        .appeal-filters {
+          grid-template-columns: 1fr !important;
+        }
+
+        .appeal-card-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .appeal-student-cell {
+          flex-wrap: wrap;
+        }
+
+        .appeal-bulk-actions {
+          align-items: stretch !important;
+          flex-direction: column !important;
+          flex-wrap: nowrap !important;
+        }
+
+        .appeal-bulk-actions .ghost-button,
+        .appeal-approve-button {
+          width: 100% !important;
+          min-width: 0 !important;
+          max-width: 100% !important;
+        }
+
+        #appeal-selected-count {
+          text-align: left;
+        }
+
+        .ci-recommendation-history-item {
+          grid-template-columns: 44px minmax(0, 1fr) !important;
+        }
+
+        .ci-recommendation-history-item .status-badge {
+          grid-column: 2 !important;
+          justify-self: start !important;
+        }
+      }
+    </style>
+
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases View</a>
+          <a class="nav-link is-active" href="student-appeals.html" aria-current="page"><span class="nav-dot"></span>Appeal Recommendations</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Workspace</p>
+              <h1>CI Appeal Recommendations</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill" id="appeal-sync-pill">0 recommended</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace appeals-workspace">
+          <section class="appeals-layout">
+            <article class="workspace-panel appeal-list-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Chair Approval Queue</h2>
+                </div>
+
+                <span class="status-badge status-pending" id="appeal-visible-count">0 shown</span>
+              </div>
+
+              <div class="history-filters appeal-filters" aria-label="Appeal filters">
+                <label class="form-label" for="appeal-section-filter">
+                  Section
+                  <select id="appeal-section-filter">
+                    <option value="BSN 3A">BSN 3A</option>
+                    <option value="BSN 3B">BSN 3B</option>
+                    <option value="BSN 3C">BSN 3C</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="appeal-search">
+                  Search
+                  <input id="appeal-search" type="search" placeholder="Search student, reason, site, or section">
+                </label>
+
+                <div class="appeal-bulk-actions" aria-label="Appeal batch actions">
+                  <button class="ghost-button" id="appeal-select-all" type="button">
+                    Select all appeals
+                  </button>
+
+                  <button class="primary-button appeal-approve-button" id="appeal-bulk-recommend" type="button" disabled>
+                    Approve selected appeals
+                  </button>
+
+                  <span id="appeal-selected-count">0 selected</span>
+                </div>
+              </div>
+
+              <div class="appeal-card-list" id="appeal-card-list"></div>
+
+              <div id="appeal-empty" class="empty-state" hidden>
+                No CI-recommended appeals match the selected filters.
+              </div>
+
+              <div id="appeal-message" class="form-message appeal-message" role="status" aria-live="polite">
+                Showing CI-recommended student appeals.
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/chair-student-appeals.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

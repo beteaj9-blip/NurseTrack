@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Create Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="assets/cit-u-logo.png">
+  </head>
+  <body>
+    <main class="login-shell" aria-labelledby="page-title">
+      <section class="login-info-panel" aria-label="NurseTrack information">
+        <div class="info-content">
+          <div class="brand-stack">
+            <img class="brand-logo info-logo" src="assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p class="eyebrow">CIT-U Nursing Portal</p>
+              <h1 id="page-title">NurseTrack</h1>
+            </div>
+          </div>
+
+          <div class="info-copy">
+            <h2>Create an account for organized clinical tracking.</h2>
+            <p>Set up secure access for duty records, case logs, schedules, approvals, and progress updates.</p>
+          </div>
+
+          <div class="info-highlights" aria-label="NurseTrack highlights">
+            <span>Secure access</span>
+            <span>Student records</span>
+            <span>Instructor review</span>
+            <span>Progress updates</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-form-panel register-form-panel" aria-label="Registration">
+        <div class="auth-card register-card">
+          <div class="card-heading card-heading-center">
+            <p class="section-kicker">Get started</p>
+            <h2>Create your account</h2>
+          </div>
+
+          <form id="register-form" class="stacked-form register-form" novalidate>
+            <div class="form-grid">
+              <label class="form-label" for="full-name">
+                Full name
+                <input id="full-name" name="fullName" type="text" autocomplete="name" placeholder="Juan Dela Cruz" required>
+              </label>
+
+              <label class="form-label" for="school-id">
+                School ID number
+                <input id="school-id" name="schoolId" type="text" autocomplete="off" placeholder="12-3456-789" pattern="[0-9]{2}-[0-9]{4}-[0-9]{3}" inputmode="numeric" required>
+              </label>
+            </div>
+
+            <label class="form-label" for="email">
+              School email
+              <input id="email" name="email" type="email" autocomplete="email" placeholder="student@cit.edu" required>
+            </label>
+
+            <div class="form-grid">
+              <label class="form-label" for="account-type">
+                Account type
+                <select id="account-type" name="accountType" required>
+                  <option value="">Select account type</option>
+                  <option>Nursing Student</option>
+                  <option>Clinical Instructor</option>
+                  <option>Chair</option>
+                  <option>Admin</option>
+                  <option>Coordinator</option>
+                  <option>Enrollment Team</option>
+                  <option>Assistant</option>
+                </select>
+              </label>
+
+              <label class="form-label" for="section">
+                Section or department
+                <input id="section" name="section" type="text" autocomplete="organization" placeholder="BSN 3A / CON" required>
+              </label>
+            </div>
+
+            <div class="form-grid">
+              <label class="form-label" for="password">
+                Password
+                <div class="password-input-wrap">
+                  <input id="password" name="password" type="password" autocomplete="new-password" placeholder="Create password" required minlength="8">
+                  <button class="password-toggle" type="button" data-toggle-password="password" aria-label="Show password" title="Show password"></button>
+                </div>
+              </label>
+
+              <label class="form-label" for="confirm-password">
+                Confirm password
+                <div class="password-input-wrap">
+                  <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter password" required minlength="8">
+                  <button class="password-toggle" type="button" data-toggle-password="confirm-password" aria-label="Show password" title="Show password"></button>
+                </div>
+              </label>
+            </div>
+
+            <label class="check-row terms-row">
+              <input type="checkbox" name="terms" required>
+              <span>I confirm that the account details are correct.</span>
+            </label>
+
+            <div id="form-message" class="form-message" role="status" aria-live="polite">
+              Complete the form to create your NurseTrack account.
+            </div>
+
+            <button class="primary-button" type="submit">Create account</button>
+          </form>
+
+          <div class="auth-card-footer">
+            <span>Already have an account?</span>
+            <a href="index.html" class="text-link">Login</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="scripts/register.js"></script>
+    <script src="scripts/password-toggle.js"></script>
+    <script src="scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Student Reports</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .student-report-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+      }
+
+      .student-report-form {
+        width: 100%;
+      }
+
+      .student-report-grid,
+      .report-scope-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+      }
+
+      .report-scope-grid {
+        margin-bottom: 1.25rem;
+      }
+
+      .student-report-form .form-label {
+        font-weight: 800;
+      }
+
+      .student-report-form .report-actions {
+        display: grid;
+        grid-template-columns: minmax(120px, 0.75fr) minmax(190px, 1.25fr);
+        gap: 14px;
+        align-items: center;
+        justify-content: flex-end;
+        width: min(100%, 560px);
+        margin: 1.25rem 0 0 auto;
+      }
+
+      .student-report-form .report-actions .ghost-button,
+      .student-report-form .report-actions .primary-button {
+        width: 100%;
+        min-height: 52px;
+        padding: 0 28px;
+        border-radius: 10px;
+        white-space: nowrap;
+      }
+
+      .student-report-form .report-actions .primary-button {
+        min-width: 210px;
+      }
+
+      #report-scope {
+        background-color: #f8fafc;
+        color: #0f172a;
+        font-weight: 800;
+        cursor: default;
+      }
+
+      @media (max-width: 520px) {
+        .student-report-form .report-actions {
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+
+        .student-report-form .report-actions .primary-button {
+          min-width: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body" data-report-scope="student">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Assigned Schedules</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-appeals.html"><span class="nav-dot"></span>Student Appeals</a>
+          <a class="nav-link is-active" href="student-reports.html" aria-current="page"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Student Workspace</p>
+              <h1>Reports</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace report-workspace">
+          <section class="student-report-layout">
+            <form class="workspace-panel report-form student-report-form" id="student-report-form" novalidate>
+              <div class="panel-heading">
+                <div>
+                  <h2>General Report Details</h2>
+                </div>
+                <span class="status-badge status-pending">Student report</span>
+              </div>
+
+              <div class="report-scope-grid">
+                <label class="form-label" for="report-scope">
+                  Report About
+                  <input id="report-scope" name="reportScope" type="text" value="Maria Cruz" readonly>
+                </label>
+              </div>
+
+              <div class="student-report-grid">
+                <div class="form-grid">
+                  <label class="form-label" for="start-date">
+                    Start Date
+                    <input id="start-date" name="startDate" type="date" value="2026-04-01" required>
+                  </label>
+
+                  <label class="form-label" for="end-date">
+                    End Date
+                    <input id="end-date" name="endDate" type="date" value="2026-05-01" required>
+                  </label>
+                </div>
+              </div>
+
+              <fieldset class="report-options">
+                <legend>Include in report</legend>
+
+                <label class="check-row">
+                  <input type="checkbox" name="includeProfile" checked>
+                  Student profile and section details
+                </label>
+
+                <label class="check-row">
+                  <input type="checkbox" name="includeSchedules" checked>
+                  Assigned schedule details
+                </label>
+
+                <label class="check-row">
+                  <input type="checkbox" name="includeCases" checked>
+                  Clinical case records and validation status
+                </label>
+
+                <label class="check-row">
+                  <input type="checkbox" name="includeProgress" checked>
+                  Progress, completion, and pending requirements
+                </label>
+
+                <label class="check-row">
+                  <input type="checkbox" name="includeAppeals" checked>
+                  Student appeal records
+                </label>
+              </fieldset>
+
+              <div id="student-report-message" class="form-message" role="status" aria-live="polite">
+                Generate a general report for Maria Cruz.
+              </div>
+
+              <div class="button-row report-actions">
+                <button class="ghost-button" type="button" id="reset-student-report">Reset</button>
+                <button class="primary-button workspace-action" type="submit">Generate Report</button>
+              </div>
+            </form>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/student-reports.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

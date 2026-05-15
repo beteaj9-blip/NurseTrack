@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Chair Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link is-active" href="admin-dashboard.html" aria-current="page"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases View</a>
+          <a class="nav-link" href="student-appeals.html"><span class="nav-dot"></span>Appeal Recommendations</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Workspace</p>
+              <h1>Dashboard</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace dashboard-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <h2>Good Evening, Reyes.</h2>
+              <p>Welcome back! Here is an overview of today's active schedules and pending appeals.</p>
+            </div>
+            <a class="primary-button workspace-action button-link" href="admin-schedules.html">Open schedules</a>
+          </section>
+
+          <section class="dashboard-stats" aria-label="Chair dashboard summary" style="display: flex; gap: 1.5rem; justify-content: space-between;">
+            <article class="workspace-card stat-card" style="flex: 1;">
+              <div class="workspace-card-header">
+                <span class="card-icon icon-only" aria-label="Appeal recommendations">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 5h16v11H8l-4 4V5Z"></path>
+                    <path d="M8 9h8"></path>
+                    <path d="M8 13h5"></path>
+                    <path d="m15 17 2 2 4-5"></path>
+                  </svg>
+                </span>
+                <span class="status-badge status-pending">Pending</span>
+              </div>
+              <h3>Appeal Recommendations</h3>
+              <p>3 student appeals are waiting for Chair approval</p>
+              <div class="progress-track"><span style="width: 60%"></span></div>
+              <strong class="stat-value">3</strong>
+            </article>
+
+            <article class="workspace-card stat-card" style="flex: 1;">
+              <div class="workspace-card-header">
+                <span class="card-icon icon-only" aria-label="Schedules today">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 2v4"></path>
+                    <path d="M16 2v4"></path>
+                    <path d="M3 10h18"></path>
+                    <path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"></path>
+                  </svg>
+                </span>
+                <span class="status-badge status-verified">Today</span>
+              </div>
+              <h3>Schedules Today</h3>
+              <p>5 clinical duty schedules are active today</p>
+              <div class="progress-track"><span style="width: 72%"></span></div>
+              <strong class="stat-value">5</strong>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/admin-dashboard.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

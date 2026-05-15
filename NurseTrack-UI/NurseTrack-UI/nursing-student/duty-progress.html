@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Duty Progress</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Duty Hours</p>
+              <h1>Duty Progress</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace duty-progress-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <p class="section-kicker">Progress</p>
+              <h2>Track your duty hour completion.</h2>
+              <p>Monitor verified hours, pending entries, remaining duty requirements, and progress by clinical area.</p>
+            </div>
+            <a class="primary-button workspace-action button-link" href="record-duty-hours.html">Record duty hours</a>
+          </section>
+
+          <section class="progress-overview">
+            <article class="workspace-panel progress-focus-card">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Completion</p>
+                  <h2>Duty hours progress</h2>
+                </div>
+                <span class="status-badge status-pending">In progress</span>
+              </div>
+
+              <div class="progress-meter">
+                <div class="meter-ring" aria-label="67 percent complete">
+                  <span>67%</span>
+                </div>
+                <div class="meter-copy">
+                  <strong>48 of 72 required hours verified</strong>
+                  <p>8 submitted hours are still pending validation. Verified hours count toNICUompletion after instructor approval.</p>
+                  <div class="progress-track large-track"><span style="width: 67%"></span></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Remaining</p>
+                  <h2>Requirement status</h2>
+                </div>
+                <span class="status-badge status-pending">24 hrs left</span>
+              </div>
+
+              <div class="requirement-list compact-list">
+                <div class="requirement-item">
+                  <span class="requirement-status"></span>
+                  <div>
+                    <strong>Verified duty hours</strong>
+                    <p>48 hours accepted</p>
+                  </div>
+                </div>
+                <div class="requirement-item">
+                  <span class="requirement-status"></span>
+                  <div>
+                    <strong>Pending validation</strong>
+                    <p>8 hours awaiting instructor review</p>
+                  </div>
+                </div>
+                <div class="requirement-item">
+                  <span class="requirement-status"></span>
+                  <div>
+                    <strong>Remaining target</strong>
+                    <p>24 verified hours still required</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="dashboard-stats" aria-label="Duty progress totals">
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Verified</span>
+                <span class="status-badge status-verified">Verified</span>
+              </div>
+              <h3>Verified</h3>
+              <p>Accepted records</p>
+              <strong class="stat-value">48 hrs</strong>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Pending</span>
+                <span class="status-badge status-pending">Pending</span>
+              </div>
+              <h3>Pending</h3>
+              <p>Awaiting validation</p>
+              <strong class="stat-value">8 hrs</strong>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Rejected</span>
+                <span class="status-badge status-rejected">Rejected</span>
+              </div>
+              <h3>Rejected</h3>
+              <p>Needs correction</p>
+              <strong class="stat-value">4 hrs</strong>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Remaining</span>
+                <span class="status-badge status-pending">Remaining</span>
+              </div>
+              <h3>Remaining</h3>
+              <p>Required to complete</p>
+              <strong class="stat-value">24 hrs</strong>
+            </article>
+          </section>
+
+          <section class="dashboard-columns">
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Clinical areas</p>
+                  <h2>Hours by area</h2>
+                </div>
+                <button class="ghost-button" type="button">View records</button>
+              </div>
+
+              <div class="area-progress-list">
+                <div class="area-progress-item">
+                  <div>
+                    <strong>Emergency Room</strong>
+                    <span>24 hrs verified</span>
+                  </div>
+                  <div class="progress-track"><span style="width: 80%"></span></div>
+                </div>
+                <div class="area-progress-item">
+                  <div>
+                    <strong>Pedia Pulmo Ward</strong>
+                    <span>16 hrs verified</span>
+                  </div>
+                  <div class="progress-track"><span style="width: 53%"></span></div>
+                </div>
+                <div class="area-progress-item">
+                  <div>
+                    <strong>Delivery Room</strong>
+                    <span>8 hrs pending</span>
+                  </div>
+                  <div class="progress-track"><span style="width: 27%"></span></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Updates</p>
+                  <h2>Recent duty progress</h2>
+                </div>
+                <span class="status-badge status-verified">Live</span>
+              </div>
+
+              <div class="timeline-list">
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>8 hours verified</strong>
+                    <p>Emergency Room duty record was approved.</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>8 hours submitted</strong>
+                    <p>Delivery Room duty entry is pending review.</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>4 hours rejected</strong>
+                    <p>Record needs corrected time-out details.</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/duty-progress.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

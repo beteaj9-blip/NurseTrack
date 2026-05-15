@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Edit Case</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Clinical Cases</p>
+              <h1>Edit Case</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Draft saved</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace clinical-case-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <p class="section-kicker">Case update</p>
+              <h2>Edit maternal care case.</h2>
+              <p>Update case details and add a reason for revision before resubmitting the record.</p>
+            </div>
+            <span class="status-badge status-pending">Returned</span>
+          </section>
+
+          <section class="clinical-case-layout">
+            <form id="edit-case-form" class="workspace-panel clinical-case-form" novalidate>
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Edit form</p>
+                  <h2>Case details</h2>
+                </div>
+                <span class="status-badge status-pending">Needs update</span>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="case-date">
+                  Case date
+                  <input id="case-date" name="caseDate" type="date" value="2026-04-21" required>
+                </label>
+
+                <label class="form-label" for="case-category">
+                  Case category
+                  <select id="case-category" name="caseCategory" required>
+                    <option>Maternal care</option>
+                    <option>Pediatric care</option>
+                    <option>Medical-surgical care</option>
+                    <option>Community health</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="clinical-site">
+                  Clinical site
+                  <select id="clinical-site" name="clinicalSite" required>
+                    <option>CCMC</option>
+                    <option>VSMMC</option>
+                    <option>CIT-U Nursing CSMC</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="duty-area">
+                  Duty area
+                  <select id="duty-area" name="dutyArea" required>
+                    <option>Delivery Room</option>
+                    <option>Emergency Room</option>
+                    <option>Pedia Pulmo Ward</option>
+                    <option>Emergency Room</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="case-code">
+                  Case code
+                  <input id="case-code" name="caseCode" type="text" value="CASE-0421-004" required>
+                </label>
+
+                <label class="form-label" for="clinical-instructor">
+                  Clinical instructor
+                  <input id="clinical-instructor" name="clinicalInstructor" type="text" value="Prof. Reyes" required>
+                </label>
+              </div>
+
+              <label class="form-label" for="procedure-title">
+                Procedure or case title
+                <input id="procedure-title" name="procedureTitle" type="text" value="Maternal care assessment" required>
+              </label>
+
+              <label class="form-label" for="case-notes">
+                Case notes
+                <textarea id="case-notes" name="caseNotes" rows="4">Assisted during maternal care assessment and documented observed nursing interventions.</textarea>
+              </label>
+
+              <label class="form-label" for="revision-note">
+                Revision note
+                <textarea id="revision-note" name="revisionNote" rows="3" placeholder="Explain what was updated before resubmitting" required></textarea>
+              </label>
+
+              <div id="form-message" class="form-message" role="status" aria-live="polite">
+                Add a revision note before saving changes.
+              </div>
+
+              <div class="button-row">
+                <a class="ghost-button" href="checklist-form.html">Edit checklist</a>
+                <button class="primary-button workspace-action" type="submit">Save changes</button>
+              </div>
+            </form>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Review note</p>
+                    <h2>Instructor feedback</h2>
+                  </div>
+                  <span class="status-badge status-pending">Returned</span>
+                </div>
+
+                <div class="review-comment no-margin">
+                  <div class="avatar small-avatar">PR</div>
+                  <div>
+                    <strong>Prof. Reyes</strong>
+                    <p>Please add a clearer reflection and confirm the procedure title before resubmitting.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Checklist</p>
+                    <h2>Completion summary</h2>
+                  </div>
+                  <span class="status-badge status-pending">7 / 9</span>
+                </div>
+
+                <div class="progress-track large-track"><span style="width: 78%"></span></div>
+                <p class="panel-note">2 required checklist items still need attention.</p>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Status</p>
+                    <h2>Update checklist</h2>
+                  </div>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Case details</strong>
+                      <p>Confirm updated case fields</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Revision note</strong>
+                      <p>Required before saving</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Resubmission</strong>
+                      <p>Returns to instructor review</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/edit-case.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Assistant About</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .about-layout-single {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+      }
+
+      .about-card-full {
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="assistant-about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Assistant</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="assistant-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="extension-days.html"><span class="nav-dot"></span>Extension Days</a>
+          <a class="nav-link" href="manual-attendance-review.html"><span class="nav-dot"></span>Manual Backup</a>
+          <a class="nav-link" href="student-clearance.html"><span class="nav-dot"></span>Clearance</a>
+          <a class="nav-link" href="clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases View</a>
+          <a class="nav-link" href="student-appeals.html"><span class="nav-dot"></span>CI Recommendations</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AG</div>
+          <div>
+            <strong>Assistant Garcia</strong>
+            <span>Assistant</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>System Info</p>
+              <h1>About NurseTrack</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated successfully</span>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace about-workspace">
+          <section class="workspace-hero dashboard-hero about-hero">
+            <div class="about-hero-copy">
+              <h2>Focused tools for schedule preparation and delegated review support.</h2>
+              <p>Assistant access supports Chair workflows with schedule setup and review-page visibility, while edit permissions remain controlled by Admin settings.</p>
+            </div>
+
+            <div class="about-brand-mark">
+              <img src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+              <span>v1.0</span>
+            </div>
+          </section>
+
+          <section class="about-layout about-layout-single">
+            <article class="workspace-panel about-card about-card-full">
+              <div class="panel-heading">
+                <div>
+                  <h2>App Information</h2>
+                </div>
+              </div>
+
+              <div class="detail-list">
+                <div class="detail-row">
+                  <span>Name</span>
+                  <strong>NurseTrack</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span>Organization</span>
+                  <strong>CIT-U Nursing</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span>Release</span>
+                  <strong>Version 1.0</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span>Updated</span>
+                  <strong>Apr 28, 2026</strong>
+                </div>
+              </div>
+
+              <div id="about-message" class="form-message is-success" role="status" aria-live="polite">
+                System information is up to date.
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/about.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

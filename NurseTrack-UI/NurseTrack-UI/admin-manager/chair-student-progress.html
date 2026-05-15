@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Chair Student Progress</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .panel-heading-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .panel-heading-actions .ghost-button {
+        min-height: 38px;
+        padding-inline: 1rem;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+
+      .student-progress-pick-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      .student-progress-pick-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1.25rem;
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border: 0;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 0;
+        background: #ffffff;
+        box-shadow: none;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+        transition: background-color 0.2s;
+      }
+
+      .student-progress-pick-card:hover {
+        background-color: #f8fafc;
+      }
+
+      .student-progress-pick-card:last-child {
+        border-bottom: none;
+      }
+
+      .student-progress-pick-card:focus-visible {
+        outline: 3px solid rgba(138, 37, 44, 0.24);
+        outline-offset: -3px;
+      }
+
+      .student-progress-pick-copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+
+      .student-progress-pick-copy strong {
+        color: #111827;
+        font-size: 1rem;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .student-progress-pick-copy small {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 700;
+      }
+
+      .enrollment-progress-view .student-progress-pick-card .status-badge {
+        justify-self: end;
+      }
+
+      .enrollment-progress-view .student-progress-pick-card {
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+      }
+
+      .enrollment-status-control {
+        width: 2rem;
+        height: 2rem;
+        display: inline-grid;
+        place-items: center;
+        justify-self: end;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.5rem;
+        background: #ffffff;
+        box-shadow: 0 8px 18px rgba(16, 24, 40, 0.04);
+      }
+
+      .status-checkbox {
+        width: 1.05rem;
+        height: 1.05rem;
+        margin: 0;
+        accent-color: #128a34;
+        cursor: pointer;
+        flex: 0 0 auto;
+      }
+
+      @media (max-width: 780px) {
+        .student-progress-pick-card {
+          grid-template-columns: auto minmax(0, 1fr);
+          align-items: start;
+        }
+
+        .student-progress-pick-card .status-badge {
+          grid-column: 2;
+          justify-self: start;
+        }
+
+        .enrollment-progress-view .student-progress-pick-card {
+          grid-template-columns: auto minmax(0, 1fr) auto;
+        }
+
+        .enrollment-progress-view .student-progress-pick-card .status-badge {
+          grid-column: 2;
+        }
+
+        .enrollment-status-control {
+          grid-column: 3;
+          grid-row: 1 / span 2;
+          align-self: center;
+        }
+      }
+
+      @media print {
+        .app-sidebar,
+        .sidebar-backdrop,
+        .topbar,
+        .history-filters,
+        .panel-heading-actions .ghost-button,
+        script {
+          display: none !important;
+        }
+
+        .app-shell,
+        .app-main,
+        .workspace,
+        .workspace-panel {
+          display: block !important;
+          width: 100% !important;
+          max-width: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+        }
+
+        .student-progress-pick-list {
+          border: 1px solid #dbe3ee !important;
+          border-radius: 0 !important;
+        }
+
+        .student-progress-pick-card {
+          break-inside: avoid;
+          page-break-inside: avoid;
+          grid-template-columns: auto minmax(0, 1fr) auto !important;
+        }
+
+        .student-progress-pick-card[hidden] {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link is-active" href="chair-student-progress.html" aria-current="page"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases View</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Workspace</p>
+              <h1>Student Progress</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace instructor-student-workspace">
+          <section class="workspace-panel student-progress-search-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>All-Section Student List</h2>
+              </div>
+
+              <div class="panel-heading-actions">
+                <button class="ghost-button" type="button" id="print-student-progress">Print</button>
+                <span class="status-badge status-verified" id="student-progress-count">0 visible</span>
+              </div>
+            </div>
+
+            <div class="history-filters student-progress-filters" aria-label="Student progress search filters">
+              <label class="form-label" for="student-progress-search">
+                Search
+                <input id="student-progress-search" type="search" placeholder="Search name, student ID, section, or status">
+              </label>
+
+              <label class="form-label" for="student-progress-section">
+                Section
+                <select id="student-progress-section">
+                  <option value="BSN 3A">BSN 3A</option>
+                  <option value="BSN 3B">BSN 3B</option>
+                  <option value="BSN 3C">BSN 3C</option>
+                  <option value="BSN 4A">BSN 4A</option>
+                </select>
+              </label>
+
+              <label class="form-label" for="student-progress-status">
+                Standing
+                <select id="student-progress-status">
+                  <option value="Checked">Checked</option>
+                  <option value="Unchecked">Unchecked</option>
+                  <option value="Cleared">Cleared</option>
+                  <option value="Not cleared">Not cleared</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="student-progress-pick-list" id="student-progress-pick-list">
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=treasure-abadinas" data-student-progress-card data-name="Treasure Abadinas" data-initials="TA" data-id="22-1845-103" data-section="BSN 3A" data-site="SAMCH" data-area="Delivery Room" data-status="Checked">
+                <span class="avatar small-avatar">TA</span>
+                <span class="student-progress-pick-copy"><strong>Treasure Abadinas</strong><small>BSN 3A - 22-1845-103</small></span>
+                <mark class="status-badge status-verified">Checked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=maria-cruz" data-student-progress-card data-name="Maria Cruz" data-initials="MC" data-id="12-3456-789" data-section="BSN 3A" data-site="CCMC" data-area="Emergency Room" data-status="Unchecked">
+                <span class="avatar small-avatar">MC</span>
+                <span class="student-progress-pick-copy"><strong>Maria Cruz</strong><small>BSN 3A - 12-3456-789</small></span>
+                <mark class="status-badge status-pending">Unchecked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=licheal-ursulo" data-student-progress-card data-name="Lichael Ursulo" data-initials="LU" data-id="23-1788-402" data-section="BSN 3A" data-site="SAMCH" data-area="Delivery Room" data-status="Cleared">
+                <span class="avatar small-avatar">LU</span>
+                <span class="student-progress-pick-copy"><strong>Lichael Ursulo</strong><small>BSN 3A - 23-1788-402</small></span>
+                <mark class="status-badge status-verified">Cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=nicole-dela-pena" data-student-progress-card data-name="Nicole Dela Pena" data-initials="ND" data-id="23-1023-441" data-section="BSN 3A" data-site="Vicente Mendiola Center for Health Infirmary" data-area="Medical Ward" data-status="Not cleared">
+                <span class="avatar small-avatar">ND</span>
+                <span class="student-progress-pick-copy"><strong>Nicole Dela Pena</strong><small>BSN 3A - 23-1023-441</small></span>
+                <mark class="status-badge status-rejected">Not cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=carlo-fernandez" data-student-progress-card data-name="Carlo Fernandez" data-initials="CF" data-id="23-1188-902" data-section="BSN 3A" data-site="VSMMC" data-area="OR Main" data-status="Checked">
+                <span class="avatar small-avatar">CF</span>
+                <span class="student-progress-pick-copy"><strong>Carlo Fernandez</strong><small>BSN 3A - 23-1188-902</small></span>
+                <mark class="status-badge status-verified">Checked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=zander-aligato" data-student-progress-card data-name="Zander Aligato" data-initials="ZA" data-id="21-7740-118" data-section="BSN 3B" data-site="CCMC" data-area="Emergency Room" data-status="Checked">
+                <span class="avatar small-avatar">ZA</span>
+                <span class="student-progress-pick-copy"><strong>Zander Aligato</strong><small>BSN 3B - 21-7740-118</small></span>
+                <mark class="status-badge status-verified">Checked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=jay-tiongzon" data-student-progress-card data-name="Jay Tiongzon" data-initials="JT" data-id="23-1782-221" data-section="BSN 3B" data-site="CHN Brgy. Dumlog" data-area="Community Health Nursing Area" data-status="Unchecked">
+                <span class="avatar small-avatar">JT</span>
+                <span class="student-progress-pick-copy"><strong>Jay Tiongzon</strong><small>BSN 3B - 23-1782-221</small></span>
+                <mark class="status-badge status-pending">Unchecked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=hannah-bautista" data-student-progress-card data-name="Hannah Bautista" data-initials="HB" data-id="22-2451-667" data-section="BSN 3B" data-site="CCMC" data-area="Pedia Pulmo Ward" data-status="Cleared">
+                <span class="avatar small-avatar">HB</span>
+                <span class="student-progress-pick-copy"><strong>Hannah Bautista</strong><small>BSN 3B - 22-2451-667</small></span>
+                <mark class="status-badge status-verified">Cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=rafael-castillo" data-student-progress-card data-name="Rafael Castillo" data-initials="RC" data-id="22-8820-431" data-section="BSN 3B" data-site="VSMMC" data-area="OR Main" data-status="Not cleared">
+                <span class="avatar small-avatar">RC</span>
+                <span class="student-progress-pick-copy"><strong>Rafael Castillo</strong><small>BSN 3B - 22-8820-431</small></span>
+                <mark class="status-badge status-rejected">Not cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=bea-montes" data-student-progress-card data-name="Bea Montes" data-initials="BM" data-id="23-5531-208" data-section="BSN 3B" data-site="CHN Brgy. Dumlog" data-area="Community Health Nursing Area" data-status="Checked">
+                <span class="avatar small-avatar">BM</span>
+                <span class="student-progress-pick-copy"><strong>Bea Montes</strong><small>BSN 3B - 23-5531-208</small></span>
+                <mark class="status-badge status-verified">Checked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=janine-aquino" data-student-progress-card data-name="Janine Aquino" data-initials="JA" data-id="22-6102-719" data-section="BSN 3C" data-site="SAMCH" data-area="Delivery Room" data-status="Unchecked">
+                <span class="avatar small-avatar">JA</span>
+                <span class="student-progress-pick-copy"><strong>Janine Aquino</strong><small>BSN 3C - 22-6102-719</small></span>
+                <mark class="status-badge status-pending">Unchecked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=miguel-reyes" data-student-progress-card data-name="Miguel Reyes" data-initials="MR" data-id="23-4190-778" data-section="BSN 3C" data-site="Vicente Mendiola Center for Health Infirmary" data-area="Medical Ward" data-status="Cleared">
+                <span class="avatar small-avatar">MR</span>
+                <span class="student-progress-pick-copy"><strong>Miguel Reyes</strong><small>BSN 3C - 23-4190-778</small></span>
+                <mark class="status-badge status-verified">Cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=patricia-uy" data-student-progress-card data-name="Patricia Uy" data-initials="PU" data-id="22-7304-122" data-section="BSN 3C" data-site="CCMC" data-area="Emergency Room" data-status="Not cleared">
+                <span class="avatar small-avatar">PU</span>
+                <span class="student-progress-pick-copy"><strong>Patricia Uy</strong><small>BSN 3C - 22-7304-122</small></span>
+                <mark class="status-badge status-rejected">Not cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=sean-villamor" data-student-progress-card data-name="Sean Villamor" data-initials="SV" data-id="23-9055-310" data-section="BSN 3C" data-site="VSMMC" data-area="OR Main" data-status="Checked">
+                <span class="avatar small-avatar">SV</span>
+                <span class="student-progress-pick-copy"><strong>Sean Villamor</strong><small>BSN 3C - 23-9055-310</small></span>
+                <mark class="status-badge status-verified">Checked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=leah-tan" data-student-progress-card data-name="Leah Tan" data-initials="LT" data-id="23-6718-235" data-section="BSN 3C" data-site="CCMC" data-area="NICU" data-status="Unchecked">
+                <span class="avatar small-avatar">LT</span>
+                <span class="student-progress-pick-copy"><strong>Leah Tan</strong><small>BSN 3C - 23-6718-235</small></span>
+                <mark class="status-badge status-pending">Unchecked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=andrea-gomez" data-student-progress-card data-name="Andrea Gomez" data-initials="AG" data-id="20-4408-332" data-section="BSN 4A" data-site="Vicente Mendiola Center for Health Infirmary" data-area="Emergency Room" data-status="Cleared">
+                <span class="avatar small-avatar">AG</span>
+                <span class="student-progress-pick-copy"><strong>Andrea Gomez</strong><small>BSN 4A - 20-4408-332</small></span>
+                <mark class="status-badge status-verified">Cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=mark-hernandez" data-student-progress-card data-name="Mark Hernandez" data-initials="MH" data-id="21-5409-882" data-section="BSN 4A" data-site="PSH" data-area="Operating Room" data-status="Not cleared">
+                <span class="avatar small-avatar">MH</span>
+                <span class="student-progress-pick-copy"><strong>Mark Hernandez</strong><small>BSN 4A - 21-5409-882</small></span>
+                <mark class="status-badge status-rejected">Not cleared</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=camille-navarro" data-student-progress-card data-name="Camille Navarro" data-initials="CN" data-id="21-3091-450" data-section="BSN 4A" data-site="CCHD" data-area="Community Health / Duty Area" data-status="Checked">
+                <span class="avatar small-avatar">CN</span>
+                <span class="student-progress-pick-copy"><strong>Camille Navarro</strong><small>BSN 4A - 21-3091-450</small></span>
+                <mark class="status-badge status-verified">Checked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=daniel-ong" data-student-progress-card data-name="Daniel Ong" data-initials="DO" data-id="21-7782-944" data-section="BSN 4A" data-site="CCMC" data-area="Pedia Pulmo Ward" data-status="Unchecked">
+                <span class="avatar small-avatar">DO</span>
+                <span class="student-progress-pick-copy"><strong>Daniel Ong</strong><small>BSN 4A - 21-7782-944</small></span>
+                <mark class="status-badge status-pending">Unchecked</mark>
+              </div>
+
+              <div class="student-progress-pick-card" role="link" tabindex="0" data-student-href="student-progress-detail.html?student=sophia-ramos" data-student-progress-card data-name="Sophia Ramos" data-initials="SR" data-id="21-6607-301" data-section="BSN 4A" data-site="CCMC" data-area="Emergency Room" data-status="Not cleared">
+                <span class="avatar small-avatar">SR</span>
+                <span class="student-progress-pick-copy"><strong>Sophia Ramos</strong><small>BSN 4A - 21-6607-301</small></span>
+                <mark class="status-badge status-rejected">Not cleared</mark>
+              </div>
+            </div>
+
+            <div id="student-progress-empty" class="empty-state" hidden>
+              No assigned students match the selected filters.
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/chair-student-progress.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

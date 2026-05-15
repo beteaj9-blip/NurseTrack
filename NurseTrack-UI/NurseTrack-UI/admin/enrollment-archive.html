@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Enrollment Archive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+        <div class="role-chip">Admin</div>
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="manage-users.html"><span class="nav-dot"></span>Manage Users</a>
+          <a class="nav-link" href="hospital-duty-area.html"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link" href="audit-logs.html"><span class="nav-dot"></span>Audit Logs</a>
+        </nav>
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Enrollment Archive</h1>
+            </div>
+          </div>
+          <div class="topbar-actions">
+            <span class="sync-pill">Archive ready</span>
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace dashboard-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <p class="section-kicker">Enrollment Summary / Archive</p>
+              <h2>View enrollment-related summaries and previous student records.</h2>
+              <p>This Admin section is for account and enrollment visibility only. Chair workflow reports remain in the Chair workspace.</p>
+            </div>
+            <span class="status-badge status-verified">Admin only</span>
+          </section>
+
+          <section class="dashboard-stats" aria-label="Enrollment archive summary">
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Current</span>
+                <span class="status-badge status-verified">Active</span>
+              </div>
+              <h3>Current enrollment</h3>
+              <p>Active nursing students with portal accounts</p>
+              <strong class="stat-value">118</strong>
+            </article>
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Archive</span>
+                <span class="status-badge status-pending">Stored</span>
+              </div>
+              <h3>Archived batches</h3>
+              <p>Previous student summaries available for review</p>
+              <strong class="stat-value">6</strong>
+            </article>
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Access</span>
+                <span class="status-badge status-verified">Controlled</span>
+              </div>
+              <h3>Access changes</h3>
+              <p>Account access updates tied to enrollment status</p>
+              <strong class="stat-value">9</strong>
+            </article>
+          </section>
+
+          <section class="workspace-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-kicker">Archive Records</p>
+                <h2>Enrollment summary list</h2>
+              </div>
+              <span class="status-badge status-verified" id="archive-visible-count">3 visible</span>
+            </div>
+            <div class="history-filters admin-archive-filters" aria-label="Enrollment archive filters">
+              <label class="form-label" for="archive-school-year">
+                School year
+                <select id="archive-school-year">
+                  <option value="all">All school years</option>
+                  <option value="2025-2026">2025-2026</option>
+                  <option value="2024-2025">2024-2025</option>
+                  <option value="2023-2024">2023-2024</option>
+                </select>
+              </label>
+              <label class="form-label" for="archive-term">
+                Semester / term
+                <select id="archive-term">
+                  <option value="all">All terms</option>
+                  <option value="2nd Semester">2nd Semester</option>
+                  <option value="1st Semester">1st Semester</option>
+                  <option value="Summer">Summer</option>
+                </select>
+              </label>
+              <label class="form-label" for="archive-record-status">
+                Record type
+                <select id="archive-record-status">
+                  <option value="all">Current and previous</option>
+                  <option value="current">Current students</option>
+                  <option value="archived">Previous / archived</option>
+                </select>
+              </label>
+            </div>
+            <div class="mini-data-table" aria-label="Enrollment archive records">
+              <div class="mini-data-row mini-data-head">
+                <span>Batch</span><span>Students</span><span>Status</span><span>Action</span>
+              </div>
+              <div class="mini-data-row" data-archive-record data-school-year="2025-2026" data-term="2nd Semester" data-record-status="current">
+                <span>BSN 2025-2026<small>Current enrollment - 2nd Semester</small></span>
+                <span>118 students<small>32 active in clinical rotations</small></span>
+                <span><span class="status-badge status-verified">Active</span></span>
+                <span><a class="text-link" href="manage-users.html">Open users</a></span>
+              </div>
+              <div class="mini-data-row" data-archive-record data-school-year="2024-2025" data-term="1st Semester" data-record-status="archived">
+                <span>BSN 2024-2025<small>Previous summary - 1st Semester</small></span>
+                <span>104 students<small>Archived completion snapshot</small></span>
+                <span><span class="status-badge status-pending">Archived</span></span>
+                <span><button class="ghost-button" type="button" data-restore-record>Restore record</button></span>
+              </div>
+              <div class="mini-data-row" data-archive-record data-school-year="2023-2024" data-term="Summer" data-record-status="archived">
+                <span>BSN 2023-2024<small>Previous summary - Summer</small></span>
+                <span>96 students<small>Archived completion snapshot</small></span>
+                <span><span class="status-badge status-pending">Archived</span></span>
+                <span><button class="ghost-button" type="button" data-restore-record>Restore record</button></span>
+              </div>
+            </div>
+            <div id="archive-empty" class="empty-state" hidden>
+              No enrollment archive records match the selected filters.
+            </div>
+            <div id="archive-message" class="form-message" role="status" aria-live="polite">
+              Current and previous student summaries are separated by record type.
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/enrollment-archive.js"></script>
+    <script src="../scripts/instructor-dashboard.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,1562 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Manage Users</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .modal-backdrop {
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 1.5rem;
+        place-items: center;
+        background: rgba(15, 23, 42, 0.46);
+        backdrop-filter: blur(3px);
+      }
+
+      .user-action-modal-card,
+      .edit-user-modal-card,
+      .status-modal-card {
+        width: min(560px, calc(100vw - 32px));
+        max-width: 560px;
+        max-height: min(88vh, 760px);
+        padding: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-sizing: border-box;
+        box-shadow: 0 26px 68px rgba(15, 23, 42, 0.24);
+      }
+
+      .user-action-modal-card .modal-heading,
+      .edit-user-modal-card .modal-heading,
+      .status-modal-card .modal-heading {
+        display: grid;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 76px;
+        margin: 0;
+        padding: 1.25rem 1.35rem;
+        border-bottom: 1px solid #e5eaf1;
+      }
+
+      .user-action-modal-card .modal-heading {
+        grid-template-columns: minmax(0, 1fr) 44px;
+      }
+
+      .edit-user-modal-card .modal-heading,
+      .status-modal-card .modal-heading {
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+      }
+
+      .user-action-modal-card .modal-heading h2,
+      .edit-user-modal-card .modal-heading h2,
+      .status-modal-card .modal-heading h2 {
+        margin: 0.2rem 0 0;
+        color: #111827;
+        font-size: 1.28rem;
+        line-height: 1.15;
+        letter-spacing: 0;
+      }
+
+      .modal-close,
+      .modal-back-button {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        background: #ffffff;
+        color: transparent;
+        font-size: 0;
+        line-height: 0;
+        text-transform: none;
+      }
+
+      .modal-close:hover,
+      .modal-close:focus-visible,
+      .modal-back-button:hover,
+      .modal-back-button:focus-visible {
+        border-color: rgba(138, 37, 44, 0.4);
+        background: #ffffff;
+        color: transparent;
+      }
+
+      .modal-close::before,
+      .modal-close::after {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 2px;
+        border-radius: 999px;
+        background: #111827;
+      }
+
+      .modal-close::before {
+        transform: rotate(45deg);
+      }
+
+      .modal-close::after {
+        transform: rotate(-45deg);
+      }
+
+      .modal-back-button::before {
+        content: "";
+        width: 11px;
+        height: 11px;
+        border-left: 2px solid #111827;
+        border-bottom: 2px solid #111827;
+        transform: translateX(2px) rotate(45deg);
+      }
+
+      .user-action-modal-card .modal-copy {
+        margin: 0;
+        padding: 1.15rem 1.35rem 0;
+        color: #4c5d7d;
+        font-size: 0.94rem;
+        font-weight: 700;
+        line-height: 1.55;
+      }
+
+      .status-modal-card > .modal-copy {
+        margin: 0;
+        padding: 1.15rem 1.35rem;
+        color: #4c5d7d;
+        font-size: 0.94rem;
+        font-weight: 800;
+        line-height: 1.5;
+      }
+
+      .account-action-summary {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.85rem;
+        width: auto;
+        max-width: none;
+        margin: 1rem 1.35rem;
+        padding: 0.9rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        background: #f8fafc;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .account-action-summary > div:nth-child(2) {
+        min-width: 0;
+      }
+
+      .account-action-summary strong {
+        display: block;
+        color: #111827;
+        font-size: 1rem;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .account-action-summary small {
+        display: block;
+        margin-top: 0.25rem;
+        max-width: 100%;
+        color: #667085;
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .account-action-summary .status-badge {
+        white-space: nowrap;
+      }
+
+      .action-menu-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.65rem;
+        margin: 0;
+        padding: 0 1.35rem 1.15rem;
+      }
+
+      .action-menu-grid .ghost-button {
+        justify-content: flex-start;
+        width: 100%;
+        min-width: 0;
+        min-height: 50px;
+        padding: 0 1.15rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 850;
+        text-align: left;
+        box-sizing: border-box;
+        background: #ffffff;
+      }
+
+      .action-menu-grid .ghost-button.is-selected {
+        border-color: rgba(138, 37, 44, 0.55);
+        background: #ffffff;
+        color: #8a252c;
+        box-shadow: none;
+      }
+
+      .user-action-modal-card .modal-actions,
+      .modal-form-actions,
+      .status-modal-actions,
+      .add-user-modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8rem;
+        margin: 0;
+        padding: 1.1rem 1.35rem 1.35rem;
+        border-top: 1px solid #e5eaf1;
+        background: #f8fafc;
+      }
+
+      .user-action-modal-card .modal-actions .ghost-button,
+      .user-action-modal-card .modal-actions .primary-button,
+      .modal-form-actions .ghost-button,
+      .modal-form-actions .primary-button,
+      .status-modal-actions .ghost-button,
+      .status-modal-actions .primary-button,
+      .add-user-modal-actions .ghost-button,
+      .add-user-modal-actions .primary-button {
+        width: 100%;
+        min-width: 0;
+        min-height: 48px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 850;
+        box-sizing: border-box;
+      }
+
+      .edit-user-modal-card .user-form,
+      .status-only-form {
+        display: grid;
+        gap: 1rem;
+        padding: 1.25rem 1.35rem 0;
+      }
+
+      .edit-user-modal-card input,
+      .edit-user-modal-card select,
+      .status-only-form select {
+        min-height: 48px;
+      }
+
+      .edit-user-modal-card .form-message,
+      .status-only-form .form-message {
+        margin: 0;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        border-radius: 8px;
+      }
+
+      .status-current-card {
+        margin: 1.2rem 1.35rem 0;
+        padding: 1rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+
+      .status-current-card span {
+        display: block;
+        color: #4c5d7d;
+        font-size: 0.8rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .status-current-card strong {
+        display: block;
+        margin-top: 0.3rem;
+        color: #111827;
+        font-size: 1rem;
+      }
+
+      .user-management-workspace {
+        gap: 1rem;
+      }
+
+      .user-management-layout-wide > .workspace-panel {
+        margin-top: 0;
+        padding: 1.45rem;
+        border-radius: 8px;
+      }
+
+      .user-management-layout-wide .panel-heading {
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e5eaf1;
+      }
+
+      .user-management-layout-wide .panel-heading h2 {
+        margin: 0;
+        color: #111827;
+        font-size: 1.25rem;
+        line-height: 1.15;
+      }
+
+      .panel-heading-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .panel-heading-actions .ghost-button {
+        min-height: 38px;
+        padding-inline: 1rem;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+
+      .user-filters {
+        display: grid;
+        grid-template-columns: minmax(160px, 0.72fr) minmax(160px, 0.72fr) minmax(160px, 0.72fr) minmax(300px, 1.6fr);
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+        padding: 0.95rem;
+        border: 1px solid #e5eaf1;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+
+      .user-filters .form-label {
+        margin: 0;
+      }
+
+      #section-filter-wrapper[hidden] {
+        display: none !important;
+      }
+
+      #user-search-wrapper {
+        grid-column: 4 / -1;
+      }
+
+      .user-filters.is-non-student-role #user-search-wrapper {
+        grid-column: 3 / -1;
+      }
+
+      .user-table {
+        max-height: 560px;
+        border-radius: 8px;
+      }
+
+      #user-message {
+        margin-top: 1rem;
+      }
+
+      .user-table .user-row {
+        grid-template-columns: minmax(220px, 1.15fr) minmax(180px, 0.9fr) minmax(170px, 0.85fr) minmax(130px, 0.7fr) minmax(120px, 0.55fr);
+        gap: 0.9rem;
+        padding: 1rem 1.1rem;
+      }
+
+      .user-table .user-row-head {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      .user-table .user-row > span:last-child {
+        justify-self: stretch;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .kebab-button {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        border-radius: 8px;
+      }
+
+      .add-user-modal-card {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .add-user-modal-card .modal-heading {
+        grid-template-columns: minmax(0, 1fr) 44px;
+      }
+
+      .add-user-modal-card #add-user-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.1rem;
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .add-user-modal-card #add-user-message,
+      .add-user-modal-card .add-user-modal-actions {
+        grid-column: 1 / -1;
+      }
+
+      .add-user-modal-card .add-user-modal-actions {
+        background: #ffffff;
+      }
+
+      .user-action-modal-card .modal-close,
+      .edit-user-modal-card .modal-close,
+      .status-modal-card .modal-close,
+      .edit-user-modal-card .modal-back-button,
+      .status-modal-card .modal-back-button {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        min-height: 44px;
+        padding: 0;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        background: #ffffff;
+        color: transparent;
+        font-size: 0;
+        line-height: 0;
+        text-transform: none;
+      }
+
+      .user-action-modal-card .modal-close:hover,
+      .user-action-modal-card .modal-close:focus-visible,
+      .edit-user-modal-card .modal-close:hover,
+      .edit-user-modal-card .modal-close:focus-visible,
+      .status-modal-card .modal-close:hover,
+      .status-modal-card .modal-close:focus-visible,
+      .edit-user-modal-card .modal-back-button:hover,
+      .edit-user-modal-card .modal-back-button:focus-visible,
+      .status-modal-card .modal-back-button:hover,
+      .status-modal-card .modal-back-button:focus-visible {
+        border-color: rgba(138, 37, 44, 0.4);
+        background: #ffffff;
+        color: transparent;
+      }
+
+      .user-action-modal-card .icon-button.modal-close::before,
+      .user-action-modal-card .icon-button.modal-close::after,
+      .edit-user-modal-card .icon-button.modal-close::before,
+      .edit-user-modal-card .icon-button.modal-close::after,
+      .status-modal-card .icon-button.modal-close::before,
+      .status-modal-card .icon-button.modal-close::after {
+        background: #111827;
+      }
+
+      .user-action-modal-card .icon-button.modal-close:hover::before,
+      .user-action-modal-card .icon-button.modal-close:hover::after,
+      .user-action-modal-card .icon-button.modal-close:focus-visible::before,
+      .user-action-modal-card .icon-button.modal-close:focus-visible::after,
+      .edit-user-modal-card .icon-button.modal-close:hover::before,
+      .edit-user-modal-card .icon-button.modal-close:hover::after,
+      .edit-user-modal-card .icon-button.modal-close:focus-visible::before,
+      .edit-user-modal-card .icon-button.modal-close:focus-visible::after,
+      .status-modal-card .icon-button.modal-close:hover::before,
+      .status-modal-card .icon-button.modal-close:hover::after,
+      .status-modal-card .icon-button.modal-close:focus-visible::before,
+      .status-modal-card .icon-button.modal-close:focus-visible::after {
+        background: #8a252c;
+      }
+
+      @media (max-width: 680px) {
+        .modal-backdrop {
+          padding: 1rem;
+        }
+
+        .account-action-summary {
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .account-action-summary .status-badge {
+          grid-column: 1 / -1;
+          width: fit-content;
+        }
+
+        .user-action-modal-card .modal-actions,
+        .modal-form-actions,
+        .status-modal-actions,
+        .add-user-modal-actions {
+          grid-template-columns: 1fr;
+        }
+
+        .add-user-modal-card #add-user-form {
+          grid-template-columns: 1fr;
+        }
+
+        .user-filters,
+        .user-table .user-row {
+          grid-template-columns: 1fr;
+        }
+
+        .user-table .user-row-head {
+          display: none;
+        }
+
+        #user-search-wrapper,
+        .user-filters.is-non-student-role #user-search-wrapper {
+          grid-column: auto;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="manage-users.html" aria-current="page"><span class="nav-dot"></span>Manage Users</a>
+          <a class="nav-link" href="assistant-access.html"><span class="nav-dot"></span>Assistant Access</a>
+          <a class="nav-link" href="section-import.html"><span class="nav-dot"></span>Section Import</a>
+          <a class="nav-link" href="hospital-duty-area.html"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="admin-live-attendance.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="admin-manual-backup.html"><span class="nav-dot"></span>Manual Backup</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Manage Users</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace user-management-workspace">
+          <section class="user-management-layout user-management-layout-wide">
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>User List</h2>
+                </div>
+                <div class="panel-heading-actions">
+                  <button class="ghost-button" type="button" id="open-add-user">Add User</button>
+                  <span class="status-badge status-verified" id="visible-user-count">6 visible</span>
+                </div>
+              </div>
+
+              <div class="form-grid user-filters" id="user-filters">
+                <label class="form-label" for="role-filter">
+                  Role
+                  <select id="role-filter">
+                    <option value="student">Student</option>
+                    <option value="instructor">Instructor</option>
+                    <option value="chair">Chair</option>
+                    <option value="admin">Admin</option>
+                    <option value="coordinator">Coordinator</option>
+                    <option value="enrollment">Enrollment Team</option>
+                    <option value="assistant">Assistant</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="status-filter">
+                  Status
+                  <select id="status-filter">
+                    <option value="all">All status</option>
+                    <option value="active">Active</option>
+                    <option value="deactivated">Deactivated</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="section-filter" id="section-filter-wrapper">
+                  Section
+                  <select id="section-filter">
+                    <option value="all">All sections</option>
+                    <option value="BSN 1A">BSN 1A</option>
+                    <option value="BSN 1B">BSN 1B</option>
+                    <option value="BSN 2A">BSN 2A</option>
+                    <option value="BSN 2B">BSN 2B</option>
+                    <option value="BSN 3A">BSN 3A</option>
+                    <option value="BSN 3B">BSN 3B</option>
+                    <option value="BSN 4A">BSN 4A</option>
+                    <option value="BSN 4B">BSN 4B</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="user-search" id="user-search-wrapper">
+                  Search
+                  <input id="user-search" type="search" placeholder="Search name, ID, email">
+                </label>
+              </div>
+
+              <div class="user-table" id="user-table">
+                <div class="user-row user-row-head">
+                  <span>Name</span>
+                  <span>Role</span>
+                  <span>ID / Section</span>
+                  <span>Status</span>
+                  <span>Action</span>
+                </div>
+
+                <div class="user-row" data-role="student" data-status="active" data-section="BSN 3A">
+                  <span>
+                    <strong>Maria Cruz</strong>
+                    <small>maria.cruz@cit.edu</small>
+                  </span>
+                  <span>Nursing Student</span>
+                  <span>
+                    <strong>12-3456-789</strong>
+                    <small>BSN 3A</small>
+                  </span>
+                  <span><mark class="status-badge status-verified">Active</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="user-row" data-role="student" data-status="active" data-section="BSN 2B">
+                  <span>
+                    <strong>Juan Dela Cruz</strong>
+                    <small>juan.delacruz@cit.edu</small>
+                  </span>
+                  <span>Nursing Student</span>
+                  <span>
+                    <strong>24-0001-001</strong>
+                    <small>BSN 2B</small>
+                  </span>
+                  <span><mark class="status-badge status-verified">Active</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="user-row" data-role="instructor" data-status="active">
+                  <span>
+                    <strong>Prof. Reyes</strong>
+                    <small>reyes@cit.edu</small>
+                  </span>
+                  <span>Clinical Instructor</span>
+                  <span>
+                    <strong>CI-1002</strong>
+                  </span>
+                  <span><mark class="status-badge status-verified">Active</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="user-row" data-role="chair" data-status="active">
+                  <span>
+                    <strong>Chair Reyes</strong>
+                    <small>chair.reyes@cit.edu</small>
+                  </span>
+                  <span>Chair</span>
+                  <span>
+                    <strong>AD-1001</strong>
+                    <small>Nursing</small>
+                  </span>
+                  <span><mark class="status-badge status-verified">Active</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="user-row" data-role="coordinator" data-status="active">
+                  <span>
+                    <strong>Coordinator Lim</strong>
+                    <small>coordinator.lim@cit.edu</small>
+                  </span>
+                  <span>Coordinator</span>
+                  <span>
+                    <strong>CO-1001</strong>
+                    <small>Nursing Operations</small>
+                  </span>
+                  <span><mark class="status-badge status-verified">Active</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="user-row" data-role="enrollment" data-status="active">
+                  <span>
+                    <strong>Enrollment Team</strong>
+                    <small>enrollment.team@cit.edu</small>
+                  </span>
+                  <span>Enrollment Team</span>
+                  <span>
+                    <strong>EN-1001</strong>
+                    <small>Registrar Coordination</small>
+                  </span>
+                  <span><mark class="status-badge status-verified">Active</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="user-row" data-role="assistant" data-status="active">
+                  <span>
+                    <strong>Assistant Garcia</strong>
+                    <small>assistant.garcia@cit.edu</small>
+                  </span>
+                  <span>Assistant</span>
+                  <span>
+                    <strong>AS-1001</strong>
+                    <small>Chair Support</small>
+                  </span>
+                  <span><mark class="status-badge status-verified">Active</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+
+                <div class="user-row" data-role="student" data-status="deactivated" data-section="BSN 4A">
+                  <span>
+                    <strong>Paolo Lim</strong>
+                    <small>paolo.lim@cit.edu</small>
+                  </span>
+                  <span>Nursing Student</span>
+                  <span>
+                    <strong>22-0988-414</strong>
+                    <small>BSN 4A</small>
+                  </span>
+                  <span><mark class="status-badge status-rejected">Deactivated</mark></span>
+                  <span>
+                    <button class="icon-button kebab-button user-action" type="button" aria-label="Open account action" title="Actions">
+                      <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="5" r="1.8"></circle>
+                        <circle cx="12" cy="12" r="1.8"></circle>
+                        <circle cx="12" cy="19" r="1.8"></circle>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
+              </div>
+
+              <div id="user-empty" class="empty-state" hidden>No matching users found.</div>
+
+              <div id="user-message" class="form-message" role="status" aria-live="polite">
+                Directory loaded successfully.
+              </div>
+            </article>
+          </section>
+        </main>
+
+        <div class="modal-backdrop" id="add-user-modal" hidden>
+          <section class="modal-card account-modal edit-user-modal-card add-user-modal-card" role="dialog" aria-modal="true" aria-labelledby="add-user-title">
+            <div class="modal-heading">
+              <div>
+                <p class="section-kicker">Add User</p>
+                <h2 id="add-user-title">Create Account</h2>
+              </div>
+              <button class="icon-button modal-close" type="button" data-close-add-modal aria-label="Close modal"></button>
+            </div>
+
+            <form class="user-form" id="add-user-form" novalidate>
+              <label class="form-label" for="add-name">
+                Full name
+                <input id="add-name" type="text" placeholder="Enter full name" required>
+              </label>
+
+              <label class="form-label" for="add-email">
+                School email
+                <input id="add-email" type="email" placeholder="name@cit.edu" required>
+              </label>
+
+              <label class="form-label" for="add-role">
+                Role
+                <select id="add-role" required>
+                  <option value="student">Nursing Student</option>
+                  <option value="instructor">Clinical Instructor</option>
+                  <option value="admin">Admin</option>
+                  <option value="chair">Chair</option>
+                  <option value="assistant">Assistant</option>
+                  <option value="enrollment">Enrollment Team</option>
+                  <option value="coordinator">Coordinator</option>
+                </select>
+              </label>
+
+              <label class="form-label" for="add-id">
+                ID
+                <input id="add-id" type="text" placeholder="Student ID or staff ID" required>
+              </label>
+
+              <label class="form-label" for="add-section">
+                Section
+                <select id="add-section" required>
+                  <option value="BSN 1A">BSN 1A</option>
+                  <option value="BSN 1B">BSN 1B</option>
+                  <option value="BSN 2A">BSN 2A</option>
+                  <option value="BSN 2B">BSN 2B</option>
+                  <option value="BSN 3A">BSN 3A</option>
+                  <option value="BSN 3B">BSN 3B</option>
+                  <option value="BSN 4A">BSN 4A</option>
+                  <option value="BSN 4B">BSN 4B</option>
+                </select>
+              </label>
+
+              <div id="add-user-message" class="form-message" role="status" aria-live="polite">
+                Add a student, CI, admin, chair, assistant, coordinator, or enrollment team account.
+              </div>
+
+              <div class="add-user-modal-actions">
+                <button class="ghost-button" type="button" data-close-add-modal>Cancel</button>
+                <button class="primary-button workspace-action" type="submit">Add User</button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div class="modal-backdrop" id="user-action-modal" hidden>
+          <section class="modal-card confirm-modal user-action-modal-card" role="dialog" aria-modal="true" aria-labelledby="user-action-title">
+            <div class="modal-heading">
+              <div>
+                <h2 id="user-action-title">Review Account</h2>
+              </div>
+              <button class="icon-button modal-close" type="button" data-close-action-modal aria-label="Close modal"></button>
+            </div>
+
+            <p id="user-action-copy" class="modal-copy">
+              Choose one clear action for this account.
+            </p>
+
+            <div class="selected-user-card account-action-summary" id="account-action-summary">
+              <div class="avatar">MC</div>
+              <div>
+                <strong>Maria Cruz</strong>
+                <small>12-3456-789 - BSN 3A - maria.cruz@cit.edu</small>
+              </div>
+              <mark class="status-badge status-verified">Active</mark>
+            </div>
+
+            <div class="action-menu-grid">
+              <button class="ghost-button is-selected" type="button" data-account-action="edit">Edit User Details</button>
+              <button class="ghost-button" type="button" data-account-action="status">Change User Status</button>
+              <button class="ghost-button" type="button" data-account-action="reset">Reset Password</button>
+            </div>
+
+            <div class="modal-actions">
+              <button class="ghost-button" type="button" data-close-action-modal>Cancel</button>
+              <button class="primary-button" type="button" id="confirm-user-action">Continue</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-backdrop" id="edit-user-modal" hidden>
+          <section class="modal-card account-modal edit-user-modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
+            <div class="modal-heading">
+              <button class="ghost-button modal-back-button" type="button" data-back-to-actions aria-label="Back to account actions"></button>
+              <div>
+                <p class="section-kicker">Edit User</p>
+                <h2 id="edit-user-title">Update Account Details</h2>
+              </div>
+              <button class="icon-button modal-close" type="button" data-close-edit-modal aria-label="Close modal"></button>
+            </div>
+
+            <form class="user-form" id="edit-user-form" novalidate>
+              <label class="form-label" for="edit-name">
+                Full name
+                <input id="edit-name" type="text" required>
+              </label>
+
+              <label class="form-label" for="edit-role">
+                Role
+                <select id="edit-role" required>
+                  <option value="student">Nursing Student</option>
+                  <option value="instructor">Clinical Instructor</option>
+                  <option value="chair">Chair</option>
+                  <option value="admin">Admin</option>
+                  <option value="coordinator">Coordinator</option>
+                  <option value="enrollment">Enrollment Team</option>
+                  <option value="assistant">Assistant</option>
+                </select>
+              </label>
+
+              <label class="form-label" for="edit-section">
+                Section
+                <select id="edit-section" required>
+                  <option value="BSN 1A">BSN 1A</option>
+                  <option value="BSN 1B">BSN 1B</option>
+                  <option value="BSN 2A">BSN 2A</option>
+                  <option value="BSN 2B">BSN 2B</option>
+                  <option value="BSN 3A">BSN 3A</option>
+                  <option value="BSN 3B">BSN 3B</option>
+                  <option value="BSN 4A">BSN 4A</option>
+                  <option value="BSN 4B">BSN 4B</option>
+                </select>
+              </label>
+
+              <div id="edit-user-message" class="form-message" role="status" aria-live="polite">
+                School email is kept unchanged for account traceability.
+              </div>
+
+              <div class="modal-form-actions">
+                <button class="ghost-button" type="button" data-back-to-actions>Back</button>
+                <button class="primary-button workspace-action" type="submit">Save Changes</button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div class="modal-backdrop" id="status-user-modal" hidden>
+          <section class="modal-card status-modal-card" role="dialog" aria-modal="true" aria-labelledby="status-user-title">
+            <div class="modal-heading">
+              <button class="ghost-button modal-back-button" type="button" data-back-to-actions aria-label="Back to account actions"></button>
+              <div>
+                <p class="section-kicker">User Status</p>
+                <h2 id="status-user-title">Change User Status</h2>
+              </div>
+              <button class="icon-button modal-close" type="button" data-close-status-modal aria-label="Close modal"></button>
+            </div>
+
+            <div class="status-current-card">
+              <span>Selected User</span>
+              <strong id="status-user-name">Maria Cruz</strong>
+            </div>
+
+            <form class="status-only-form" id="status-user-form">
+              <label class="form-label" for="status-only-select">
+                New status
+                <select id="status-only-select" required>
+                  <option value="active">Active</option>
+                  <option value="deactivated">Deactivated</option>
+                </select>
+              </label>
+
+              <div id="status-user-message" class="form-message" role="status" aria-live="polite">
+                Only the account status will be changed.
+              </div>
+
+              <div class="status-modal-actions">
+                <button class="ghost-button" type="button" data-back-to-actions>Back</button>
+                <button class="primary-button" type="submit">Save Status</button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div class="modal-backdrop" id="reset-password-modal" hidden>
+          <section class="modal-card status-modal-card" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+            <div class="modal-heading">
+              <button class="ghost-button modal-back-button" type="button" data-back-to-actions aria-label="Back to account actions"></button>
+              <div>
+                <p class="section-kicker">Password Reset</p>
+                <h2 id="reset-password-title">Confirm Password Reset</h2>
+              </div>
+              <button class="icon-button modal-close" type="button" data-close-reset-modal aria-label="Close modal"></button>
+            </div>
+
+            <p class="modal-copy" id="reset-password-copy">Are you sure you want to reset this password?</p>
+
+            <div class="status-modal-actions">
+              <button class="ghost-button" type="button" data-back-to-actions>Back</button>
+              <button class="primary-button" type="button" id="confirm-reset-password">Reset Password</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const menuButton = document.querySelector("[data-menu-button]");
+      const sidebarBackdrop = document.querySelector("[data-close-sidebar]");
+      const roleFilter = document.querySelector("#role-filter");
+      const statusFilter = document.querySelector("#status-filter");
+      const sectionFilterWrapper = document.querySelector("#section-filter-wrapper");
+      const sectionFilter = document.querySelector("#section-filter");
+      const userSearch = document.querySelector("#user-search");
+      const userFilters = document.querySelector("#user-filters");
+      let userRows = Array.from(document.querySelectorAll("#user-table .user-row:not(.user-row-head)"));
+      const userTable = document.querySelector("#user-table");
+      const userEmpty = document.querySelector("#user-empty");
+      const visibleUserCount = document.querySelector("#visible-user-count");
+      const userMessage = document.querySelector("#user-message");
+
+      const addUserModal = document.querySelector("#add-user-modal");
+      const userActionModal = document.querySelector("#user-action-modal");
+      const editUserModal = document.querySelector("#edit-user-modal");
+      const statusUserModal = document.querySelector("#status-user-modal");
+      const resetPasswordModal = document.querySelector("#reset-password-modal");
+      const openAddUserButton = document.querySelector("#open-add-user");
+      const accountActionSummary = document.querySelector("#account-action-summary");
+      const actionButtons = Array.from(document.querySelectorAll("[data-account-action]"));
+      const confirmUserAction = document.querySelector("#confirm-user-action");
+      const resetPasswordCopy = document.querySelector("#reset-password-copy");
+      const confirmResetPassword = document.querySelector("#confirm-reset-password");
+
+      const addUserForm = document.querySelector("#add-user-form");
+      const addName = document.querySelector("#add-name");
+      const addEmail = document.querySelector("#add-email");
+      const addRole = document.querySelector("#add-role");
+      const addId = document.querySelector("#add-id");
+      const addSection = document.querySelector("#add-section");
+
+      const editUserForm = document.querySelector("#edit-user-form");
+      const editName = document.querySelector("#edit-name");
+      const editRole = document.querySelector("#edit-role");
+      const editSection = document.querySelector("#edit-section");
+
+      const statusUserForm = document.querySelector("#status-user-form");
+      const statusOnlySelect = document.querySelector("#status-only-select");
+      const statusUserName = document.querySelector("#status-user-name");
+
+      let selectedUserRow = null;
+      let selectedAction = "edit";
+
+      function openModal(modal) {
+        modal.hidden = false;
+        document.body.classList.add("modal-open");
+      }
+
+      function closeModal(modal) {
+        modal.hidden = true;
+      }
+
+      function closeAllModals() {
+        addUserModal.hidden = true;
+        userActionModal.hidden = true;
+        editUserModal.hidden = true;
+        statusUserModal.hidden = true;
+        resetPasswordModal.hidden = true;
+        document.body.classList.remove("modal-open");
+      }
+
+      function backToActions() {
+        addUserModal.hidden = true;
+        editUserModal.hidden = true;
+        statusUserModal.hidden = true;
+        resetPasswordModal.hidden = true;
+        openModal(userActionModal);
+      }
+
+      function getUserData(row) {
+        const name = row.querySelector("span:first-child strong")?.textContent.trim() || "";
+        const email = row.querySelector("span:first-child small")?.textContent.trim() || "";
+        const roleText = row.children[1]?.textContent.trim() || "";
+        const id = row.children[2]?.querySelector("strong")?.textContent.trim() || "";
+        const isStudent = row.dataset.role === "student" || roleText.toLowerCase().includes("student");
+        const section = isStudent ? row.dataset.section || row.children[2]?.querySelector("small")?.textContent.trim() || "" : "";
+        const status = row.dataset.status || "active";
+
+        return { name, email, roleText, id, section, status };
+      }
+
+      function roleTextToValue(roleText) {
+        const value = roleText.toLowerCase();
+
+        if (value.includes("student")) return "student";
+        if (value.includes("instructor")) return "instructor";
+        if (value.includes("chair")) return "chair";
+        if (value.includes("admin")) return "admin";
+        if (value.includes("coordinator")) return "coordinator";
+        if (value.includes("enrollment")) return "enrollment";
+        if (value.includes("assistant")) return "assistant";
+
+        return "student";
+      }
+
+      function statusClass(status) {
+        if (status === "active") return "status-verified";
+        return "status-rejected";
+      }
+
+      function statusLabel(status) {
+        if (status === "deactivated") return "Deactivated";
+        return "Active";
+      }
+
+      function roleLabel(role) {
+        const labels = {
+          student: "Nursing Student",
+          instructor: "Clinical Instructor",
+          chair: "Chair",
+          admin: "Admin",
+          coordinator: "Coordinator",
+          enrollment: "Enrollment Team",
+          assistant: "Assistant"
+        };
+
+        return labels[role] || "Nursing Student";
+      }
+
+      function getInitials(name) {
+        return name
+          .split(" ")
+          .filter(Boolean)
+          .map((part) => part.charAt(0))
+          .join("")
+          .slice(0, 2)
+          .toUpperCase();
+      }
+
+      function buildUserActionButton() {
+        const button = document.createElement("button");
+        button.className = "icon-button kebab-button user-action";
+        button.type = "button";
+        button.setAttribute("aria-label", "Open account action");
+        button.title = "Actions";
+        button.innerHTML = `
+          <svg class="kebab-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="5" r="1.8"></circle>
+            <circle cx="12" cy="12" r="1.8"></circle>
+            <circle cx="12" cy="19" r="1.8"></circle>
+          </svg>
+        `;
+        return button;
+      }
+
+      function syncSectionFilterVisibility() {
+        const isStudent = roleFilter.value === "student";
+
+        if (sectionFilterWrapper) {
+          sectionFilterWrapper.hidden = !isStudent;
+        }
+
+        if (userFilters) {
+          userFilters.classList.toggle("is-non-student-role", !isStudent);
+        }
+
+        if (!isStudent && sectionFilter) {
+          sectionFilter.value = "all";
+        }
+      }
+
+      function syncAddSectionVisibility() {
+        const sectionWrapper = addSection?.closest(".form-label");
+        const isStudent = addRole.value === "student";
+
+        if (sectionWrapper) {
+          sectionWrapper.hidden = !isStudent;
+        }
+
+        addSection.required = isStudent;
+
+        if (!isStudent) {
+          addSection.value = "";
+        } else if (!addSection.value && addSection.options.length) {
+          addSection.value = addSection.options[0].value;
+        }
+      }
+
+      function ensureSectionOption(value) {
+        const exists = Array.from(editSection.options).some((option) => option.value === value);
+
+        if (!exists && value) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          editSection.appendChild(option);
+        }
+
+        editSection.value = value;
+      }
+
+      function syncEditSectionVisibility() {
+        const sectionWrapper = editSection?.closest(".form-label");
+        const isStudent = editRole.value === "student";
+
+        if (sectionWrapper) {
+          sectionWrapper.hidden = !isStudent;
+        }
+
+        editSection.required = isStudent;
+
+        if (!isStudent) {
+          editSection.value = "";
+        }
+      }
+
+      function updateSummary(row) {
+        const user = getUserData(row);
+        const initials = getInitials(user.name);
+
+        const summaryParts = [
+          user.id,
+          ...(user.roleText.toLowerCase().includes("student") && user.section ? [user.section] : []),
+          user.email
+        ].filter(Boolean);
+
+        accountActionSummary.innerHTML = `
+          <div class="avatar">${initials}</div>
+          <div>
+            <strong>${user.name}</strong>
+            <small>${summaryParts.join(" - ")}</small>
+          </div>
+          <mark class="status-badge ${statusClass(user.status)}">${statusLabel(user.status)}</mark>
+        `;
+      }
+
+      function updateActionSelection(action) {
+        selectedAction = action;
+
+        actionButtons.forEach((button) => {
+          button.classList.toggle("is-selected", button.dataset.accountAction === selectedAction);
+        });
+      }
+
+      function createUserRow({ name, email, role, id, section }) {
+        const row = document.createElement("div");
+        row.className = "user-row";
+        row.dataset.role = role;
+        row.dataset.status = "active";
+
+        if (role === "student" && section) {
+          row.dataset.section = section;
+        }
+
+        const nameCell = document.createElement("span");
+        const nameStrong = document.createElement("strong");
+        const emailSmall = document.createElement("small");
+        nameStrong.textContent = name;
+        emailSmall.textContent = email;
+        nameCell.append(nameStrong, emailSmall);
+
+        const roleCell = document.createElement("span");
+        roleCell.textContent = roleLabel(role);
+
+        const identityCell = document.createElement("span");
+        const identityStrong = document.createElement("strong");
+        identityStrong.textContent = id;
+        identityCell.appendChild(identityStrong);
+
+        if (role === "student" && section) {
+          const sectionSmall = document.createElement("small");
+          sectionSmall.textContent = section;
+          identityCell.appendChild(sectionSmall);
+        }
+
+        const statusCell = document.createElement("span");
+        statusCell.innerHTML = `<mark class="status-badge status-verified">Active</mark>`;
+
+        const actionCell = document.createElement("span");
+        actionCell.appendChild(buildUserActionButton());
+
+        row.append(nameCell, roleCell, identityCell, statusCell, actionCell);
+        return row;
+      }
+
+      function filterUsers() {
+        syncSectionFilterVisibility();
+
+        const role = roleFilter.value;
+        const status = statusFilter.value;
+        const section = sectionFilter?.value || "all";
+        const search = userSearch.value.trim().toLowerCase();
+        let count = 0;
+
+        userRows.forEach((row) => {
+          const matchesRole = search ? true : row.dataset.role === role;
+          const matchesStatus = status === "all" || row.dataset.status === status;
+          const matchesSection = role !== "student" || section === "all" || row.dataset.section === section;
+          const matchesSearch = !search || row.textContent.toLowerCase().includes(search);
+          const visible = matchesRole && matchesStatus && matchesSection && matchesSearch;
+
+          row.hidden = !visible;
+
+          if (visible) {
+            count += 1;
+          }
+        });
+
+        visibleUserCount.textContent = `${count} visible`;
+        userEmpty.hidden = count > 0;
+      }
+
+      function openEditUser() {
+        if (!selectedUserRow) return;
+
+        const user = getUserData(selectedUserRow);
+
+        editName.value = user.name;
+        editRole.value = roleTextToValue(user.roleText);
+
+        if (editRole.value === "student") {
+          ensureSectionOption(user.section);
+        }
+
+        syncEditSectionVisibility();
+
+        closeModal(userActionModal);
+        openModal(editUserModal);
+      }
+
+      function openStatusUser() {
+        if (!selectedUserRow) return;
+
+        const user = getUserData(selectedUserRow);
+
+        statusUserName.textContent = user.name;
+        statusOnlySelect.value = user.status === "deactivated" ? "deactivated" : "active";
+
+        closeModal(userActionModal);
+        openModal(statusUserModal);
+      }
+
+      openAddUserButton?.addEventListener("click", () => {
+        addUserForm.reset();
+        syncAddSectionVisibility();
+        openModal(addUserModal);
+      });
+
+      document.addEventListener("click", (event) => {
+        const actionButton = event.target.closest(".user-action");
+
+        if (actionButton) {
+          selectedUserRow = actionButton.closest(".user-row");
+          updateSummary(selectedUserRow);
+          updateActionSelection("edit");
+          openModal(userActionModal);
+          return;
+        }
+
+        const accountAction = event.target.closest("[data-account-action]");
+
+        if (accountAction) {
+          updateActionSelection(accountAction.dataset.accountAction);
+          return;
+        }
+
+        if (event.target.closest("[data-back-to-actions]")) {
+          backToActions();
+          return;
+        }
+
+        if (event.target.closest("[data-close-add-modal], [data-close-action-modal], [data-close-edit-modal], [data-close-status-modal], [data-close-reset-modal]")) {
+          closeAllModals();
+        }
+      });
+
+      confirmUserAction.addEventListener("click", () => {
+        if (selectedAction === "edit") {
+          openEditUser();
+          return;
+        }
+
+        if (selectedAction === "status") {
+          openStatusUser();
+          return;
+        }
+
+        if (selectedAction === "reset") {
+          const user = selectedUserRow ? getUserData(selectedUserRow) : null;
+
+          resetPasswordCopy.textContent = `Are you sure you want to reset the password for ${user?.name || "this account"}?`;
+          closeModal(userActionModal);
+          openModal(resetPasswordModal);
+        }
+      });
+
+      confirmResetPassword.addEventListener("click", () => {
+        closeAllModals();
+        userMessage.textContent = "Password reset request recorded.";
+        userMessage.classList.remove("is-error");
+        userMessage.classList.add("is-success");
+      });
+
+      addUserForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const name = addName.value.trim();
+        const email = addEmail.value.trim();
+        const role = addRole.value;
+        const id = addId.value.trim();
+        const section = addSection.value.trim();
+
+        if (!name || !email || !id || (role === "student" && !section)) {
+          userMessage.textContent = "Complete the user details before adding the account.";
+          userMessage.classList.add("is-error");
+          userMessage.classList.remove("is-success");
+          return;
+        }
+
+        const row = createUserRow({ name, email, role, id, section });
+        userTable.appendChild(row);
+        userRows = Array.from(document.querySelectorAll("#user-table .user-row:not(.user-row-head)"));
+        userSearch.value = name;
+
+        closeAllModals();
+        filterUsers();
+
+        userMessage.textContent = "User added successfully.";
+        userMessage.classList.remove("is-error");
+        userMessage.classList.add("is-success");
+      });
+
+      addRole.addEventListener("change", syncAddSectionVisibility);
+
+      editUserForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!selectedUserRow) return;
+
+        selectedUserRow.querySelector("span:first-child strong").textContent = editName.value.trim();
+        selectedUserRow.children[1].textContent = editRole.options[editRole.selectedIndex].textContent;
+        selectedUserRow.dataset.role = editRole.value;
+
+        const identityCell = selectedUserRow.children[2];
+        let sectionSmall = identityCell.querySelector("small");
+
+        if (editRole.value === "student") {
+          if (!sectionSmall) {
+            sectionSmall = document.createElement("small");
+            identityCell.appendChild(sectionSmall);
+          }
+
+          sectionSmall.textContent = editSection.value.trim();
+          selectedUserRow.dataset.section = editSection.value.trim();
+        } else {
+          sectionSmall?.remove();
+          delete selectedUserRow.dataset.section;
+        }
+
+        closeAllModals();
+        filterUsers();
+
+        userMessage.textContent = "User details updated successfully.";
+        userMessage.classList.remove("is-error");
+        userMessage.classList.add("is-success");
+      });
+
+      editRole.addEventListener("change", syncEditSectionVisibility);
+
+      statusUserForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!selectedUserRow) return;
+
+        const newStatus = statusOnlySelect.value;
+        const statusBadge = selectedUserRow.querySelector("mark.status-badge");
+
+        selectedUserRow.dataset.status = newStatus;
+        statusBadge.className = `status-badge ${statusClass(newStatus)}`;
+        statusBadge.textContent = statusLabel(newStatus);
+
+        closeAllModals();
+        filterUsers();
+
+        userMessage.textContent = "User status updated successfully.";
+        userMessage.classList.remove("is-error");
+        userMessage.classList.add("is-success");
+      });
+
+      roleFilter.addEventListener("change", filterUsers);
+      statusFilter.addEventListener("change", filterUsers);
+      sectionFilter?.addEventListener("change", filterUsers);
+      userSearch.addEventListener("input", filterUsers);
+
+      menuButton?.addEventListener("click", () => {
+        document.body.classList.add("sidebar-open");
+      });
+
+      sidebarBackdrop?.addEventListener("click", () => {
+        document.body.classList.remove("sidebar-open");
+      });
+
+      [addUserModal, userActionModal, editUserModal, statusUserModal, resetPasswordModal].forEach((modal) => {
+        modal.addEventListener("click", (event) => {
+          if (event.target === modal) {
+            closeAllModals();
+          }
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeAllModals();
+        }
+      });
+
+      syncAddSectionVisibility();
+      syncSectionFilterVisibility();
+      filterUsers();
+    </script>
+
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Add Clinical Case</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .clinical-case-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .clinical-case-form {
+        width: 100%;
+        margin-top: 0;
+      }
+
+      .clinical-case-form .form-label {
+        font-weight: 800;
+      }
+
+      .clinical-case-form .button-row {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 14px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+      }
+
+      .clinical-case-form .button-row .ghost-button,
+      .clinical-case-form .button-row .primary-button {
+        width: auto;
+        min-width: 170px;
+        min-height: 52px;
+        padding: 0 24px;
+        border-radius: 10px;
+        white-space: nowrap;
+        font-size: 0.92rem;
+      }
+
+      .clinical-case-form .button-row .primary-button {
+        min-width: 240px;
+      }
+
+      .readonly-field {
+        background-color: #f8fafc !important;
+        color: #334155 !important;
+        cursor: not-allowed;
+      }
+
+      @media (max-width: 680px) {
+        .clinical-case-form .button-row {
+          justify-content: stretch;
+        }
+
+        .clinical-case-form .button-row .ghost-button,
+        .clinical-case-form .button-row .primary-button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="case-history.html" aria-current="page"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Clinical Cases</p>
+              <h1>Add Clinical Case</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Draft autosaved</span>
+
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace clinical-case-workspace">
+          <section class="clinical-case-layout">
+            <form id="clinical-case-form" class="workspace-panel clinical-case-form" data-student-case-submitted-format novalidate>
+              <div class="panel-heading">
+                <div>
+                  <h2>Case Information</h2>
+                </div>
+                <span class="status-badge status-pending">Draft</span>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="case-date">
+                  Case Date
+                  <select id="case-date" name="caseDate" required>
+                    <option value="">Select case date</option>
+                    <option value="2026-05-01">May 1, 2026 - Emergency Room</option>
+                    <option value="2026-05-03">May 3, 2026 - Delivery Room</option>
+                    <option value="2026-05-05">May 5, 2026 - Operating Room</option>
+                    <option value="2026-05-08">May 8, 2026 - Pedia Pulmo Ward</option>
+                    <option value="2026-05-10">May 10, 2026 - SP St 201</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="shift-time">
+                  Time of Shift
+                  <input id="shift-time" class="readonly-field" name="shiftTime" type="text" placeholder="Select a case date first" readonly required>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="patient-name">
+                  Patient Name
+                  <input id="patient-name" name="patientName" type="text" placeholder="Enter patient initials only" required>
+                </label>
+
+                <label class="form-label" for="case-category">
+                  Category
+                  <select id="case-category" name="caseCategory" required>
+                    <option value="">Select category</option>
+                    <option>Major Case - Assist</option>
+                    <option>Major Case - Scrub</option>
+                    <option>Major Case - Circulating</option>
+                    <option>Minor Case</option>
+                    <option>Handled Case</option>
+                    <option>Assisted Case</option>
+                    <option>Newborn Care</option>
+                    <option>Labor Watch</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="form-label" for="procedure-performed">
+                Procedure Performed
+                <input id="procedure-performed" name="procedurePerformed" type="text" placeholder="Enter procedure performed" required>
+              </label>
+
+              <div class="form-grid">
+                <label class="form-label" for="hospital-name">
+                  Name of Hospital
+                  <select id="hospital-name" name="hospitalName" required>
+                    <option value="">Select hospital</option>
+                    <option>CCMC</option>
+                    <option>VSMMC</option>
+                    <option>CIT-U Nursing CSMC</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="supervising-clinical-instructor">
+                  Supervising Clinical Instructor
+                  <select id="supervising-clinical-instructor" name="supervisingClinicalInstructor" required>
+                    <option value="">Select supervising CI</option>
+                    <option>Patricia Reyes, RN, MAN</option>
+                    <option>Louise Wong</option>
+                    <option>Miguel Santos, RN, MAN</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="form-label" for="duty-area">
+                Duty Area
+                <select id="duty-area" name="dutyArea" required>
+                  <option value="">Select duty area</option>
+                  <option>Emergency Room</option>
+                  <option>Delivery Room</option>
+                  <option>Operating Room</option>
+                  <option>Pedia Pulmo Ward</option>
+                  <option>SP St 201</option>
+                </select>
+              </label>
+
+              <input id="submitted-date" name="submittedDate" type="hidden">
+              <input id="submitted-time" name="submittedTime" type="hidden">
+
+              <label class="form-label" for="student-reflection">
+                Student Reflection
+                <textarea id="student-reflection" name="studentReflection" rows="5" placeholder="Enter student reflection" required></textarea>
+              </label>
+
+              <div id="form-message" class="form-message" role="status" aria-live="polite">
+                Complete the required case information before submitting.
+              </div>
+
+              <div class="button-row">
+                <button class="primary-button workspace-action" type="submit">Submit For CI Validation</button>
+              </div>
+            </form>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const caseDateSelect = document.querySelector("#case-date");
+      const shiftTimeInput = document.querySelector("#shift-time");
+      const submittedDateInput = document.querySelector("#submitted-date");
+      const submittedTimeInput = document.querySelector("#submitted-time");
+      const clinicalCaseForm = document.querySelector("#clinical-case-form");
+      const formMessage = document.querySelector("#form-message");
+
+      const caseDutyDatabase = {
+        "2026-05-01": {
+          shift: "07:00 AM - 03:00 PM",
+          area: "Emergency Room"
+        },
+        "2026-05-03": {
+          shift: "06:00 AM - 02:00 PM",
+          area: "Delivery Room"
+        },
+        "2026-05-05": {
+          shift: "08:00 AM - 04:00 PM",
+          area: "Operating Room"
+        },
+        "2026-05-08": {
+          shift: "07:00 AM - 03:00 PM",
+          area: "Pedia Pulmo Ward"
+        },
+        "2026-05-10": {
+          shift: "02:00 PM - 10:00 PM",
+          area: "SP St 201"
+        }
+      };
+
+      function getTodayDateValue() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+      }
+
+      function getCurrentTimeValue() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, "0");
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+
+        return `${hours}:${minutes}`;
+      }
+
+      function setAutomaticSubmissionDateTime() {
+        if (submittedDateInput) {
+          submittedDateInput.value = getTodayDateValue();
+        }
+
+        if (submittedTimeInput) {
+          submittedTimeInput.value = getCurrentTimeValue();
+        }
+      }
+
+      function updateShiftFromCaseDate() {
+        const selectedDate = caseDateSelect?.value;
+        const dutyRecord = caseDutyDatabase[selectedDate];
+
+        if (!shiftTimeInput) {
+          return;
+        }
+
+        if (!dutyRecord) {
+          shiftTimeInput.value = "";
+          shiftTimeInput.placeholder = "Select a case date first";
+          return;
+        }
+
+        shiftTimeInput.value = dutyRecord.shift;
+      }
+
+      caseDateSelect?.addEventListener("change", updateShiftFromCaseDate);
+
+      clinicalCaseForm?.addEventListener("submit", () => {
+        setAutomaticSubmissionDateTime();
+      });
+
+      document.querySelector("[data-menu-button]")?.addEventListener("click", () => {
+        document.body.classList.add("sidebar-open");
+      });
+
+      document.querySelector("[data-close-sidebar]")?.addEventListener("click", () => {
+        document.body.classList.remove("sidebar-open");
+      });
+
+      setAutomaticSubmissionDateTime();
+      updateShiftFromCaseDate();
+    </script>
+
+    <script src="../scripts/add-clinical-case.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

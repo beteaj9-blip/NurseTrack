@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Extension Day Details</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .extension-workspace {
+        display: grid;
+        gap: 1.25rem;
+      }
+
+      .extension-workspace > .workspace-panel,
+      .extension-stack > .workspace-panel,
+      #extension-history-panel {
+        margin-top: 0;
+      }
+
+      .extension-summary-panel,
+      .extension-stack > .workspace-panel,
+      #extension-history-panel {
+        padding: 1.5rem;
+      }
+
+      .extension-summary-panel {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .extension-summary-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .extension-summary-heading h2 {
+        margin: 0;
+      }
+
+      .extension-selected-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1rem;
+        min-height: 5.25rem;
+        padding: 1rem 1.15rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.85rem;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      }
+
+      .extension-selected-card .avatar {
+        width: 3rem;
+        height: 3rem;
+        font-size: 0.92rem;
+      }
+
+      .extension-selected-copy {
+        min-width: 0;
+        display: grid;
+        gap: 0.2rem;
+      }
+
+      .extension-selected-copy strong {
+        color: #111827;
+        font-size: 1.05rem;
+        line-height: 1.2;
+      }
+
+      .extension-selected-copy small {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .extension-stack {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.1rem;
+        align-items: start;
+      }
+
+      .extension-section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.15rem;
+      }
+
+      .extension-section-heading h2 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      #extension-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.1rem;
+        align-items: start;
+      }
+
+      #extension-form .form-label {
+        gap: 0.55rem;
+      }
+
+      #extension-form .form-label input,
+      #extension-form .form-label select,
+      #extension-form .form-label textarea {
+        border-radius: 0.8rem;
+      }
+
+      #extension-form .form-label textarea {
+        min-height: 8.5rem;
+        resize: vertical;
+      }
+
+      .full-width {
+        grid-column: 1 / -1;
+      }
+
+      .extension-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.85rem;
+        padding-top: 0.2rem;
+      }
+
+      .extension-actions .ghost-button,
+      .extension-actions .primary-button {
+        width: auto;
+      }
+
+      .extension-actions .ghost-button {
+        min-width: 7rem;
+      }
+
+      .extension-actions .primary-button {
+        min-width: 13.5rem;
+      }
+
+      .extension-history-list {
+        display: grid;
+        gap: 0.85rem;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+        background: transparent;
+      }
+
+      .extension-history-row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 3.75rem minmax(210px, 1fr) minmax(190px, 0.82fr) minmax(240px, 1.05fr) minmax(190px, auto);
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem 1.1rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.85rem;
+        background: #ffffff;
+        color: inherit;
+        text-align: left;
+        font: inherit;
+      }
+
+      .extension-history-row .avatar {
+        width: 3rem;
+        height: 3rem;
+        font-size: 0.9rem;
+      }
+
+      .extension-history-row strong,
+      .extension-history-row small {
+        display: block;
+      }
+
+      .extension-history-row strong {
+        color: #111827;
+        font-size: 0.96rem;
+        line-height: 1.25;
+      }
+
+      .extension-history-row small {
+        margin-top: 0.18rem;
+        color: #475569;
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .extension-history-row .status-badge {
+        justify-self: end;
+      }
+
+      .extension-history-status {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+      }
+
+      .extension-history-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .extension-history-actions .ghost-button {
+        min-height: 2.25rem;
+        width: auto;
+        padding: 0.45rem 0.7rem;
+        border-radius: 0.45rem;
+        font-size: 0.78rem;
+        white-space: nowrap;
+      }
+
+      .extension-cancel-backdrop {
+        background: rgba(16, 24, 40, 0.46);
+        backdrop-filter: blur(5px);
+      }
+
+      .extension-cancel-modal {
+        width: min(520px, 100%);
+        padding: 2rem;
+      }
+
+      .extension-cancel-modal .modal-heading {
+        align-items: center;
+      }
+
+      .extension-empty-state {
+        margin: 0;
+        border: 1px dashed #cbd5e1;
+        border-radius: 0.8rem;
+        background: #f8fafc;
+        padding: 1.2rem;
+        color: #64748b;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      @media (max-width: 980px) {
+        .extension-summary-heading,
+        .extension-section-heading {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .extension-selected-card {
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .extension-selected-card .status-badge {
+          grid-column: 1 / -1;
+          justify-self: start;
+        }
+
+        #extension-form {
+          grid-template-columns: 1fr;
+        }
+
+        .extension-history-row {
+          grid-template-columns: 1fr;
+          justify-items: start;
+        }
+
+        .extension-history-row .status-badge,
+        .extension-history-status {
+          justify-self: start;
+          justify-content: flex-start;
+        }
+
+        .extension-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .extension-actions .ghost-button,
+        .extension-actions .primary-button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Clinical Instructor</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="assigned-schedules.html"><span class="nav-dot"></span>Assigned Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="manual-attendance.html"><span class="nav-dot"></span>Manual Backup</a>
+          <a class="nav-link" href="clinical-cases.html"><span class="nav-dot"></span>Clinical Cases Review</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link is-active" href="extension-days.html" aria-current="page"><span class="nav-dot"></span>Extension Days</a>
+          <a class="nav-link" href="student-appeals.html"><span class="nav-dot"></span>Student Appeals</a>
+          <a class="nav-link" href="reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Clinical Instructor</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Instructor Workspace</p>
+              <h1>Extension Day Details</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="instructor-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace extension-workspace">
+          <section class="workspace-panel extension-summary-panel">
+            <div class="extension-summary-heading">
+              <h2>Selected Student</h2>
+            </div>
+
+            <div class="extension-selected-card" id="extension-selected-summary">
+              <span class="avatar small-avatar" id="extension-selected-initials">--</span>
+
+              <span class="extension-selected-copy">
+                <strong id="extension-selected-name">Select a student</strong>
+                <small id="extension-selected-meta">Go back to search and choose a student</small>
+              </span>
+
+              <span class="status-badge status-neutral" id="extension-selected-standing">Standing</span>
+            </div>
+          </section>
+
+          <div class="extension-stack" id="extension-detail-content" hidden>
+            <section class="workspace-panel">
+              <div class="extension-section-heading">
+                <h2>Add Extension Days</h2>
+                <span class="status-badge status-pending">New extension</span>
+              </div>
+
+              <form id="extension-form">
+                <label class="form-label" for="extension-days-count">
+                  Extension days to add
+                  <select id="extension-days-count" name="extension-days-count" required>
+                    <option value="1">1 extension day</option>
+                    <option value="2">2 extension days</option>
+                    <option value="3">3 extension days</option>
+                    <option value="4">4 extension days</option>
+                    <option value="5">5 extension days</option>
+                    <option value="6">6 extension days</option>
+                    <option value="7">7 extension days</option>
+                    <option value="8">8 extension days</option>
+                    <option value="10">10 extension days</option>
+                    <option value="15">15 extension days</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="extension-basis">
+                  Basis
+                  <select id="extension-basis" name="basis" required>
+                    <option value="Excused absence">Excused absence</option>
+                    <option value="Unexcused absence">Unexcused absence</option>
+                    <option value="Tardiness">Tardiness</option>
+                    <option value="Performance deficiency">Performance deficiency</option>
+                    <option value="Clinical requirement completion">Clinical requirement completion</option>
+                    <option value="Instructor assessment">Instructor assessment</option>
+                  </select>
+                </label>
+
+                <label class="form-label full-width" for="extension-reason">
+                  Reason / remarks
+                  <textarea id="extension-reason" name="reason" rows="5" placeholder="Type the reason, documentation note, or instructor remarks here" required></textarea>
+                </label>
+
+                <p class="form-message full-width" id="extension-message" hidden></p>
+
+                <div class="extension-actions full-width">
+                  <button class="ghost-button" type="button" id="extension-clear">Clear</button>
+                  <button class="primary-button workspace-action" type="submit">Add Extension Days</button>
+                </div>
+              </form>
+            </section>
+          </div>
+
+          <section class="workspace-panel" id="extension-history-panel" hidden>
+            <div class="panel-heading">
+              <div>
+                <h2>Extension Day History</h2>
+              </div>
+              <span class="status-badge status-verified" id="extension-history-count">0 records</span>
+            </div>
+
+            <div class="extension-history-list" id="extension-history-list"></div>
+            <p class="extension-empty-state" id="extension-history-empty" hidden>No extension day records yet for this student.</p>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop extension-cancel-backdrop" id="extension-cancel-modal" hidden>
+      <section class="modal-card confirm-modal extension-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="extension-cancel-title" aria-describedby="extension-cancel-copy">
+        <div class="modal-heading">
+          <div>
+            <h2 id="extension-cancel-title">Cancel this extension record?</h2>
+          </div>
+          <button class="icon-button modal-close" type="button" data-extension-cancel-close aria-label="Close modal"></button>
+        </div>
+        <p class="modal-copy" id="extension-cancel-copy">Cancel this extension day record? This keeps the record in the history but marks it as canceled.</p>
+        <div class="modal-actions">
+          <button class="ghost-button" type="button" data-extension-cancel-close>Cancel</button>
+          <button class="primary-button workspace-action danger-confirm-button" type="button" id="confirm-extension-cancel">Cancel Record</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="../scripts/extension-days.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

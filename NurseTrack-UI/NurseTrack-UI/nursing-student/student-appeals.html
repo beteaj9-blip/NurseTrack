@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Student Appeals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .appeals-workspace {
+        display: grid;
+        gap: 1.75rem;
+      }
+
+      .student-appeal-entry-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.25rem;
+      }
+
+      #student-appeal-form {
+        width: 100%;
+      }
+
+      #student-appeal-form .form-grid {
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      #student-appeal-form .form-label {
+        font-weight: 800;
+      }
+
+      #student-appeal-form > .form-label {
+        margin-bottom: 1rem;
+      }
+
+      #student-appeal-form textarea {
+        resize: vertical;
+      }
+
+      #student-appeal-form .button-row {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 14px;
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      #student-appeal-form .button-row .ghost-button,
+      #student-appeal-form .button-row .primary-button {
+        min-height: 52px;
+        padding: 0 28px;
+        border-radius: 10px;
+        white-space: nowrap;
+      }
+
+      #student-appeal-form .button-row .primary-button {
+        min-width: 230px;
+      }
+
+      .student-appeal-summary-panel {
+        padding: 1.5rem;
+      }
+
+      .compact-appeal-list {
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .compact-appeal-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.25rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        background: linear-gradient(135deg, #ffffff 0%, #fffdf5 100%);
+      }
+
+      .compact-appeal-card strong {
+        display: block;
+        color: #0f172a;
+        font-size: 1.05rem;
+        font-weight: 800;
+        margin-bottom: 0.35rem;
+      }
+
+      .compact-appeal-card p {
+        margin: 0;
+        color: #475569;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .compact-appeal-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.65rem;
+      }
+
+      .compact-appeal-meta span {
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .appeal-mini-flow {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.9rem;
+      }
+
+      .appeal-mini-step {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.65rem;
+        border-radius: 999px;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .appeal-mini-step.is-done {
+        background: #fef3c7;
+        color: #8A252C;
+      }
+
+      .appeal-mini-step.is-current {
+        background: #fff7d6;
+        color: #854d0e;
+        box-shadow: inset 0 0 0 1px #facc15;
+      }
+
+      .appeal-mini-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      .compact-appeal-side {
+        display: grid;
+        justify-items: end;
+        gap: 0.55rem;
+      }
+
+      .compact-appeal-side small {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .student-appeal-history-panel {
+        display: grid;
+        gap: 1.35rem;
+      }
+
+      .student-appeal-history-panel .panel-heading {
+        margin-bottom: 0;
+      }
+
+      .student-appeal-history-panel .panel-heading .section-kicker {
+        margin-bottom: 0.65rem;
+      }
+
+      .student-appeal-history-section {
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .student-appeal-history-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        color: #475569;
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .student-appeal-history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      .student-appeal-history-item {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.35rem 1.6rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: inherit;
+        background: #ffffff;
+      }
+
+      .student-appeal-history-item:last-child {
+        border-bottom: 0;
+      }
+
+      .student-appeal-history-item .avatar {
+        box-shadow: 0 8px 18px rgba(255, 207, 1, 0.28);
+      }
+
+      .student-appeal-history-copy {
+        display: grid;
+        gap: 0.32rem;
+        min-width: 0;
+      }
+
+      .student-appeal-history-copy strong {
+        color: #111827;
+        font-size: 1rem;
+        line-height: 1.3;
+      }
+
+      .student-appeal-history-copy small {
+        display: block;
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 800;
+        line-height: 1.45;
+      }
+
+      .student-appeal-history-copy small:first-of-type {
+        color: #415a7a;
+      }
+
+      .student-appeal-history-item .status-badge {
+        justify-self: end;
+        min-width: 0;
+        padding: 6px 12px;
+        justify-content: center;
+      }
+
+      .student-appeal-history-item {
+        text-decoration: none;
+      }
+
+      .student-appeal-history-item:hover,
+      .student-appeal-history-item:focus-visible {
+        background: #fffdf2;
+      }
+
+      .student-appeal-detail-card {
+        display: grid;
+        gap: 1.15rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        background: #ffffff;
+        padding: 1.35rem;
+      }
+
+      .student-appeal-detail-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .student-appeal-detail-head > div {
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .student-appeal-detail-head h3 {
+        margin: -0.1rem 0 0;
+        color: #111827;
+        font-size: 1.25rem;
+        line-height: 1.16;
+      }
+
+      .student-appeal-detail-head .status-badge {
+        margin-top: 0;
+      }
+
+      .student-appeal-detail-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+        margin-top: 0;
+        color: #52617a;
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      .student-appeal-file-note {
+        margin-top: 0.45rem;
+        color: #52617a;
+        font-size: 0.84rem;
+        font-weight: 800;
+        line-height: 1.45;
+      }
+
+      .student-appeal-file-field {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .student-appeal-file-upload {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+        padding: 1rem;
+        border: 1px dashed #d7dfeb;
+        border-radius: 0.75rem;
+        background: #fffdf7;
+      }
+
+      .student-appeal-file-upload input[type="file"] {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .student-appeal-file-upload .ghost-button {
+        width: auto;
+        min-width: 158px;
+        min-height: 46px;
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .student-appeal-file-summary {
+        color: #4c5d7d;
+        font-size: 0.86rem;
+        font-weight: 800;
+      }
+
+      .student-appeal-detail-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.8rem;
+        padding-top: 0.5rem;
+      }
+
+      .student-appeal-detail-actions .ghost-button {
+        width: auto;
+        min-width: 150px;
+        min-height: 46px;
+        padding: 0 22px;
+        border-radius: 10px;
+      }
+
+      @media (max-width: 720px) {
+        .compact-appeal-card {
+          grid-template-columns: 1fr;
+        }
+
+        .compact-appeal-side {
+          justify-items: start;
+        }
+
+        #student-appeal-form .button-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        #student-appeal-form .button-row .ghost-button,
+        #student-appeal-form .button-row .primary-button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link is-active" href="student-appeals.html" aria-current="page"><span class="nav-dot"></span>Student Appeals</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Student Workspace</p>
+              <h1>Student Appeals</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill" id="student-appeal-sync">1 open</span>
+
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace appeals-workspace">
+          <section class="student-appeal-entry-layout">
+            <form class="workspace-panel" id="student-appeal-form" novalidate>
+              <div class="panel-heading">
+                <div>
+                  <h2>Appeal Details</h2>
+                </div>
+                <span class="status-badge status-pending">Draft</span>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="appeal-type">
+                  Appeal Type
+                  <select id="appeal-type" name="appealType" required>
+                    <option value="">Select appeal type</option>
+                    <option value="attendance">Attendance</option>
+                    <option value="schedule">Schedule</option>
+                    <option value="case">Clinical case</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="appeal-duty-date">
+                  Related Duty Date
+                  <input id="appeal-duty-date" name="dutyDate" type="date" required>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="appeal-site">
+                  Clinical Site
+                  <select id="appeal-site" name="site" required>
+                    <option value="">Select clinical site</option>
+                    <option>CCMC</option>
+                    <option>VSMMC</option>
+                    <option>CIT-U Nursing CSMC</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="appeal-area">
+                  Duty Area
+                  <select id="appeal-area" name="area" required>
+                    <option value="">Select duty area</option>
+                    <option>Emergency Room</option>
+                    <option>Delivery Room</option>
+                    <option>Operating Room</option>
+                    <option>Pedia Pulmo Ward</option>
+                    <option>SP St 201</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="form-label" for="appeal-ci">
+                Assigned Clinical Instructor
+                <select id="appeal-ci" name="recommendedByCi" required>
+                  <option value="">Select assigned CI</option>
+                  <option>Patricia Reyes, RN, MAN</option>
+                  <option>Louise Wong</option>
+                  <option>Miguel Santos, RN, MAN</option>
+                </select>
+              </label>
+
+              <label class="form-label" for="appeal-title">
+                Appeal Title
+                <input id="appeal-title" name="title" type="text" placeholder="Enter appeal title" required>
+              </label>
+
+              <label class="form-label" for="appeal-reason">
+                Student Reason
+                <textarea id="appeal-reason" name="reason" rows="4" placeholder="Explain why the appeal should be considered." required></textarea>
+              </label>
+
+              <label class="form-label" for="appeal-evidence">
+                Supporting Evidence or Notes
+                <textarea id="appeal-evidence" name="evidence" rows="4" placeholder="Add note summaries, timestamps, screenshots, or supporting document details." required></textarea>
+              </label>
+
+              <div class="form-label student-appeal-file-field">
+                <span>Supporting Files</span>
+                <div class="student-appeal-file-upload">
+                  <input id="appeal-files" name="evidenceFiles" type="file" multiple accept=".pdf,.doc,.docx,image/*">
+                  <label class="ghost-button" for="appeal-files">Choose files</label>
+                  <span class="student-appeal-file-summary" id="appeal-file-summary">No files selected</span>
+                </div>
+                <span class="student-appeal-file-note">Attach screenshots, PDFs, or documents that support the appeal.</span>
+              </div>
+
+              <input id="appeal-chair-status" name="chairStatus" type="hidden" value="Pending CI recommendation">
+
+              <div id="student-appeal-message" class="form-message" role="status" aria-live="polite">
+                Complete the appeal details to submit it for CI recommendation.
+              </div>
+
+              <div class="button-row">
+                <button class="ghost-button" type="reset">Clear</button>
+                <button class="primary-button workspace-action" type="submit">Submit Appeal</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="workspace-panel student-appeal-summary-panel student-appeal-history-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Maria Cruz's Appeal History</h2>
+              </div>
+              <span class="status-badge status-verified" id="student-appeal-list-count">2 records</span>
+            </div>
+
+            <div class="compact-appeal-list" id="student-appeal-list" aria-live="polite">
+              <article class="compact-appeal-card" data-status="submitted">
+                <div>
+                  <strong>Late arrival due to bus delay</strong>
+                  <p>Attendance appeal for April 29, 2026 duty at CCMC Emergency Room.</p>
+
+                  <div class="compact-appeal-meta">
+                    <span>Submitted today, 7:48 AM</span>
+                    <span>•</span>
+                    <span>Awaiting CI recommendation</span>
+                  </div>
+
+                  <div class="appeal-mini-flow" aria-label="Appeal status progress">
+                    <span class="appeal-mini-step is-done"><span class="appeal-mini-dot"></span>Submitted</span>
+                    <span class="appeal-mini-step is-current"><span class="appeal-mini-dot"></span>CI Review</span>
+                    <span class="appeal-mini-step"><span class="appeal-mini-dot"></span>Chair Approval</span>
+                  </div>
+                </div>
+
+                <div class="compact-appeal-side">
+                  <span class="status-badge status-pending">Submitted</span>
+                  <small>Pending</small>
+                </div>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/student-appeal-submit.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

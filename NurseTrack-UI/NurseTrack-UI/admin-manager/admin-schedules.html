@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Chair Schedules</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="admin-schedules.html" aria-current="page"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Workspace</p>
+              <h1>Schedules</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace schedule-management-workspace chair-schedules-workspace">
+          <section class="schedule-management-layout ci-assigned-schedules-layout chair-calendar-layout">
+            <article class="workspace-panel schedule-calendar-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Schedule Calendar</h2>
+                </div>
+                <div class="chair-schedule-tools">
+                  <a class="primary-button workspace-action button-link" href="schedule-maker.html">Open Schedule Maker</a>
+                  <a class="ghost-button button-link" href="overtime-details.html">View Overtime Details</a>
+                </div>
+              </div>
+
+              <div class="calendar-month-heading">
+                <strong>May 2026</strong>
+                <span>Choose a day to view schedules, students, and edit options</span>
+              </div>
+
+              <div class="management-calendar ci-assigned-calendar ci-month-calendar" id="calendar-view">
+                <span class="calendar-weekday">Sun</span>
+                <span class="calendar-weekday">Mon</span>
+                <span class="calendar-weekday">Tue</span>
+                <span class="calendar-weekday">Wed</span>
+                <span class="calendar-weekday">Thu</span>
+                <span class="calendar-weekday">Fri</span>
+                <span class="calendar-weekday">Sat</span>
+
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="April 26, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>26</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="April 27, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>27</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="April 28, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>28</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="April 29, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>29</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted is-today" type="button" data-chair-schedule-day data-date="April 30, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>30</span><small>Today</small></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 1, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>1</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 2, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>2</span><p>No assigned duty</p></button>
+
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 3, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>3</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 4, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>4</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 5, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>5</span><p>No assigned duty</p></button>
+                <button class="management-day has-duty action-item is-selected" type="button" data-chair-schedule-day data-date="May 6, 2026" data-title="Pedia Pulmo Ward Rotation" data-hospital="CCMC" data-area="Pedia Pulmo Ward" data-shift="8:00 AM - 4:00 PM" data-group="BSN 3B - Group 1" data-ci="Miguel Santos, RN, MAN" data-students="10" data-status="Published">
+                  <span>6</span>
+                  <strong>Pedia Pulmo Ward</strong>
+                  <p>BSN 3B</p>
+                </button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 7, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>7</span><p>No assigned duty</p></button>
+                <button class="management-day has-duty action-item" type="button" data-chair-schedule-day data-date="May 8, 2026" data-title="Emergency Room Rotation" data-hospital="CCMC" data-area="Emergency Room" data-shift="7:00 AM - 3:00 PM" data-group="BSN 3A - Group 2" data-ci="Patricia Reyes, RN, MAN" data-students="12" data-status="Published">
+                  <span>8</span>
+                  <strong>Emergency Room</strong>
+                  <p>BSN 3A</p>
+                </button>
+                <button class="management-day has-duty action-item" type="button" data-chair-schedule-day data-date="May 9, 2026" data-title="Operating Room Duty" data-hospital="VSMMC" data-area="OR Main" data-shift="8:00 AM - 5:00 PM" data-group="BSN 4A - Group 1" data-ci="Elena Dela Cruz, RN, MN, DSCN" data-students="9" data-status="Published">
+                  <span>9</span>
+                  <strong>Operating Room</strong>
+                  <p>BSN 4A</p>
+                </button>
+
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 10, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>10</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 11, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>11</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 12, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>12</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 13, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>13</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 14, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>14</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 15, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>15</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 16, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>16</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 17, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>17</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 18, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>18</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 19, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>19</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 20, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>20</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 21, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>21</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 22, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>22</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 23, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>23</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 24, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>24</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 25, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>25</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 26, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>26</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 27, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>27</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 28, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>28</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 29, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>29</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 30, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>30</span><p>No assigned duty</p></button>
+                <button class="management-day" type="button" data-chair-schedule-day data-date="May 31, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>31</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="June 1, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>1</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="June 2, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>2</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="June 3, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>3</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="June 4, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>4</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="June 5, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>5</span><p>No assigned duty</p></button>
+                <button class="management-day is-muted" type="button" data-chair-schedule-day data-date="June 6, 2026" data-title="No assigned duty" data-hospital="" data-area="" data-shift="" data-group="" data-ci="" data-students="0" data-status="Draft"><span>6</span><p>No assigned duty</p></button>
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/instructor-dashboard.js"></script>
+    <script src="../scripts/chair-schedules.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

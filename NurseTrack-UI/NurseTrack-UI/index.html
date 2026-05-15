@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="assets/cit-u-logo.png">
+  </head>
+  <body>
+    <main class="login-shell" aria-labelledby="page-title">
+      <section class="login-info-panel" aria-label="NurseTrack information">
+        <div class="info-content">
+          <div class="brand-stack">
+            <img class="brand-logo info-logo" src="assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p class="eyebrow">CIT-U Nursing Portal</p>
+              <h1 id="page-title">NurseTrack</h1>
+            </div>
+          </div>
+
+          <div class="info-copy">
+            <h2>Clinical tracking made organized and secure.</h2>
+            <p>Manage duty hours, case records, schedules, approvals, and student progress from one reliable portal.</p>
+          </div>
+
+          <div class="info-highlights" aria-label="NurseTrack highlights">
+            <span>Duty hours</span>
+            <span>Case logs</span>
+            <span>Schedules</span>
+            <span>Approvals</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-form-panel" aria-label="Login">
+        <div class="auth-card">
+          <div class="card-heading card-heading-center">
+            <p class="section-kicker">Welcome back</p>
+            <h2>Login to your account</h2>
+          </div>
+
+          <form id="login-form" class="stacked-form" novalidate>
+            <label class="form-label" for="user-id">
+              School email or ID number
+              <input id="user-id" name="userId" type="text" autocomplete="username" placeholder="student@cit.edu" required>
+            </label>
+
+            <label class="form-label" for="password">
+              Password
+              <div class="password-input-wrap">
+                <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter password" required minlength="8">
+                <button class="password-toggle" type="button" data-toggle-password="password" aria-label="Show password" title="Show password"></button>
+              </div>
+            </label>
+
+            <div class="form-row">
+              <label class="check-row">
+                <input type="checkbox" name="remember">
+                <span>Keep me signed in</span>
+              </label>
+              <a href="forgot-password.html" class="text-link">Forgot password?</a>
+            </div>
+
+            <div id="form-message" class="form-message" role="status" aria-live="polite">
+              Enter your account details to continue.
+            </div>
+
+            <button class="primary-button" type="submit">Sign in</button>
+          </form>
+
+          <div class="auth-card-footer">
+            <span>Don't have an account?</span>
+            <a href="register.html" class="text-link">Create account</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/password-toggle.js"></script>
+    <script src="scripts/global-back-button.js"></script>
+  </body>
+</html>

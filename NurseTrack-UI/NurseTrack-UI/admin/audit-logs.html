@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Audit Logs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .audit-workspace {
+        padding-top: 1.25rem;
+      }
+
+      .audit-panel {
+        padding: 1.35rem 1.55rem 1.6rem;
+      }
+
+      .audit-panel .panel-heading {
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.35rem;
+      }
+
+      .audit-panel .panel-heading h2 {
+        margin: 0;
+        color: #111827;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+      }
+
+      .audit-date-hint {
+        margin: 0.35rem 0 0;
+        color: #4c5d7d;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .audit-log-controls {
+        display: grid;
+        grid-template-columns: auto minmax(300px, 1.15fr) minmax(210px, 0.7fr) auto;
+        gap: 1rem;
+        align-items: end;
+        margin-bottom: 1.35rem;
+      }
+
+      .audit-range-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        width: fit-content;
+        padding: 0.25rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 999px;
+        background: #ffffff;
+      }
+
+      .audit-range-control button {
+        min-height: 38px;
+        padding: 0 1rem;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #1e2f4f;
+        font-family: "Kumbh Sans", sans-serif;
+        font-size: 0.86rem;
+        font-weight: 850;
+        cursor: pointer;
+      }
+
+      .audit-range-control button.is-active {
+        background: #8a252c;
+        color: #ffffff;
+        box-shadow: 0 8px 16px rgba(138, 37, 44, 0.12);
+      }
+
+      .audit-range-control button:not(.is-active):hover,
+      .audit-range-control button:not(.is-active):focus-visible {
+        background: #f8fafc;
+      }
+
+      .audit-log-controls .form-label {
+        margin: 0;
+      }
+
+      .audit-log-controls input {
+        min-height: 50px;
+      }
+
+      .audit-clear-button {
+        min-width: 110px;
+        min-height: 50px;
+        padding: 0 1.25rem;
+        white-space: nowrap;
+      }
+
+      .audit-table {
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 14px;
+        background: #ffffff;
+      }
+
+      .audit-table .user-row {
+        display: grid;
+        grid-template-columns:
+          minmax(220px, 1fr)
+          minmax(190px, 0.9fr)
+          minmax(290px, 1.15fr)
+          minmax(230px, 0.95fr);
+        align-items: center;
+        column-gap: 1.25rem;
+        width: 100%;
+        padding: 1.05rem 1.25rem;
+      }
+
+      .audit-table .user-row-head {
+        background: #f8fafc;
+        border-bottom: 1px solid #dbe3ee;
+      }
+
+      .audit-table .user-row:not(.user-row-head) {
+        border-bottom: 1px solid #e5eaf1;
+      }
+
+      .audit-table .user-row:last-child {
+        border-bottom: 0;
+      }
+
+      .audit-table .user-row-head span {
+        color: #0b1b3a;
+        font-size: 0.82rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+      }
+
+      .audit-table .user-row > span {
+        min-width: 0;
+      }
+
+      .audit-table .user-row > span:nth-child(4),
+      .audit-table .user-row-head > span:nth-child(4) {
+        justify-self: start;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      .audit-table strong {
+        display: block;
+        color: #111827;
+        line-height: 1.25;
+      }
+
+      .audit-table small {
+        display: block;
+        margin-top: 0.25rem;
+        color: #4c5d7d;
+        font-weight: 700;
+        line-height: 1.25;
+      }
+
+      #audit-empty {
+        margin-top: 1rem;
+        padding: 1.1rem 1.25rem;
+        border: 1px dashed rgba(138, 37, 44, 0.24);
+        border-radius: 12px;
+        background: #fffaf0;
+        color: #8a252c;
+        font-weight: 800;
+      }
+
+      @media (max-width: 1180px) {
+        .audit-log-controls {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .audit-range-control {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .audit-range-control button {
+          flex: 1;
+        }
+
+        .audit-clear-button {
+          width: 100%;
+        }
+
+        .audit-table .user-row {
+          grid-template-columns:
+            minmax(180px, 1fr)
+            minmax(160px, 0.85fr)
+            minmax(220px, 1fr)
+            minmax(190px, 0.9fr);
+        }
+      }
+
+      @media (max-width: 820px) {
+        .audit-panel {
+          padding: 1.2rem;
+        }
+
+        .audit-log-controls {
+          grid-template-columns: 1fr;
+        }
+
+        .audit-range-control {
+          width: 100%;
+        }
+
+        .audit-table .user-row {
+          grid-template-columns: 1fr;
+          row-gap: 0.45rem;
+          padding: 1rem;
+        }
+
+        .audit-table .user-row-head {
+          display: none;
+        }
+
+        .audit-table .user-row > span:nth-child(4),
+        .audit-table .user-row-head > span:nth-child(4) {
+          justify-self: start;
+          text-align: left;
+          white-space: normal;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="section-import.html"><span class="nav-dot"></span>Section Import</a>
+          <a class="nav-link" href="hospital-duty-area.html"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link is-active" href="audit-logs.html" aria-current="page"><span class="nav-dot"></span>Audit Logs</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Audit Logs</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill" id="audit-sync-pill">CI and Chair tracked</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace dashboard-workspace audit-workspace">
+          <section class="workspace-panel audit-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Audit Trail</h2>
+                <p class="audit-date-hint">Filter logs by week, keyword, or selected date.</p>
+              </div>
+              <span class="status-badge status-verified" id="audit-visible-count">8 this week</span>
+            </div>
+
+            <div class="audit-log-controls">
+              <div class="audit-range-control" role="group" aria-label="Audit log date range">
+                <button class="is-active" type="button" data-audit-range="this" aria-pressed="true">This week</button>
+                <button type="button" data-audit-range="last" aria-pressed="false">Last week</button>
+              </div>
+
+              <label class="form-label" for="audit-search">
+                Search
+                <input id="audit-search" type="search" placeholder="Search actor, student, action, or record">
+              </label>
+
+              <label class="form-label" for="audit-date">
+                Date
+                <input id="audit-date" type="date">
+              </label>
+
+              <button class="ghost-button audit-clear-button" type="button" id="audit-clear-filters">Clear</button>
+            </div>
+
+            <div class="user-table audit-table" id="audit-log-list">
+              <div class="user-row user-row-head">
+                <span>Actor</span>
+                <span>Action</span>
+                <span>Affected Record</span>
+                <span>Time</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="schedule" data-date="2026-05-01">
+                <span><strong>Chair Reyes</strong><small>Chair</small></span>
+                <span>Published schedule</span>
+                <span><strong>Pedia Pulmo Ward Rotation</strong><small>BSN 3B - Group 1</small></span>
+                <span>May 1, 2026 - 09:20 AM</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="case" data-date="2026-04-30">
+                <span><strong>Patricia Reyes, RN, MAN</strong><small>Clinical Instructor</small></span>
+                <span>Approved clinical case</span>
+                <span><strong>Maria Cruz</strong><small>Major Case - Assist</small></span>
+                <span>Apr 30, 2026 - 04:35 PM</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="appeal" data-date="2026-04-30">
+                <span><strong>Louise Wong</strong><small>Clinical Instructor</small></span>
+                <span>Recommended appeal</span>
+                <span><strong>Treasure Abadinas</strong><small>Late attendance appeal</small></span>
+                <span>Apr 30, 2026 - 02:10 PM</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="appeal" data-date="2026-04-30">
+                <span><strong>Chair Reyes</strong><small>Chair</small></span>
+                <span>Approved appeal</span>
+                <span><strong>Treasure Abadinas</strong><small>Late attendance appeal</small></span>
+                <span>Apr 30, 2026 - 03:22 PM</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="schedule" data-date="2026-04-29">
+                <span><strong>Chair Reyes</strong><small>Chair</small></span>
+                <span>Edited duty type</span>
+                <span><strong>N1 G1</strong><small>Regular to Extension</small></span>
+                <span>Apr 29, 2026 - 10:05 AM</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="attendance" data-date="2026-04-28">
+                <span><strong>Miguel Santos, RN, MAN</strong><small>Clinical Instructor</small></span>
+                <span>Validated attendance</span>
+                <span><strong>BSN 3B - Group 1</strong><small>08:00 AM to 04:00 PM</small></span>
+                <span>Apr 28, 2026 - 05:10 PM</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="case" data-date="2026-04-28">
+                <span><strong>Louise Wong</strong><small>Clinical Instructor</small></span>
+                <span>Returned clinical case</span>
+                <span><strong>Zander Aligato</strong><small>Missing checklist item</small></span>
+                <span>Apr 28, 2026 - 01:40 PM</span>
+              </div>
+
+              <div class="user-row" data-week="this" data-type="schedule" data-date="2026-04-27">
+                <span><strong>Chair Reyes</strong><small>Chair</small></span>
+                <span>Assigned supervising CI</span>
+                <span><strong>N1 G2</strong><small>Louise Wong</small></span>
+                <span>Apr 27, 2026 - 11:18 AM</span>
+              </div>
+
+              <div class="user-row" data-week="last" data-type="case" data-date="2026-04-24">
+                <span><strong>Patricia Reyes, RN, MAN</strong><small>Clinical Instructor</small></span>
+                <span>Verified clinical case</span>
+                <span><strong>Treasure Abadinas</strong><small>Major Case - Circulate</small></span>
+                <span>Apr 24, 2026 - 04:35 PM</span>
+              </div>
+
+              <div class="user-row" data-week="last" data-type="schedule" data-date="2026-04-23">
+                <span><strong>Chair Reyes</strong><small>Chair</small></span>
+                <span>Updated supervising CI</span>
+                <span><strong>Operating Room Duty</strong><small>Elena Dela Cruz assigned</small></span>
+                <span>Apr 23, 2026 - 09:45 AM</span>
+              </div>
+
+              <div class="user-row" data-week="last" data-type="appeal" data-date="2026-04-18">
+                <span><strong>Chair Reyes</strong><small>Chair</small></span>
+                <span>Closed appeal review</span>
+                <span><strong>Nicole Dela Pena</strong><small>Completion duty appeal</small></span>
+                <span>Apr 18, 2026 - 02:30 PM</span>
+              </div>
+            </div>
+
+            <div id="audit-empty" class="empty-state" hidden>
+              No audit log entries match this view. Try clearing filters or changing the selected date.
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const menuButton = document.querySelector("[data-menu-button]");
+      const sidebarBackdrop = document.querySelector("[data-close-sidebar]");
+      const auditRangeButtons = Array.from(document.querySelectorAll("[data-audit-range]"));
+      const auditSearch = document.querySelector("#audit-search");
+      const auditDate = document.querySelector("#audit-date");
+      const auditClearFilters = document.querySelector("#audit-clear-filters");
+      const auditRows = Array.from(document.querySelectorAll("#audit-log-list .user-row:not(.user-row-head)"));
+      const auditEmpty = document.querySelector("#audit-empty");
+      const auditVisibleCount = document.querySelector("#audit-visible-count");
+
+      let activeAuditRange = "this";
+
+      function updateRangeButtons() {
+        auditRangeButtons.forEach((button) => {
+          const isActive = button.dataset.auditRange === activeAuditRange;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-pressed", String(isActive));
+        });
+      }
+
+      function rowMatchesText(row, term) {
+        if (!term) {
+          return true;
+        }
+
+        return row.textContent.toLowerCase().includes(term);
+      }
+
+      function rowMatchesRange(row) {
+        return row.dataset.week === activeAuditRange;
+      }
+
+      function rowMatchesDate(row) {
+        const selectedDate = auditDate?.value || "";
+
+        if (!selectedDate) {
+          return true;
+        }
+
+        return row.dataset.date === selectedDate;
+      }
+
+      function updateAuditVisibleCount(count) {
+        if (!auditVisibleCount) {
+          return;
+        }
+
+        const label = activeAuditRange === "this" ? "this week" : "last week";
+        auditVisibleCount.textContent = `${count} ${label}`;
+      }
+
+      function filterAuditLogs() {
+        const term = (auditSearch?.value || "").trim().toLowerCase();
+        let visibleCount = 0;
+
+        auditRows.forEach((row) => {
+          const shouldShow = rowMatchesRange(row) && rowMatchesText(row, term) && rowMatchesDate(row);
+
+          row.hidden = !shouldShow;
+
+          if (shouldShow) {
+            visibleCount += 1;
+          }
+        });
+
+        if (auditEmpty) {
+          auditEmpty.hidden = visibleCount > 0;
+        }
+
+        updateAuditVisibleCount(visibleCount);
+      }
+
+      auditRangeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          activeAuditRange = button.dataset.auditRange || "this";
+          updateRangeButtons();
+          filterAuditLogs();
+        });
+      });
+
+      auditSearch?.addEventListener("input", filterAuditLogs);
+      auditDate?.addEventListener("change", filterAuditLogs);
+
+      auditClearFilters?.addEventListener("click", () => {
+        activeAuditRange = "this";
+
+        if (auditSearch) {
+          auditSearch.value = "";
+        }
+
+        if (auditDate) {
+          auditDate.value = "";
+        }
+
+        updateRangeButtons();
+        filterAuditLogs();
+      });
+
+      menuButton?.addEventListener("click", () => {
+        document.body.classList.add("sidebar-open");
+      });
+
+      sidebarBackdrop?.addEventListener("click", () => {
+        document.body.classList.remove("sidebar-open");
+      });
+
+      updateRangeButtons();
+      filterAuditLogs();
+    </script>
+
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

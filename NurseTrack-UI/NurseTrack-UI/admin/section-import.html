@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Section Import</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .section-import-form-panel {
+        margin-top: 1.5rem;
+      }
+
+      .section-import-form {
+        display: grid;
+        gap: 1.25rem;
+      }
+
+      .section-import-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+      }
+
+      .section-file-dropzone {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 2rem;
+        min-height: 210px;
+        padding: 1.9rem;
+        border: 1px dashed rgba(138, 37, 44, 0.28);
+        border-radius: 0.85rem;
+        background: linear-gradient(135deg, #fff7d6 0%, #fffaf0 55%, #ffffff 100%);
+      }
+
+      .section-file-dropzone strong {
+        display: block;
+        color: #0f172a;
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+      }
+
+      .section-file-dropzone p {
+        max-width: 1180px;
+        margin: 0;
+        color: #475569;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.55;
+      }
+
+      .section-file-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .section-file-actions .ghost-button {
+        width: auto;
+        min-width: 175px;
+        min-height: 48px;
+        white-space: nowrap;
+      }
+
+      .section-file-name {
+        color: #475569;
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+
+      .section-import-button-row {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+      }
+
+      .section-import-button-row .ghost-button,
+      .section-import-button-row .primary-button {
+        width: auto;
+        min-height: 52px;
+        border-radius: 10px;
+        white-space: nowrap;
+      }
+
+      .section-import-button-row .ghost-button {
+        min-width: 145px;
+        padding: 0 24px;
+      }
+
+      .section-import-button-row .primary-button {
+        min-width: 285px;
+        padding: 0 30px;
+        font-size: 0.95rem;
+        letter-spacing: -0.01em;
+      }
+
+      @media (max-width: 900px) {
+        .section-import-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .section-file-actions,
+        .section-import-button-row {
+          justify-content: flex-start;
+        }
+
+        .section-import-button-row .ghost-button,
+        .section-import-button-row .primary-button {
+          width: 100%;
+          min-width: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="section-import.html" aria-current="page"><span class="nav-dot"></span>Section Import</a>
+          <a class="nav-link" href="hospital-duty-area.html"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link" href="audit-logs.html"><span class="nav-dot"></span>Audit Logs</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Section Import</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill" id="section-import-sync">Ready</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace dashboard-workspace">
+          <section class="workspace-panel section-import-form-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Upload Student Section File</h2>
+              </div>
+              <span class="status-badge status-pending" id="section-import-status">Waiting for file</span>
+            </div>
+
+            <form class="section-import-form" id="section-import-form">
+              <div class="section-import-grid">
+                <label class="form-label" for="semester-name">
+                  Semester
+                  <select id="semester-name" required>
+                    <option>1st Semester</option>
+                    <option>2nd Semester</option>
+                    <option>Summer</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="school-year">
+                  School Year
+                  <input id="school-year" type="text" value="2026-2027" required>
+                </label>
+
+                <label class="form-label" for="effective-date">
+                  Effective Date
+                  <input id="effective-date" type="date" value="2026-06-01">
+                </label>
+              </div>
+
+              <div class="section-file-dropzone">
+                <div>
+                  <strong>Drop Excel or CSV file here</strong>
+                  <p>Accepted data: student ID, student name, year level, and section. This file will be used to assign student sections for the new semester.</p>
+                </div>
+
+                <div class="section-file-actions">
+                  <input id="section-file" type="file" accept=".xlsx,.xls,.csv" hidden required>
+                  <button class="ghost-button" type="button" id="choose-section-file">Choose section file</button>
+                  <span class="section-file-name" id="section-file-name">No file selected</span>
+                </div>
+              </div>
+
+              <div id="section-import-message" class="form-message" role="status" aria-live="polite">
+                Upload an imported file before importing section assignments.
+              </div>
+
+              <div class="section-import-button-row">
+                <button class="ghost-button" type="reset">Clear</button>
+                <button class="primary-button workspace-action" type="submit">Import Section Assignments</button>
+              </div>
+            </form>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const chooseSectionFile = document.querySelector("#choose-section-file");
+      const sectionFileInput = document.querySelector("#section-file");
+      const sectionFileName = document.querySelector("#section-file-name");
+      const sectionImportStatus = document.querySelector("#section-import-status");
+      const sectionImportMessage = document.querySelector("#section-import-message");
+      const sectionImportSync = document.querySelector("#section-import-sync");
+      const sectionImportForm = document.querySelector("#section-import-form");
+
+      chooseSectionFile?.addEventListener("click", () => {
+        sectionFileInput?.click();
+      });
+
+      sectionFileInput?.addEventListener("change", () => {
+        const fileName = sectionFileInput.files?.[0]?.name || "No file selected";
+
+        if (sectionFileName) {
+          sectionFileName.textContent = fileName;
+        }
+
+        if (sectionImportStatus) {
+          sectionImportStatus.textContent = sectionFileInput.files?.length ? "File selected" : "Waiting for file";
+          sectionImportStatus.className = "status-badge status-pending";
+        }
+
+        if (sectionImportSync) {
+          sectionImportSync.textContent = sectionFileInput.files?.length ? "File ready" : "Ready";
+        }
+
+        if (sectionImportMessage && sectionFileInput.files?.length) {
+          sectionImportMessage.textContent = `${fileName} selected. Review the semester details, then import section assignments.`;
+          sectionImportMessage.classList.remove("is-error");
+          sectionImportMessage.classList.add("is-success");
+        }
+      });
+
+      sectionImportForm?.addEventListener("reset", () => {
+        setTimeout(() => {
+          if (sectionFileName) {
+            sectionFileName.textContent = "No file selected";
+          }
+
+          if (sectionImportStatus) {
+            sectionImportStatus.textContent = "Waiting for file";
+            sectionImportStatus.className = "status-badge status-pending";
+          }
+
+          if (sectionImportSync) {
+            sectionImportSync.textContent = "Ready";
+          }
+
+          if (sectionImportMessage) {
+            sectionImportMessage.textContent = "Upload an imported file before importing section assignments.";
+            sectionImportMessage.classList.remove("is-success", "is-error");
+          }
+        }, 0);
+      });
+    </script>
+
+    <script src="../scripts/admin-section-import.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

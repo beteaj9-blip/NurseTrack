@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .admin-dashboard-stats {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: space-between;
+      }
+
+      .admin-dashboard-stats .stat-card {
+        flex: 1;
+      }
+
+      .audit-summary-panel {
+        margin-top: 1.5rem;
+      }
+
+      .audit-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+      }
+
+      .audit-summary-card {
+        padding: 1.15rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        background:
+          radial-gradient(circle at top right, rgba(255, 207, 1, 0.16), transparent 32%),
+          #ffffff;
+      }
+
+      .audit-summary-card span {
+        display: block;
+        margin-bottom: 0.45rem;
+        color: #8a252c;
+        font-size: 0.76rem;
+        font-weight: 900;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+      }
+
+      .audit-summary-card strong {
+        display: block;
+        color: #111827;
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1.1;
+      }
+
+      .audit-summary-card small {
+        display: block;
+        margin-top: 0.4rem;
+        color: #4c5d7d;
+        font-size: 0.86rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .audit-log-preview {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .audit-log-item {
+        display: grid;
+        grid-template-columns: minmax(180px, 0.9fr) minmax(220px, 1.1fr) minmax(190px, 0.8fr) auto;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.15rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.9rem;
+        background: #ffffff;
+      }
+
+      .audit-log-item strong {
+        display: block;
+        color: #111827;
+        font-size: 0.95rem;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .audit-log-item span {
+        color: #4c5d7d;
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .audit-log-item small {
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .audit-summary-footer {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 1rem;
+      }
+
+      .audit-summary-footer .ghost-button {
+        min-height: 44px;
+        padding: 0 1.25rem;
+      }
+
+      @media (max-width: 1000px) {
+        .audit-summary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .audit-log-item {
+          grid-template-columns: 1fr;
+          gap: 0.45rem;
+        }
+
+        .audit-log-item small {
+          white-space: normal;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .admin-dashboard-stats {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link is-active" href="admin-dashboard.html" aria-current="page"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="section-import.html"><span class="nav-dot"></span>Section Import</a>
+          <a class="nav-link" href="hospital-duty-area.html"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link" href="audit-logs.html"><span class="nav-dot"></span>Audit Logs</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Dashboard</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace dashboard-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <h2>Good Evening, Santos.</h2>
+              <p>Welcome back! Here is an overview of system setup, and recent audit activity.</p>
+            </div>
+            <a class="primary-button workspace-action button-link" href="section-import.html">Upload Section File</a>
+          </section>
+
+          <section class="workspace-panel audit-summary-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Recent System Activity</h2>
+              </div>
+              <span class="status-badge status-verified">Live logs</span>
+            </div>
+
+            <div class="audit-log-preview" aria-label="Recent audit log preview">
+              <div class="audit-log-item">
+                <div>
+                  <strong>Chair Reyes</strong>
+                  <span>Chair</span>
+                </div>
+                <span>Published schedule</span>
+                <span>Pedia Pulmo Ward Rotation</span>
+                <small>May 1, 2026 - 09:20 AM</small>
+              </div>
+
+              <div class="audit-log-item">
+                <div>
+                  <strong>Patricia Reyes, RN, MAN</strong>
+                  <span>Clinical Instructor</span>
+                </div>
+                <span>Approved clinical case</span>
+                <span>Maria Cruz</span>
+                <small>Apr 30, 2026 - 04:35 PM</small>
+              </div>
+
+              <div class="audit-log-item">
+                <div>
+                  <strong>Chair Reyes</strong>
+                  <span>Chair</span>
+                </div>
+                <span>Approved appeal</span>
+                <span>Treasure Abadinas</span>
+                <small>Apr 30, 2026 - 03:22 PM</small>
+              </div>
+            </div>
+
+            <div class="audit-summary-footer">
+              <a class="ghost-button button-link" href="audit-logs.html">Open Audit Logs</a>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/instructor-dashboard.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

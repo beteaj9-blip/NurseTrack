@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Student Progress Detail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .instructor-student-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        align-items: start;
+      }
+      @media (max-width: 1024px) {
+        .instructor-student-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .record-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .record-heading > div:first-child {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .compact-segment {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        gap: 0.35rem;
+        width: auto;
+        min-width: max-content;
+        max-width: none;
+        padding: 0.35rem;
+      }
+
+      .compact-segment button {
+        min-width: 95px;
+        padding: 0.75rem 0.85rem;
+        white-space: nowrap;
+        text-align: center;
+      }
+
+      @media (max-width: 640px) {
+        .record-heading {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .compact-segment {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .compact-segment button {
+          flex: 1;
+          min-width: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Clinical Instructor</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="instructor-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="select-validation-user.html"><span class="nav-dot"></span>Clinical Cases Review</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="schedule-management.html"><span class="nav-dot"></span>Assigned Schedules</a>
+          <a class="nav-link is-active" href="instructor-student-view.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="instructor-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Clinical Instructor</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Progress Monitoring</p>
+              <h1>Student Progress Detail</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+            <a class="icon-button notification-button button-link" href="instructor-notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace instructor-student-workspace">
+          <section class="workspace-hero student-profile-hero">
+            <div class="student-profile-head">
+              <div class="avatar large-avatar" id="progress-avatar">MC</div>
+              <div>
+                <h2 id="progress-name">Maria Cruz</h2>
+                <p id="progress-meta">BSN 3A - Student ID 12-3456-789 - CCMC rotation</p>
+              </div>
+            </div>
+            <div class="hero-action-stack">
+              <span class="status-badge status-pending" id="progress-status">In progress</span>
+            </div>
+          </section>
+
+          <section class="dashboard-stats" aria-label="Student progress summary">
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon icon-only" aria-label="Extension days">
+                  <svg viewBox="0 0 24 24"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"></path></svg>
+                </span>
+                <span class="status-badge status-pending">Open</span>
+              </div>
+              <h3>Extension Days</h3>
+              <p id="duty-summary">11 extension days recorded</p>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon icon-only" aria-label="Clinical cases">
+                  <svg viewBox="0 0 24 24"><path d="M8 4h8"></path><path d="M7 8h10"></path><path d="M7 12h7"></path><path d="M6 3h12v18H6z"></path></svg>
+                </span>
+                <span class="status-badge status-pending">In progress</span>
+              </div>
+              <h3>Clinical Cases</h3>
+              <p id="case-summary">12/21 cases completed</p>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon icon-only" aria-label="Pending items">
+                  <svg viewBox="0 0 24 24"><path d="M12 8v5"></path><path d="M12 17h.01"></path><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                </span>
+                <span class="status-badge status-pending">Open</span>
+              </div>
+              <h3>Pending Items</h3>
+              <p id="pending-summary">14 records need instructor or student action</p>
+            </article>
+          </section>
+
+          <section class="instructor-student-layout">
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Requirement Progress</h2>
+                </div>
+                <a class="ghost-button" id="pending-case-link" href="clinical-case-selection.html?student=maria-cruz">Pending items</a>
+              </div>
+
+              <div class="progress-breakdown-list grouped-progress-list">
+                <section class="progress-case-group" aria-label="Delivery Room case requirements">
+                  <div class="progress-case-group-heading">
+                    <strong>DR</strong>
+                    <span>Delivery Room Cases</span>
+                  </div>
+
+                  <div class="progress-breakdown-item">
+                    <div class="breakdown-copy">
+                      <strong>Handled Cases</strong>
+                      <span>3 / 3 completed</span>
+                    </div>
+                    <div class="progress-track"><span style="width: 100%"></span></div>
+                    <span class="status-badge status-verified">3 / 3</span>
+                  </div>
+
+                  <div class="progress-breakdown-item">
+                    <div class="breakdown-copy">
+                      <strong>Assisted Cases</strong>
+                      <span>2 / 3 completed</span>
+                    </div>
+                    <div class="progress-track"><span style="width: 66%"></span></div>
+                    <span class="status-badge status-pending">2 / 3</span>
+                  </div>
+
+                  <div class="progress-breakdown-item">
+                    <div class="breakdown-copy">
+                      <strong>Newborn Care</strong>
+                      <span>1 / 3 completed</span>
+                    </div>
+                    <div class="progress-track"><span style="width: 33%"></span></div>
+                    <span class="status-badge status-pending">1 / 3</span>
+                  </div>
+
+                  <div class="progress-breakdown-item">
+                    <div class="breakdown-copy">
+                      <strong>Labor Watch</strong>
+                      <span>0 / 3 completed</span>
+                    </div>
+                    <div class="progress-track"><span style="width: 0%"></span></div>
+                    <span class="status-badge status-rejected">0 / 3</span>
+                  </div>
+                </section>
+
+                <section class="progress-case-group" aria-label="Operating Room case requirements">
+                  <div class="progress-case-group-heading">
+                    <strong>OR</strong>
+                    <span>Operating Room Cases</span>
+                  </div>
+
+                  <div class="progress-breakdown-item">
+                    <div class="breakdown-copy">
+                      <strong>Minor Cases</strong>
+                      <span>3 / 3 completed</span>
+                    </div>
+                    <div class="progress-track"><span style="width: 100%"></span></div>
+                    <span class="status-badge status-verified">3 / 3</span>
+                  </div>
+
+                  <div class="progress-breakdown-item">
+                    <div class="breakdown-copy">
+                      <strong>Major Cases - Scrub</strong>
+                      <span>2 / 3 completed</span>
+                    </div>
+                    <div class="progress-track"><span style="width: 66%"></span></div>
+                    <span class="status-badge status-pending">2 / 3</span>
+                  </div>
+
+                  <div class="progress-breakdown-item">
+                    <div class="breakdown-copy">
+                      <strong>Major Cases - Circulating</strong>
+                      <span>1 / 3 completed</span>
+                    </div>
+                    <div class="progress-track"><span style="width: 33%"></span></div>
+                    <span class="status-badge status-pending">1 / 3</span>
+                  </div>
+                </section>
+              </div>
+            </article>
+
+            <div class="student-progress-side-stack">
+              <article class="workspace-panel weekly-duty-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Weekly Duty Hours</h2>
+                  </div>
+                </div>
+
+                <div class="weekly-duty-overview">
+                  <div>
+                    <span>This week</span>
+                    <strong id="weekly-duty-overview-title">0 hrs recorded</strong>
+                  </div>
+                  <p id="weekly-duty-overview-copy">No overtime recorded yet.</p>
+                </div>
+
+                <div class="weekly-duty-summary" aria-label="Weekly duty summary">
+                  <div>
+                    <span>Duty days</span>
+                    <strong id="weekly-duty-days">0</strong>
+                  </div>
+                  <div>
+                    <span>Total hours</span>
+                    <strong id="weekly-duty-hours">0 hrs</strong>
+                  </div>
+                  <div>
+                    <span>Overtime</span>
+                    <strong id="weekly-duty-overtime">0 hrs</strong>
+                  </div>
+                </div>
+
+                <div class="weekly-duty-list" id="weekly-duty-list"></div>
+
+                <div id="weekly-duty-message" class="form-message weekly-duty-message" role="status" aria-live="polite">
+                  Showing weekly duty attendance and overtime status.
+                </div>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/clinical-instructor-data.js"></script>
+    <script src="../scripts/student-progress-detail.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

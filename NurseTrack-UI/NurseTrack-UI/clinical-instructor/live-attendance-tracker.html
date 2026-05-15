@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Live Attendance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .live-attendance-table {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      .live-attendance-row {
+        display: grid;
+        grid-template-columns: minmax(210px, 1.25fr) minmax(240px, 1.4fr) minmax(100px, 0.65fr) minmax(150px, 0.8fr) minmax(120px, 0.65fr);
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        gap: 1rem;
+      }
+
+      .live-attendance-row > span {
+        text-align: left;
+      }
+
+      .live-attendance-row:last-child {
+        border-bottom: none;
+      }
+
+      .live-attendance-head {
+        background-color: #f8fafc;
+      }
+
+      .live-attendance-row:not(.live-attendance-head):hover {
+        background-color: #f8fafc;
+      }
+
+      .roster-student-cell {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 1rem;
+      }
+
+      .roster-student-cell .avatar {
+        flex-shrink: 0;
+      }
+
+      .live-attendance-row small {
+        display: block;
+        margin-top: 0.125rem;
+      }
+
+      .panel-heading-actions {
+        display: flex;
+        align-items: center;
+      }
+
+      .live-hero-status {
+        margin: 0;
+      }
+
+      input[type="search"]::-webkit-search-cancel-button {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 14px;
+        width: 14px;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23800000'><path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/></svg>");
+        background-size: contain;
+        background-repeat: no-repeat;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      input[type="search"]::-webkit-search-cancel-button:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Clinical Instructor</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="instructor-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="select-validation-user.html"><span class="nav-dot"></span>Clinical Cases Review</a>
+          <a class="nav-link is-active" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="manual-attendance.html"><span class="nav-dot"></span>Manual Backup</a>
+          <a class="nav-link" href="schedule-management.html"><span class="nav-dot"></span>Assigned Schedules</a>
+          <a class="nav-link" href="instructor-student-view.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="instructor-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Clinical Instructor</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Attendance Monitoring</p>
+              <h1>Live Attendance</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill" id="attendance-sync-pill">Live now</span>
+            <a class="icon-button notification-button button-link" href="instructor-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace live-attendance-workspace">
+          <section class="live-attendance-layout live-attendance-single">
+            <article class="workspace-panel live-attendance-main">
+              <div class="panel-heading">
+                <div>
+                  <h2>Student Attendance Feed</h2>
+                </div>
+              </div>
+
+              <div class="history-filters live-attendance-filters" aria-label="Live attendance filters">
+                <label class="form-label" for="attendance-site-filter">
+                  Hospital
+                  <select id="attendance-site-filter">
+                    <option value="CCMC">CCMC</option>
+                    <option value="VSMMC">VSMMC</option>
+                    <option value="CHN Brgy. Dumlog">CHN Brgy. Dumlog</option>
+                    <option value="CSMC">CSMC</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="attendance-area-filter">
+                  Duty area
+                  <select id="attendance-area-filter">
+                    <option value="all">All duty areas</option>
+                    <option value="Emergency Room">Emergency Room</option>
+                    <option value="Delivery Room">Delivery Room</option>
+                    <option value="Operating Room">Operating Room</option>
+                    <option value="Medical Ward">Medical Ward</option>
+                    <option value="Pedia Pulmo Ward">Pedia Pulmo Ward</option>
+                    <option value="Community Health Nursing Area">Community Health Nursing Area</option>
+                    <option value="Community Assessment">Community Assessment</option>
+                    <option value="Outpatient Department">Outpatient Department</option>
+                    <option value="Dialysis Center">Dialysis Center</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="attendance-search">
+                  Search
+                  <input id="attendance-search" type="search" placeholder="Search student, section, area, or site">
+                </label>
+              </div>
+
+              <div class="live-attendance-table" id="live-attendance-table" role="table" aria-label="Live student attendance feed">
+                <div class="live-attendance-row live-attendance-head" role="row">
+                  <span role="columnheader">Student</span>
+                  <span role="columnheader">Duty Location</span>
+                  <span role="columnheader">Check-In</span>
+                  <span role="columnheader">Time Connected</span>
+                  <span role="columnheader">Status</span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="CCMC" data-status="present">
+                  <span role="cell" class="roster-student-cell"><span class="avatar small-avatar">MC</span><span><strong>Maria Cruz</strong><small>BSN 3A</small></span></span>
+                  <span role="cell"><strong>CCMC</strong><small>Emergency Room</small><small>CI: Patricia Reyes</small></span>
+                  <span role="cell">6:54 AM</span>
+                  <span role="cell" data-live-minutes="1">1 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="CCMC" data-status="present">
+                  <span role="cell" class="roster-student-cell"><span class="avatar small-avatar">JA</span><span><strong>Josh Anton Nuevas</strong><small>BSN 3A</small></span></span>
+                  <span role="cell"><strong>CCMC</strong><small>Emergency Room</small><small>CI: Patricia Reyes</small></span>
+                  <span role="cell">7:18 AM</span>
+                  <span role="cell" data-live-minutes="4">4 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="Vicente Mendiola Center for Health Infirmary" data-status="present"><span role="cell" class="roster-student-cell"><span class="avatar small-avatar">ND</span><span><strong>Nicole Dela Pena</strong><small>BSN 3A</small></span></span>
+                  <span role="cell"><strong>Vicente Mendiola Center for Health Infirmary</strong><small>Medical Ward</small><small>CI: Patricia Reyes</small></span>
+                  <span role="cell">6:59 AM</span>
+                  <span role="cell" data-live-minutes="2">2 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="VSMMC" data-status="present">
+                  <span role="cell" class="roster-student-cell"><span class="avatar small-avatar">TA</span><span><strong>Treasure Abadinas</strong><small>BSN 3A</small></span></span>
+                  <span role="cell"><strong>SAMCH</strong><small>Delivery Room</small><small>CI: Miguel Santos</small></span>
+                  <span role="cell">6:48 AM</span>
+                  <span role="cell" data-live-minutes="2">2 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="VSMMC" data-status="present">
+                  <span role="cell" class="roster-student-cell"><span class="avatar small-avatar">ZA</span><span><strong>Zander Aligato</strong><small>BSN 3B</small></span></span>
+                  <span role="cell"><strong>CCMC</strong><small>Emergency Room</small><small>CI: Miguel Santos</small></span>
+                  <span role="cell">6:52 AM</span>
+                  <span role="cell" data-live-minutes="3">3 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="CCMC" data-status="present"><span role="cell" class="roster-student-cell"><span class="avatar small-avatar">HB</span><span><strong>Hannah Bautista</strong><small>BSN 3B</small></span></span>
+                  <span role="cell"><strong>CCMC</strong><small>Pedia Pulmo Ward</small><small>CI: Miguel Santos</small></span>
+                  <span role="cell">7:21 AM</span>
+                  <span role="cell" data-live-minutes="5">5 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="CHN Brgy. Dumlog" data-status="present">
+                  <span role="cell" class="roster-student-cell"><span class="avatar small-avatar">AG</span><span><strong>Andrea Gomez</strong><small>BSN 3B</small></span></span>
+                  <span role="cell"><strong>CHN Brgy. Dumlog</strong><small>Community Health Nursing Area</small><small>CI: Elena Dela Cruz</small></span>
+                  <span role="cell">7:02 AM</span>
+                  <span role="cell" data-live-minutes="1">1 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="CHN Brgy. Dumlog" data-status="present">
+                  <span role="cell" class="roster-student-cell"><span class="avatar small-avatar">MR</span><span><strong>Miguel Reyes</strong><small>BSN 3C</small></span></span>
+                  <span role="cell"><strong>CHN Brgy. Dumlog</strong><small>Community Health Nursing Area</small><small>CI: Elena Dela Cruz</small></span>
+                  <span role="cell">6:57 AM</span>
+                  <span role="cell" data-live-minutes="2">2 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="CHN Brgy. Dumlog" data-status="present">
+                  <span role="cell" class="roster-student-cell"><span class="avatar small-avatar">PU</span><span><strong>Patricia Uy</strong><small>BSN 3C</small></span></span>
+                  <span role="cell"><strong>CHN Brgy. Dumlog</strong><small>Community Assessment</small><small>CI: Elena Dela Cruz</small></span>
+                  <span role="cell">7:25 AM</span>
+                  <span role="cell" data-live-minutes="6">6 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="ECS" data-status="present"><span role="cell" class="roster-student-cell"><span class="avatar small-avatar">LU</span><span><strong>Lichael Ursulo</strong><small>BSN 3C</small></span></span><span role="cell"><strong>ECS</strong><small>Outpatient Department</small><small>CI: Patricia Reyes</small></span>
+                  <span role="cell">6:55 AM</span>
+                  <span role="cell" data-live-minutes="3">3 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="Healing Hands Dialysis Center" data-status="present"><span role="cell" class="roster-student-cell"><span class="avatar small-avatar">SV</span><span><strong>Sean Villamor</strong><small>BSN 3C</small></span></span><span role="cell"><strong>Healing Hands Dialysis Center</strong><small>Dialysis Center</small><small>CI: Patricia Reyes</small></span>
+                  <span role="cell">6:51 AM</span>
+                  <span role="cell" data-live-minutes="2">2 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+                <div class="live-attendance-row" role="row" data-site="Vicente Mendiola Center for Health Infirmary" data-status="present"><span role="cell" class="roster-student-cell"><span class="avatar small-avatar">AG</span><span><strong>Andrea Gomez</strong><small>BSN 4A</small></span></span><span role="cell"><strong>Vicente Mendiola Center for Health Infirmary</strong><small>Emergency Room</small><small>CI: Patricia Reyes</small></span>
+                  <span role="cell">7:16 AM</span>
+                  <span role="cell" data-live-minutes="4">4 min</span>
+                  <span role="cell"><span class="status-badge status-verified">Present</span></span>
+                </div>
+
+              </div>
+
+              <div id="attendance-empty" class="empty-state" hidden>
+                No attendance records match the selected filters.
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/live-attendance-tracker.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

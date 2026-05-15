@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Case History</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .validation-layout-single {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .detail-main-card .student-validation-card {
+        width: 100%;
+        max-width: none;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .student-case-heading-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .student-case-heading-actions .ghost-button {
+        min-height: 50px;
+        padding: 0 1.35rem;
+        white-space: nowrap;
+      }
+
+      .case-period-filter {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(280px, auto);
+        gap: 1rem;
+        align-items: end;
+        margin: 1rem 0 1.15rem;
+        padding: 1rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 14px;
+        background:
+          linear-gradient(135deg, rgba(255, 207, 1, 0.12), rgba(255, 255, 255, 0) 52%),
+          #ffffff;
+      }
+
+      .case-period-filter .form-label {
+        margin: 0;
+      }
+
+      .case-period-filter select {
+        min-height: 50px;
+      }
+
+      .submit-clearance-button {
+        min-height: 50px;
+        padding: 0 1.35rem;
+        white-space: nowrap;
+      }
+
+      .case-clearance-actions {
+        display: flex;
+        align-items: end;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        min-width: 0;
+      }
+
+      .case-clearance-actions .ghost-button {
+        min-height: 50px;
+        min-width: 170px;
+      }
+
+      .clearance-print-certificate {
+        display: none;
+      }
+
+      .case-history-section {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .case-history-section + .case-history-section {
+        margin-top: 26px;
+      }
+
+      .case-history-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 4px;
+      }
+
+      .case-history-title h3 {
+        margin: 0;
+        color: #8A252C;
+        font-size: 1.05rem;
+        font-weight: 800;
+      }
+
+      .case-history-title span {
+        color: #475569;
+        font-size: 0.85rem;
+        font-weight: 800;
+      }
+
+      .history-row.case-row,
+      .history-row-head.case-row {
+        display: grid;
+        grid-template-columns: minmax(180px, 1.2fr) minmax(300px, 2.2fr) minmax(120px, 0.9fr) minmax(120px, 0.9fr) minmax(96px, 0.6fr) minmax(88px, 0.5fr);
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .history-row.case-row span,
+      .history-row-head.case-row span {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: left;
+      }
+
+      #case-history-message {
+        margin-top: 1.35rem;
+      }
+
+      @media (max-width: 900px) {
+        .case-period-filter {
+          grid-template-columns: 1fr;
+        }
+
+        .student-case-heading-actions .ghost-button,
+        .submit-clearance-button {
+          width: 100%;
+        }
+
+        .case-clearance-actions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .case-clearance-actions .ghost-button {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .detail-main-card .student-validation-card,
+        .history-row.case-row,
+        .history-row-head.case-row {
+          grid-template-columns: 1fr;
+        }
+
+        .case-history-title {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media print {
+        .app-shell {
+          display: block;
+        }
+
+        .app-sidebar,
+        .sidebar-backdrop,
+        .topbar,
+        .workspace {
+          display: none !important;
+        }
+
+        .clearance-print-certificate {
+          display: block;
+          padding: 2rem;
+          color: #111827;
+          font-family: "Kumbh Sans", Arial, sans-serif;
+        }
+
+        .clearance-print-certificate h1 {
+          margin: 0 0 0.5rem;
+          color: #8A252C;
+          font-size: 2rem;
+          text-align: center;
+        }
+
+        .clearance-print-certificate .certificate-subtitle {
+          margin: 0 0 2rem;
+          color: #475569;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .clearance-print-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+          margin: 2rem 0;
+        }
+
+        .clearance-print-grid div {
+          border: 1px solid #dbe3ee;
+          border-radius: 10px;
+          padding: 1rem;
+        }
+
+        .clearance-print-grid span {
+          display: block;
+          color: #64748b;
+          font-size: 0.8rem;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+
+        .clearance-print-grid strong {
+          display: block;
+          margin-top: 0.35rem;
+          font-size: 1rem;
+        }
+
+        .clearance-signature-line {
+          margin-top: 4rem;
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        .clearance-signature-line div {
+          min-width: 260px;
+          border-top: 1px solid #111827;
+          padding-top: 0.75rem;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="case-history.html" aria-current="page"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Assigned Schedules</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-appeals.html"><span class="nav-dot"></span>Student Appeals</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Clinical Cases</p>
+              <h1>Case History</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace validation-workspace">
+          <section class="validation-layout validation-layout-single">
+            <article class="workspace-panel detail-main-card">
+              <div class="panel-heading">
+                <div>
+                  <h2>Student Information</h2>
+                </div>
+                <div class="student-case-heading-actions">
+                  <a class="ghost-button workspace-action button-link" href="add-clinical-case.html">Add clinical case</a>
+                  <span class="status-badge status-pending" id="clearance-status-badge">Clearance locked</span>
+                  <span class="status-badge status-pending">1 pending case</span>
+                </div>
+              </div>
+
+              <div class="student-validation-card">
+                <div class="avatar">MC</div>
+                <div>
+                  <strong>Maria Cruz</strong>
+                  <p>BSN 3A - Student ID 12-3456-789</p>
+                </div>
+                <span class="status-badge status-pending">In review</span>
+              </div>
+
+              <div class="case-period-filter" aria-label="Case history period filter">
+                <label class="form-label" for="case-school-year">
+                  School Year
+                  <select id="case-school-year">
+                    <option value="2026-2027">2026 - 2027</option>
+                    <option value="2025-2026" selected>2025 - 2026</option>
+                    <option value="2024-2025">2024 - 2025</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="case-semester">
+                  Semester
+                  <select id="case-semester">
+                    <option value="1st Semester">1st Semester</option>
+                    <option value="2nd Semester" selected>2nd Semester</option>
+                    <option value="Summer">Summer</option>
+                  </select>
+                </label>
+
+                <div class="case-clearance-actions">
+                  <button class="ghost-button submit-clearance-button" id="submit-clearance" type="button">Submit for Clearance</button>
+                  <button class="ghost-button submit-clearance-button" id="print-clearance" type="button" disabled>Print Clearance</button>
+                </div>
+              </div>
+
+              <section class="case-history-section" aria-label="Delivery Room case records">
+                <div class="case-history-title">
+                  <h3>Delivery Room Cases</h3>
+                </div>
+
+                <div class="history-table">
+                  <div class="history-row history-row-head case-row">
+                    <span>Category</span>
+                    <span>Procedure Performed</span>
+                    <span>Status</span>
+                    <span>Date</span>
+                    <span>Time</span>
+                    <span>Action</span>
+                  </div>
+
+                  <div class="history-row case-row" data-school-year="2025-2026" data-semester="2nd Semester">
+                    <span>Major Case - Assist</span>
+                    <span><strong>Primary Lower Segment Transverse Cesarean Section</strong></span>
+                    <span><span class="status-badge status-pending">Pending</span></span>
+                    <span><strong>Apr 24, 2026</strong></span>
+                    <span><strong>4:35 PM</strong></span>
+                    <span><a class="text-link" href="case-detail.html?case=maria-dr-assist-0424">View</a></span>
+                  </div>
+
+                  <div class="history-row case-row" data-school-year="2025-2026" data-semester="2nd Semester">
+                    <span>Handled Case</span>
+                    <span><strong>Operative Hysteroscopy, Transcervical Resection of Polyp</strong></span>
+                    <span><span class="status-badge status-verified">Approved</span></span>
+                    <span><strong>Apr 22, 2026</strong></span>
+                    <span><strong>11:45 AM</strong></span>
+                    <span><a class="text-link" href="case-detail.html?case=maria-dr-handled-0422">View</a></span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="case-history-section" aria-label="Operating Room case records">
+                <div class="case-history-title">
+                  <h3>Operating Room Cases</h3>
+                </div>
+
+                <div class="history-table">
+                  <div class="history-row history-row-head case-row">
+                    <span>Category</span>
+                    <span>Procedure Performed</span>
+                    <span>Status</span>
+                    <span>Date</span>
+                    <span>Time</span>
+                    <span>Action</span>
+                  </div>
+
+                  <div class="history-row case-row" data-school-year="2025-2026" data-semester="2nd Semester">
+                    <span>Major Case - Circulate</span>
+                    <span><strong>Laparoscopic Cholecystectomy</strong></span>
+                    <span><span class="status-badge status-verified">Approved</span></span>
+                    <span><strong>Apr 23, 2026</strong></span>
+                    <span><strong>2:10 PM</strong></span>
+                    <span><a class="text-link" href="case-detail.html?case=maria-or-circulate-0423">View</a></span>
+                  </div>
+                </div>
+              </section>
+
+              <div class="form-message" id="case-history-message" role="status" aria-live="polite">
+                Showing 3 clinical cases for S.Y. 2025 - 2026 · 2nd Semester.
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <section class="clearance-print-certificate" aria-label="Printable clearance certificate">
+      <h1>Clinical Clearance</h1>
+      <p class="certificate-subtitle">Cebu Institute of Technology - University College of Nursing</p>
+      <p>
+        This certifies that <strong id="print-clearance-student">Maria Cruz</strong> has been approved for clinical clearance
+        for the selected semester after review of clinical case requirements and duty records.
+      </p>
+
+      <div class="clearance-print-grid">
+        <div>
+          <span>Student</span>
+          <strong>Maria Cruz</strong>
+        </div>
+        <div>
+          <span>Section</span>
+          <strong>BSN 3A</strong>
+        </div>
+        <div>
+          <span>Student ID</span>
+          <strong>12-3456-789</strong>
+        </div>
+        <div>
+          <span>Clearance Status</span>
+          <strong>Approved</strong>
+        </div>
+        <div>
+          <span>Submitted</span>
+          <strong id="print-clearance-submitted">Pending</strong>
+        </div>
+        <div>
+          <span>Approved</span>
+          <strong id="print-clearance-approved">Pending</strong>
+        </div>
+      </div>
+
+      <div class="clearance-signature-line">
+        <div>
+          <strong>Chair Approval</strong>
+          <p id="print-clearance-chair">Reyes, Chair</p>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const menuButton = document.querySelector("[data-menu-button]");
+      const sidebarBackdrop = document.querySelector("[data-close-sidebar]");
+      const schoolYearSelect = document.querySelector("#case-school-year");
+      const semesterSelect = document.querySelector("#case-semester");
+      const caseHistoryMessage = document.querySelector("#case-history-message");
+      const caseRows = Array.from(document.querySelectorAll(".history-row.case-row:not(.history-row-head)"));
+
+      function formatSchoolYear(value) {
+        return value ? value.replace("-", " - ") : "";
+      }
+
+      function updateCasePeriodView() {
+        const selectedSchoolYear = schoolYearSelect?.value || "";
+        const selectedSemester = semesterSelect?.value || "";
+        let visibleCount = 0;
+
+        caseRows.forEach((row) => {
+          const matchesSchoolYear = row.dataset.schoolYear === selectedSchoolYear;
+          const matchesSemester = row.dataset.semester === selectedSemester;
+          const shouldShow = matchesSchoolYear && matchesSemester;
+
+          row.hidden = !shouldShow;
+
+          if (shouldShow) {
+            visibleCount += 1;
+          }
+        });
+
+        const summaryText = `S.Y. ${formatSchoolYear(selectedSchoolYear)} · ${selectedSemester}`;
+
+        if (caseHistoryMessage) {
+          caseHistoryMessage.dataset.casePeriodEmpty = visibleCount === 0 ? "true" : "false";
+          caseHistoryMessage.title = visibleCount === 0 ? "No clinical case found" : "";
+          caseHistoryMessage.textContent = visibleCount === 0
+            ? `No clinical case found for ${summaryText}.`
+            : `Showing ${visibleCount} clinical case${visibleCount === 1 ? "" : "s"} for ${summaryText}.`;
+          caseHistoryMessage.classList.remove("is-error", "is-success");
+        }
+      }
+
+      menuButton?.addEventListener("click", () => {
+        document.body.classList.add("sidebar-open");
+      });
+
+      sidebarBackdrop?.addEventListener("click", () => {
+        document.body.classList.remove("sidebar-open");
+      });
+
+      schoolYearSelect?.addEventListener("change", updateCasePeriodView);
+      semesterSelect?.addEventListener("change", updateCasePeriodView);
+
+      updateCasePeriodView();
+    </script>
+
+    <script src="../scripts/student-clearance.js"></script>
+    <script src="../scripts/case-history.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

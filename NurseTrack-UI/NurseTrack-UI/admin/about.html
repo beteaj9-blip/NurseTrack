@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | About</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .about-layout-single {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+      }
+
+      .about-card-full {
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="manage-users.html"><span class="nav-dot"></span>Manage Users</a>
+          <a class="nav-link" href="section-import.html"><span class="nav-dot"></span>Section Import</a>
+          <a class="nav-link" href="hospital-duty-area.html"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link" href="../admin-manager/admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="../admin-manager/live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="../admin-manager/chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="../admin-manager/student-clearance.html"><span class="nav-dot"></span>Clearance</a>
+          <a class="nav-link" href="../admin-manager/clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="../admin-manager/student-appeals.html"><span class="nav-dot"></span>Approved Appeals</a>
+          <a class="nav-link" href="../admin-manager/overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="../admin-manager/generate-report.html"><span class="nav-dot"></span>Reports</a>
+          <a class="nav-link" href="audit-logs.html"><span class="nav-dot"></span>Audit Logs</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>System Info</p>
+              <h1>About NurseTrack</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated successfully</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace about-workspace">
+          <section class="workspace-hero dashboard-hero about-hero">
+            <div class="about-hero-copy">
+              <h2>Focused tools for verification, monitoring, and review.</h2>
+              <p>Admin access provides comprehensive oversight of departmental operations, including global student data management, hospital/area configuration, and system-wide audit logging.</p>
+            </div>
+
+            <div class="about-brand-mark">
+              <img src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+              <span>v1.0</span>
+            </div>
+          </section>
+
+          <section class="about-layout about-layout-single">
+            <article class="workspace-panel about-card about-card-full">
+              <div class="panel-heading">
+                <div>
+                  <h2>App Information</h2>
+                </div>
+              </div>
+
+              <div class="detail-list">
+                <div class="detail-row">
+                  <span>Name</span>
+                  <strong>NurseTrack</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span>Organization</span>
+                  <strong>CIT-U Nursing</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span>Release</span>
+                  <strong>Version 1.0</strong>
+                </div>
+
+                <div class="detail-row">
+                  <span>Updated</span>
+                  <strong>Apr 28, 2026</strong>
+                </div>
+              </div>
+
+              <div id="about-message" class="form-message is-success" role="status" aria-live="polite">
+                System information is up to date.
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/about.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Checklist Form</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Clinical Cases</p>
+              <h1>Checklist Form</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Draft autosaved</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace checklist-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <p class="section-kicker">Procedure checklist</p>
+              <h2>Complete required case checklist fields.</h2>
+              <p>Required fields must be completed before the case can be submitted for instructor validation.</p>
+            </div>
+            <span class="status-badge status-pending" id="completion-badge">0% complete</span>
+          </section>
+
+          <section class="checklist-layout">
+            <form id="checklist-form" class="workspace-panel checklist-form" novalidate>
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Checklist</p>
+                  <h2>Maternal care procedure</h2>
+                </div>
+                <span class="status-badge status-pending">Required</span>
+              </div>
+
+              <div class="case-context-card">
+                <div>
+                  <span>Case code</span>
+                  <strong>CASE-0426-001</strong>
+                </div>
+                <div>
+                  <span>Clinical site</span>
+                  <strong>CCMC</strong>
+                </div>
+                <div>
+                  <span>Duty area</span>
+                  <strong>Delivery Room</strong>
+                </div>
+              </div>
+
+              <fieldset class="checklist-section">
+                <legend>Preparation</legend>
+                <label class="checklist-row">
+                  <input type="checkbox" name="prepPatientId" required>
+                  <span>Verified patient identity and procedure details</span>
+                </label>
+                <label class="checklist-row">
+                  <input type="checkbox" name="prepConsent" required>
+                  <span>Confirmed consent or instructor clearance</span>
+                </label>
+                <label class="checklist-row">
+                  <input type="checkbox" name="prepHandHygiene" required>
+                  <span>Performed hand hygiene and prepared supplies</span>
+                </label>
+              </fieldset>
+
+              <fieldset class="checklist-section">
+                <legend>Procedure Performance</legend>
+                <label class="form-label" for="procedure-role">
+                  Student role
+                  <select id="procedure-role" name="procedureRole" required>
+                    <option value="">Select student role</option>
+                    <option>Observed procedure</option>
+                    <option>Assisted instructor</option>
+                    <option>Performed with supervision</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="competency-level">
+                  Competency level
+                  <select id="competency-level" name="competencyLevel" required>
+                    <option value="">Select competency level</option>
+                    <option>Beginning</option>
+                    <option>Developing</option>
+                    <option>Competent</option>
+                  </select>
+                </label>
+
+                <label class="checklist-row">
+                  <input type="checkbox" name="safeTechnique" required>
+                  <span>Maintained safe technique throughout the procedure</span>
+                </label>
+                <label class="checklist-row">
+                  <input type="checkbox" name="documentedCare" required>
+                  <span>Documented care details after procedure completion</span>
+                </label>
+              </fieldset>
+
+              <fieldset class="checklist-section">
+                <legend>Reflection</legend>
+                <label class="form-label" for="learning-summary">
+                  Learning summary
+                  <textarea id="learning-summary" name="learningSummary" rows="4" placeholder="Write a short summary of what you learned from this case" required></textarea>
+                </label>
+
+                <label class="form-label" for="improvement-plan">
+                  Improvement plan
+                  <textarea id="improvement-plan" name="improvementPlan" rows="3" placeholder="Write what you will improve on the next similar case" required></textarea>
+                </label>
+              </fieldset>
+
+              <div id="form-message" class="form-message" role="status" aria-live="polite">
+                Complete all required checklist items to submit this case.
+              </div>
+
+              <div class="button-row">
+                <button class="ghost-button" type="button" id="save-checklist">Save draft</button>
+                <button class="primary-button workspace-action" type="submit">Submit checklist</button>
+              </div>
+            </form>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Completion</p>
+                    <h2>Checklist progress</h2>
+                  </div>
+                  <span class="status-badge status-pending" id="side-completion-badge">0 / 9</span>
+                </div>
+
+                <div class="progress-track large-track"><span id="checklist-progress" style="width: 0%"></span></div>
+                <p class="panel-note" id="checklist-note">9 required items remaining.</p>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Status</p>
+                    <h2>Validation readiness</h2>
+                  </div>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Preparation</strong>
+                      <p>All preparation checks required</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Performance</strong>
+                      <p>Role, competency, and safety fields required</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Reflection</strong>
+                      <p>Learning summary and improvement plan required</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Next step</p>
+                    <h2>Instructor review</h2>
+                  </div>
+                  <span class="status-badge status-pending">After submit</span>
+                </div>
+
+                <p class="panel-note">Once submitted, this case will appear in the instructor validation queue with your completed checklist fields.</p>
+              </article>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/checklist-form.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

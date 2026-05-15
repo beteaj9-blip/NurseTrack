@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Error Validation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Feedback</p>
+              <h1>Error Validation</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Needs correction</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="ghost-button button-link" href="alerts.html">Alerts</a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace error-validation-workspace">
+          <section class="workspace-hero dashboard-hero error-hero">
+            <div>
+              <p class="section-kicker">Input check</p>
+              <h2>Some required details need correction.</h2>
+              <p>Review the highlighted fields, fix the issues, and submit the form again.</p>
+            </div>
+            <span class="status-badge status-rejected" id="error-count-badge">4 issues</span>
+          </section>
+
+          <section class="error-validation-layout">
+            <form class="workspace-panel error-form" id="error-form" novalidate>
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Validation</p>
+                  <h2>Duty entry check</h2>
+                </div>
+                <span class="status-badge status-rejected">Required</span>
+              </div>
+
+              <div class="error-summary-card" id="error-summary">
+                <span class="alert-icon">!</span>
+                <div>
+                  <strong>4 fields need attention</strong>
+                  <p>Complete the missing details before the duty record can be submitted.</p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label has-error" for="student-id">
+                  Student ID
+                  <input id="student-id" name="studentId" type="text" value="12-3456" aria-invalid="true">
+                  <span class="field-error">Use the format xx-xxxx-xxx.</span>
+                </label>
+
+                <label class="form-label has-error" for="duty-date">
+                  Duty date
+                  <input id="duty-date" name="dutyDate" type="date" aria-invalid="true">
+                  <span class="field-error">Duty date is required.</span>
+                </label>
+
+                <label class="form-label has-error" for="clinical-site">
+                  Clinical site
+                  <select id="clinical-site" name="clinicalSite" aria-invalid="true">
+                    <option value="">Select clinical site</option>
+                    <option>CCMC</option>
+                    <option>CSMC</option>
+                    <option>CHN Brgy. Dumlog</option>
+                  </select>
+                  <span class="field-error">Select the assigned clinical site.</span>
+                </label>
+
+                <label class="form-label has-error" for="time-out">
+                  Time out
+                  <input id="time-out" name="timeOut" type="time" aria-invalid="true">
+                  <span class="field-error">Time out is required to calculate hours.</span>
+                </label>
+              </div>
+
+              <label class="form-label" for="notes">
+                Notes
+                <textarea id="notes" name="notes" rows="4" placeholder="Add optional note"></textarea>
+              </label>
+
+              <div id="validation-message" class="form-message is-error" role="status" aria-live="polite">
+                Fix the highlighted fields before submitting.
+              </div>
+
+              <div class="button-row">
+                <button class="ghost-button" type="button" id="fix-sample">Fix sample fields</button>
+                <button class="primary-button workspace-action" type="submit">Validate form</button>
+              </div>
+            </form>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Issues</p>
+                    <h2>Validation summary</h2>
+                  </div>
+                  <span class="status-badge status-rejected" id="issue-total">4 open</span>
+                </div>
+
+                <div class="validation-issue-list" id="validation-issue-list">
+                  <div class="validation-issue-card" data-field="student-id">
+                    <span class="alert-icon">!</span>
+                    <div>
+                      <strong>Student ID format</strong>
+                      <p>Use xx-xxxx-xxx for school ID number.</p>
+                    </div>
+                  </div>
+                  <div class="validation-issue-card" data-field="duty-date">
+                    <span class="alert-icon">!</span>
+                    <div>
+                      <strong>Missing duty date</strong>
+                      <p>Select the date of the completed shift.</p>
+                    </div>
+                  </div>
+                  <div class="validation-issue-card" data-field="clinical-site">
+                    <span class="alert-icon">!</span>
+                    <div>
+                      <strong>No clinical site selected</strong>
+                      <p>Choose the assigned site for this duty record.</p>
+                    </div>
+                  </div>
+                  <div class="validation-issue-card" data-field="time-out">
+                    <span class="alert-icon">!</span>
+                    <div>
+                      <strong>Missing time out</strong>
+                      <p>Add time out to calculate completed hours.</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Resolution</p>
+                    <h2>How to resolve</h2>
+                  </div>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <a class="requirement-item action-item" href="record-duty-hours.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Return to duty form</strong>
+                      <p>Update the full duty-hour entry.</p>
+                    </div>
+                  </a>
+                  <a class="requirement-item action-item" href="record-duty-hours.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Review duty details</strong>
+                      <p>Check the submitted duty-hour entry again.</p>
+                    </div>
+                  </a>
+                  <a class="requirement-item action-item" href="alerts.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>View alerts</strong>
+                      <p>Review all active issues.</p>
+                    </div>
+                  </a>
+                </div>
+              </article>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/error-validation.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

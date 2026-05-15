@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Extension Day View</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .extension-workspace {
+        display: grid;
+        gap: 1.25rem;
+      }
+
+      .extension-workspace > .workspace-panel,
+      #extension-history-panel {
+        margin-top: 0;
+      }
+
+      .extension-summary-panel,
+      .extension-view-panel,
+      #extension-history-panel {
+        padding: 1.5rem;
+      }
+
+      .extension-summary-panel {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .extension-summary-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .extension-summary-heading h2 {
+        margin: 0;
+      }
+
+      .extension-selected-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 1rem;
+        min-height: 5.25rem;
+        padding: 1rem 1.15rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.85rem;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      }
+
+      .extension-selected-card .avatar,
+      .extension-history-row .avatar,
+      .sidebar-account .avatar {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        line-height: 1 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+        border-radius: 999px !important;
+        font-weight: 800 !important;
+      }
+
+      .extension-selected-card .avatar {
+        width: 3rem;
+        height: 3rem;
+        min-width: 3rem;
+        min-height: 3rem;
+        font-size: 0.92rem;
+      }
+
+      .extension-selected-copy {
+        min-width: 0;
+        display: grid;
+        gap: 0.2rem;
+      }
+
+      .extension-selected-copy strong {
+        color: #111827;
+        font-size: 1.05rem;
+        line-height: 1.2;
+      }
+
+      .extension-selected-copy small {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .extension-view-panel {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .extension-view-note {
+        display: grid;
+        gap: 0.35rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.85rem;
+        background: #f8fafc;
+        padding: 1rem 1.15rem;
+      }
+
+      .extension-view-note strong {
+        color: #111827;
+        font-size: 0.98rem;
+      }
+
+      .extension-view-note span {
+        color: #51627d;
+        font-size: 0.9rem;
+        font-weight: 750;
+        line-height: 1.45;
+      }
+
+      .extension-history-list {
+        display: grid;
+        gap: 0.85rem;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+        background: transparent;
+      }
+
+      .extension-history-row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 3.75rem minmax(210px, 1.1fr) minmax(190px, 0.9fr) minmax(240px, 1.1fr) auto;
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem 1.1rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.85rem;
+        background: #ffffff;
+        color: inherit;
+        text-align: left;
+        font: inherit;
+      }
+
+      .extension-history-row .avatar {
+        width: 3rem;
+        height: 3rem;
+        min-width: 3rem;
+        min-height: 3rem;
+        font-size: 0.9rem;
+      }
+
+      .extension-history-row strong,
+      .extension-history-row small {
+        display: block;
+      }
+
+      .extension-history-row strong {
+        color: #111827;
+        font-size: 0.96rem;
+        line-height: 1.25;
+      }
+
+      .extension-history-row small {
+        margin-top: 0.18rem;
+        color: #475569;
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .extension-history-row .status-badge {
+        justify-self: end;
+      }
+
+      .extension-empty-state {
+        margin: 0;
+        border: 1px dashed #cbd5e1;
+        border-radius: 0.8rem;
+        background: #f8fafc;
+        padding: 1.2rem;
+        color: #64748b;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      @media (max-width: 980px) {
+        .extension-summary-heading {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .extension-selected-card {
+          grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .extension-selected-card .status-badge {
+          grid-column: 1 / -1;
+          justify-self: start;
+        }
+
+        .extension-history-row {
+          grid-template-columns: 1fr;
+          justify-items: start;
+        }
+
+        .extension-history-row .status-badge {
+          justify-self: start;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link is-active" href="extension-days.html" aria-current="page"><span class="nav-dot"></span>Extension Days</a>
+          <a class="nav-link" href="student-clearance.html"><span class="nav-dot"></span>Clearance</a>
+          <a class="nav-link" href="clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases View</a>
+          <a class="nav-link" href="student-appeals.html"><span class="nav-dot"></span>CI Recommendations</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Workspace</p>
+              <h1>Extension Day View</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">View only</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace extension-workspace">
+          <section class="workspace-panel extension-summary-panel">
+            <div class="extension-summary-heading">
+              <h2>Selected Student</h2>
+            </div>
+
+            <div class="extension-selected-card" id="extension-selected-summary">
+              <span class="avatar small-avatar" id="extension-selected-initials">--</span>
+
+              <span class="extension-selected-copy">
+                <strong id="extension-selected-name">Select a student</strong>
+                <small id="extension-selected-meta">Go back to search and choose a student</small>
+              </span>
+
+              <span class="status-badge status-neutral" id="extension-selected-standing">Standing</span>
+            </div>
+          </section>
+
+          <section class="workspace-panel extension-view-panel" id="extension-detail-content" hidden>
+            <div class="panel-heading">
+              <div>
+                <h2>Extension Access</h2>
+              </div>
+              <span class="status-badge status-muted">View only</span>
+            </div>
+
+            <div class="extension-view-note">
+              <strong>Viewing permission only</strong>
+              <span>This role can view extension day records, but only the Clinical Instructor can add or update extension days.</span>
+            </div>
+          </section>
+
+          <section class="workspace-panel" id="extension-history-panel" hidden>
+            <div class="panel-heading">
+              <div>
+                <h2>Extension Day History</h2>
+              </div>
+              <span class="status-badge status-verified" id="extension-history-count">0 records</span>
+            </div>
+
+            <div class="extension-history-list" id="extension-history-list"></div>
+            <p class="extension-empty-state" id="extension-history-empty" hidden>No extension day records yet for this student.</p>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/extension-days.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Assistant Access</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .assistant-access-layout {
+        display: grid;
+        gap: 1rem;
+        width: 100%;
+        max-width: none;
+      }
+
+      .assistant-access-section {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .level-assignment-list {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .level-assignment-card {
+        display: grid;
+        grid-template-columns: minmax(260px, 0.85fr) minmax(420px, 1.15fr);
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem 1.1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+      }
+
+      .level-person-info {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+      }
+
+      .level-person-info .avatar {
+        width: 46px;
+        height: 46px;
+        min-width: 46px;
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        line-height: 1;
+        padding: 0;
+        font-size: 0.86rem;
+        font-weight: 850;
+      }
+
+      .level-person-copy {
+        min-width: 0;
+      }
+
+      .level-person-copy strong {
+        display: block;
+        color: #111827;
+        font-size: 0.98rem;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .level-radio-group {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.55rem;
+      }
+
+      .level-radio-option {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 44px;
+        padding: 0 0.75rem;
+        border: 1px solid #dbe3ee;
+        border-radius: 0.6rem;
+        background: #ffffff;
+        color: #334155;
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 850;
+        text-align: center;
+        transition: border-color 160ms ease, box-shadow 160ms ease, color 160ms ease, background 160ms ease;
+      }
+
+      .level-radio-option:hover {
+        border-color: rgba(138, 37, 44, 0.35);
+        color: #8a252c;
+      }
+
+      .level-radio-option.is-selected {
+        border-color: #8a252c;
+        background: #fff7f7;
+        color: #8a252c;
+        box-shadow: 0 8px 18px rgba(138, 37, 44, 0.1);
+      }
+
+      .level-radio-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .assistant-access-toggle-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+      }
+
+      .assistant-access-toggle-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: center;
+        min-height: 112px;
+        padding: 1.05rem 1.1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+      }
+
+      .assistant-access-toggle-card h3 {
+        margin: 0;
+        color: #111827;
+        font-size: 1rem;
+        font-weight: 850;
+        line-height: 1.25;
+      }
+
+      .assistant-access-toggle-card p {
+        margin: 0.32rem 0 0;
+        color: #475569;
+        font-size: 0.85rem;
+        font-weight: 750;
+        line-height: 1.45;
+      }
+
+      .assistant-access-copy {
+        min-width: 0;
+      }
+
+      .assistant-switch {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        width: 58px;
+        height: 32px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .assistant-switch input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .assistant-switch span {
+        position: absolute;
+        inset: 0;
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #e2e8f0;
+        transition: background 160ms ease, border-color 160ms ease;
+      }
+
+      .assistant-switch span::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+        transition: transform 160ms ease;
+      }
+
+      .assistant-switch input:checked + span {
+        border-color: #8a252c;
+        background: #8a252c;
+      }
+
+      .assistant-switch input:checked + span::after {
+        transform: translateX(26px);
+      }
+
+      .assistant-switch input:focus-visible + span {
+        outline: 3px solid rgba(138, 37, 44, 0.25);
+        outline-offset: 3px;
+      }
+
+      .assistant-access-message {
+        margin-top: 1rem;
+      }
+
+      @media (max-width: 980px) {
+        .level-assignment-card {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .assistant-access-toggle-list {
+          grid-template-columns: 1fr;
+        }
+
+        .assistant-access-toggle-card {
+          grid-template-columns: 1fr auto;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .level-radio-group {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .assistant-access-toggle-card {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav"></nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Assistant Access</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace assistant-access-layout">
+          <section class="workspace-panel assistant-access-section">
+            <div class="panel-heading">
+              <div>
+                <h2>Chair Level Assignments</h2>
+              </div>
+              <span class="status-badge status-pending">One level per chair</span>
+            </div>
+
+            <div class="level-assignment-list">
+              <article class="level-assignment-card" data-level-card="chair-reyes">
+                <div class="level-person-info">
+                  <span class="avatar">CR</span>
+                  <div class="level-person-copy">
+                    <strong>Chair Clarissa Reyes</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Chair Clarissa Reyes level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-reyes-level" value="level-1" data-level-role="chair" data-level-person="chair-reyes" data-default-level="level-1">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-reyes-level" value="level-2" data-level-role="chair" data-level-person="chair-reyes" data-default-level="level-1">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-reyes-level" value="level-3" data-level-role="chair" data-level-person="chair-reyes" data-default-level="level-1">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-reyes-level" value="level-4" data-level-role="chair" data-level-person="chair-reyes" data-default-level="level-1">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+
+              <article class="level-assignment-card" data-level-card="chair-mendoza">
+                <div class="level-person-info">
+                  <span class="avatar">JM</span>
+                  <div class="level-person-copy">
+                    <strong>Chair Jessa Mendoza</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Chair Jessa Mendoza level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-mendoza-level" value="level-1" data-level-role="chair" data-level-person="chair-mendoza" data-default-level="level-2">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-mendoza-level" value="level-2" data-level-role="chair" data-level-person="chair-mendoza" data-default-level="level-2">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-mendoza-level" value="level-3" data-level-role="chair" data-level-person="chair-mendoza" data-default-level="level-2">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-mendoza-level" value="level-4" data-level-role="chair" data-level-person="chair-mendoza" data-default-level="level-2">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+
+              <article class="level-assignment-card" data-level-card="chair-santos">
+                <div class="level-person-info">
+                  <span class="avatar">LS</span>
+                  <div class="level-person-copy">
+                    <strong>Chair Liza Santos</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Chair Liza Santos level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-santos-level" value="level-1" data-level-role="chair" data-level-person="chair-santos" data-default-level="level-3">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-santos-level" value="level-2" data-level-role="chair" data-level-person="chair-santos" data-default-level="level-3">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-santos-level" value="level-3" data-level-role="chair" data-level-person="chair-santos" data-default-level="level-3">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-santos-level" value="level-4" data-level-role="chair" data-level-person="chair-santos" data-default-level="level-3">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+
+              <article class="level-assignment-card" data-level-card="chair-lim">
+                <div class="level-person-info">
+                  <span class="avatar">RL</span>
+                  <div class="level-person-copy">
+                    <strong>Chair Rafael Lim</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Chair Rafael Lim level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-lim-level" value="level-1" data-level-role="chair" data-level-person="chair-lim" data-default-level="level-4">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-lim-level" value="level-2" data-level-role="chair" data-level-person="chair-lim" data-default-level="level-4">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-lim-level" value="level-3" data-level-role="chair" data-level-person="chair-lim" data-default-level="level-4">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="chair-lim-level" value="level-4" data-level-role="chair" data-level-person="chair-lim" data-default-level="level-4">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="workspace-panel assistant-access-section">
+            <div class="panel-heading">
+              <div>
+                <h2>Assistant Level Assignments</h2>
+              </div>
+              <span class="status-badge status-pending">One level per assistant</span>
+            </div>
+
+            <div class="level-assignment-list">
+              <article class="level-assignment-card" data-level-card="assistant-garcia">
+                <div class="level-person-info">
+                  <span class="avatar">AG</span>
+                  <div class="level-person-copy">
+                    <strong>Assistant Andrea Garcia</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Assistant Andrea Garcia level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-garcia-level" value="level-1" data-level-role="assistant" data-level-person="assistant-garcia" data-default-level="level-1">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-garcia-level" value="level-2" data-level-role="assistant" data-level-person="assistant-garcia" data-default-level="level-1">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-garcia-level" value="level-3" data-level-role="assistant" data-level-person="assistant-garcia" data-default-level="level-1">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-garcia-level" value="level-4" data-level-role="assistant" data-level-person="assistant-garcia" data-default-level="level-1">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+
+              <article class="level-assignment-card" data-level-card="assistant-navarro">
+                <div class="level-person-info">
+                  <span class="avatar">PN</span>
+                  <div class="level-person-copy">
+                    <strong>Assistant Paula Navarro</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Assistant Paula Navarro level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-navarro-level" value="level-1" data-level-role="assistant" data-level-person="assistant-navarro" data-default-level="level-2">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-navarro-level" value="level-2" data-level-role="assistant" data-level-person="assistant-navarro" data-default-level="level-2">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-navarro-level" value="level-3" data-level-role="assistant" data-level-person="assistant-navarro" data-default-level="level-2">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-navarro-level" value="level-4" data-level-role="assistant" data-level-person="assistant-navarro" data-default-level="level-2">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+
+              <article class="level-assignment-card" data-level-card="assistant-dela-cruz">
+                <div class="level-person-info">
+                  <span class="avatar">DC</span>
+                  <div class="level-person-copy">
+                    <strong>Assistant Dana Dela Cruz</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Assistant Dana Dela Cruz level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-dela-cruz-level" value="level-1" data-level-role="assistant" data-level-person="assistant-dela-cruz" data-default-level="level-3">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-dela-cruz-level" value="level-2" data-level-role="assistant" data-level-person="assistant-dela-cruz" data-default-level="level-3">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-dela-cruz-level" value="level-3" data-level-role="assistant" data-level-person="assistant-dela-cruz" data-default-level="level-3">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-dela-cruz-level" value="level-4" data-level-role="assistant" data-level-person="assistant-dela-cruz" data-default-level="level-3">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+
+              <article class="level-assignment-card" data-level-card="assistant-bautista">
+                <div class="level-person-info">
+                  <span class="avatar">MB</span>
+                  <div class="level-person-copy">
+                    <strong>Assistant Mara Bautista</strong>
+                  </div>
+                </div>
+
+                <div class="level-radio-group" role="radiogroup" aria-label="Assistant Mara Bautista level access">
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-bautista-level" value="level-1" data-level-role="assistant" data-level-person="assistant-bautista" data-default-level="level-4">
+                    Level 1
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-bautista-level" value="level-2" data-level-role="assistant" data-level-person="assistant-bautista" data-default-level="level-4">
+                    Level 2
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-bautista-level" value="level-3" data-level-role="assistant" data-level-person="assistant-bautista" data-default-level="level-4">
+                    Level 3
+                  </label>
+                  <label class="level-radio-option">
+                    <input type="radio" name="assistant-bautista-level" value="level-4" data-level-role="assistant" data-level-person="assistant-bautista" data-default-level="level-4">
+                    Level 4
+                  </label>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="workspace-panel assistant-access-section">
+            <div class="panel-heading">
+              <div>
+                <h2>Assistant Edit Permissions</h2>
+              </div>
+              <span class="status-badge status-pending">Assistant controls</span>
+            </div>
+
+            <div class="assistant-access-toggle-list">
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>Manual Backup</h3>
+                  <p>Assistant can already view Manual Backup. Turn this on only to allow approving or returning encoded attendance.</p>
+                </div>
+                <label class="assistant-switch" for="assistant-access-manual-backup" aria-label="Toggle Assistant Manual Backup access">
+                  <input id="assistant-access-manual-backup" type="checkbox" data-access-role="assistant" data-access-module="manualBackup">
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>Clearance</h3>
+                  <p>Assistant can already view Clearance. Turn this on only to allow approving or canceling clearance approval.</p>
+                </div>
+                <label class="assistant-switch" for="assistant-access-clearance" aria-label="Toggle Assistant Clearance access">
+                  <input id="assistant-access-clearance" type="checkbox" data-access-role="assistant" data-access-module="clearance">
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>Clinical Cases View</h3>
+                  <p>Assistant can already view Clinical Cases. Turn this on only to allow editing approval or rejection decisions.</p>
+                </div>
+                <label class="assistant-switch" for="assistant-access-clinical-cases" aria-label="Toggle Assistant Clinical Cases View access">
+                  <input id="assistant-access-clinical-cases" type="checkbox" data-access-role="assistant" data-access-module="clinicalCases">
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>CI Recommendations</h3>
+                  <p>Assistant can already view CI Recommendations. Turn this on only to allow accepting, rejecting, or editing decisions.</p>
+                </div>
+                <label class="assistant-switch" for="assistant-access-ci-recommendations" aria-label="Toggle Assistant CI Recommendations access">
+                  <input id="assistant-access-ci-recommendations" type="checkbox" data-access-role="assistant" data-access-module="ciRecommendations">
+                  <span></span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="workspace-panel assistant-access-section">
+            <div class="panel-heading">
+              <div>
+                <h2>Coordinator Edit Permissions</h2>
+              </div>
+              <span class="status-badge status-pending">Coordinator controls</span>
+            </div>
+
+            <div class="assistant-access-toggle-list">
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>Manual Backup</h3>
+                  <p>Coordinator can already view Manual Backup. Turn this on only to allow approving or returning encoded attendance.</p>
+                </div>
+                <label class="assistant-switch" for="coordinator-access-manual-backup" aria-label="Toggle Coordinator Manual Backup access">
+                  <input id="coordinator-access-manual-backup" type="checkbox" data-access-role="coordinator" data-access-module="manualBackup">
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>Clearance</h3>
+                  <p>Coordinator can already view Clearance. Turn this on only to allow approving or canceling clearance approval.</p>
+                </div>
+                <label class="assistant-switch" for="coordinator-access-clearance" aria-label="Toggle Coordinator Clearance access">
+                  <input id="coordinator-access-clearance" type="checkbox" data-access-role="coordinator" data-access-module="clearance">
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>Clinical Cases View</h3>
+                  <p>Coordinator can already view Clinical Cases. Turn this on only to allow editing approval or rejection decisions.</p>
+                </div>
+                <label class="assistant-switch" for="coordinator-access-clinical-cases" aria-label="Toggle Coordinator Clinical Cases View access">
+                  <input id="coordinator-access-clinical-cases" type="checkbox" data-access-role="coordinator" data-access-module="clinicalCases">
+                  <span></span>
+                </label>
+              </div>
+
+              <div class="assistant-access-toggle-card">
+                <div class="assistant-access-copy">
+                  <h3>CI Recommendations</h3>
+                  <p>Coordinator can already view CI Recommendations. Turn this on only to allow accepting, rejecting, or editing decisions.</p>
+                </div>
+                <label class="assistant-switch" for="coordinator-access-ci-recommendations" aria-label="Toggle Coordinator CI Recommendations access">
+                  <input id="coordinator-access-ci-recommendations" type="checkbox" data-access-role="coordinator" data-access-module="ciRecommendations">
+                  <span></span>
+                </label>
+              </div>
+            </div>
+
+            <div id="assistant-access-message" class="form-message assistant-access-message" role="status" aria-live="polite">
+              Level assignments and edit permissions are UI-only for now.
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/assistant-access.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Role Assignment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="manage-users.html"><span class="nav-dot"></span>Manage Users</a>
+          <a class="nav-link" href="hospital-duty-area.html"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link" href="audit-logs.html"><span class="nav-dot"></span>Audit Logs</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Role Assignment</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill" id="role-sync-pill">1 selected</span>
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace role-assignment-workspace">
+          <section class="workspace-hero dashboard-hero role-assignment-hero">
+            <div>
+              <p class="section-kicker">Role Assignment</p>
+              <h2>Assign access based on account responsibility.</h2>
+              <p>Select a user, choose the correct role, and review permissions before saving. Admin can assign who becomes Chair.</p>
+            </div>
+          </section>
+
+          <section class="dashboard-stats">
+            <article class="workspace-card stat-card">
+              <span>Students</span>
+              <strong>18</strong>
+              <small>Student access</small>
+            </article>
+            <article class="workspace-card stat-card">
+              <span>Instructors</span>
+              <strong>6</strong>
+              <small>Validation access</small>
+            </article>
+            <article class="workspace-card stat-card">
+              <span>Chairs</span>
+              <strong>2</strong>
+              <small>Workflow control</small>
+            </article>
+            <article class="workspace-card stat-card">
+              <span>Admins</span>
+              <strong>2</strong>
+              <small>Account control</small>
+            </article>
+          </section>
+
+          <section class="role-assignment-layout">
+            <div class="role-assignment-main-stack">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Select User</p>
+                    <h2>Account list</h2>
+                  </div>
+                </div>
+
+                <label class="form-label role-search-field" for="role-user-search">
+                  Search user
+                  <input id="role-user-search" type="search" placeholder="Search name, role, ID, section">
+                </label>
+
+                <div class="role-user-list" id="role-user-list">
+                  <button class="role-user-card is-selected" type="button" data-name="Maria Cruz" data-email="maria.cruz@cit.edu" data-id="12-3456-789" data-section="BSN 3A" data-role="student" data-status="Active">
+                    <span class="avatar">MC</span>
+                    <span>
+                      <strong>Maria Cruz</strong>
+                      <small>Nursing Student - BSN 3A</small>
+                    </span>
+                    <mark class="status-badge status-verified">Active</mark>
+                  </button>
+
+                  <button class="role-user-card" type="button" data-name="Juan Dela Cruz" data-email="juan.delacruz@cit.edu" data-id="24-0001-001" data-section="BSN 2B" data-role="student" data-status="Pending">
+                    <span class="avatar">JD</span>
+                    <span>
+                      <strong>Juan Dela Cruz</strong>
+                      <small>Nursing Student - BSN 2B</small>
+                    </span>
+                    <mark class="status-badge status-pending">Pending</mark>
+                  </button>
+
+                  <button class="role-user-card" type="button" data-name="Prof. Reyes" data-email="reyes@cit.edu" data-id="CI-1002" data-section="Ward B" data-role="instructor" data-status="Active">
+                    <span class="avatar">PR</span>
+                    <span>
+                      <strong>Prof. Reyes</strong>
+                      <small>Clinical Instructor - Ward B</small>
+                    </span>
+                    <mark class="status-badge status-verified">Active</mark>
+                  </button>
+
+                  <button class="role-user-card" type="button" data-name="Angela Tan" data-email="angela.tan@cit.edu" data-id="23-1450-110" data-section="BSN 3A" data-role="student" data-status="Active">
+                    <span class="avatar">AT</span>
+                    <span>
+                      <strong>Angela Tan</strong>
+                      <small>Nursing Student - BSN 3A</small>
+                    </span>
+                    <mark class="status-badge status-verified">Active</mark>
+                  </button>
+
+                  <button class="role-user-card" type="button" data-name="Chair Reyes" data-email="chair.reyes@cit.edu" data-id="CH-1001" data-section="Nursing Office" data-role="chair" data-status="Active">
+                    <span class="avatar">AR</span>
+                    <span>
+                      <strong>Chair Reyes</strong>
+                      <small>Chair - Nursing Office</small>
+                    </span>
+                    <mark class="status-badge status-verified">Active</mark>
+                  </button>
+
+                  <button class="role-user-card" type="button" data-name="Admin Santos" data-email="admin.santos@cit.edu" data-id="AD-1001" data-section="System Office" data-role="admin" data-status="Active">
+                    <span class="avatar">AS</span>
+                    <span>
+                      <strong>Admin Santos</strong>
+                      <small>Admin - System Office</small>
+                    </span>
+                    <mark class="status-badge status-verified">Active</mark>
+                  </button>
+                </div>
+
+                <div id="role-user-empty" class="empty-state" hidden>
+                  No matching users found.
+                </div>
+              </article>
+
+              <form class="workspace-panel role-assignment-form" id="role-assignment-form">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Assign Role</p>
+                    <h2>Access details</h2>
+                  </div>
+                  <span class="status-badge status-verified" id="assignment-status">Saved</span>
+                </div>
+
+                <div class="selected-user-card">
+                  <div class="avatar" id="selected-avatar">MC</div>
+                  <div>
+                    <strong id="selected-name">Maria Cruz</strong>
+                    <p id="selected-meta">12-3456-789 - BSN 3A - maria.cruz@cit.edu</p>
+                  </div>
+                  <span class="status-badge status-verified" id="selected-status">Active</span>
+                </div>
+
+                <fieldset class="role-fieldset">
+                  <legend>Assign account type</legend>
+                  <div class="role-segment role-assignment-segment" id="role-segment">
+                    <label class="role-option is-active">
+                      <input type="radio" name="assignedRole" value="student" checked>
+                      <span>Student</span>
+                    </label>
+                    <label class="role-option">
+                      <input type="radio" name="assignedRole" value="instructor">
+                      <span>Instructor</span>
+                    </label>
+                    <label class="role-option">
+                      <input type="radio" name="assignedRole" value="chair">
+                      <span>Chair</span>
+                    </label>
+                    <label class="role-option">
+                      <input type="radio" name="assignedRole" value="admin">
+                      <span>Admin</span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset class="role-fieldset access-fieldset">
+                  <legend>Select access</legend>
+                  <div class="access-option-grid" id="access-options">
+                    <label class="access-option">
+                      <input type="checkbox" value="dashboard" checked>
+                      <span>Dashboard</span>
+                    </label>
+                    <label class="access-option">
+                      <input type="checkbox" value="duties" checked>
+                      <span>Duty Records</span>
+                    </label>
+                    <label class="access-option">
+                      <input type="checkbox" value="cases" checked>
+                      <span>Case Logs</span>
+                    </label>
+                    <label class="access-option">
+                      <input type="checkbox" value="schedule" checked>
+                      <span>Schedules</span>
+                    </label>
+                    <label class="access-option">
+                      <input type="checkbox" value="validation">
+                      <span>Validation</span>
+                    </label>
+                    <label class="access-option">
+                      <input type="checkbox" value="users">
+                      <span>User Management</span>
+                    </label>
+                    <label class="access-option">
+                      <input type="checkbox" value="reports" checked>
+                      <span>Reports</span>
+                    </label>
+                    <label class="access-option">
+                      <input type="checkbox" value="roles">
+                      <span>Role Assignment</span>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <label class="form-label" for="role-note">
+                  Assignment note
+                  <textarea id="role-note" rows="4" placeholder="Add a short note for this access update"></textarea>
+                </label>
+
+                <div id="role-assignment-message" class="form-message" role="status" aria-live="polite">
+                  Review the selected role before saving.
+                </div>
+
+                <div class="button-row">
+                  <button class="ghost-button" type="button" id="reset-role-assignment">Reset role</button>
+                  <button class="primary-button workspace-action" type="submit">Save role</button>
+                </div>
+              </form>
+            </div>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel chair-assignment-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Chair Assignment</p>
+                    <h2>Assign Chair role</h2>
+                  </div>
+                  <span class="status-badge status-verified" id="chair-assignment-status">Chair active</span>
+                </div>
+                <div class="selected-user-card">
+                  <div class="avatar">CR</div>
+                  <div>
+                    <strong id="current-chair-name">Chair Reyes</strong>
+                    <p id="current-chair-meta">CH-1001 - Nursing Office - chair.reyes@cit.edu</p>
+                  </div>
+                  <span class="status-badge status-verified">Current Chair</span>
+                </div>
+                <label class="form-label" for="chair-candidate">
+                  Chair candidate
+                  <select id="chair-candidate">
+                    <option value="Chair Reyes">Chair Reyes</option>
+                    <option value="Prof. Reyes">Prof. Reyes</option>
+                    <option value="Prof. Dela Cruz">Prof. Dela Cruz</option>
+                    <option value="Admin Santos">Admin Santos</option>
+                  </select>
+                </label>
+                <div class="button-row">
+                  <button class="ghost-button" type="button" id="remove-chair-role">Clear Chair assignment</button>
+                  <button class="primary-button" type="button" id="assign-chair-role">Assign Chair</button>
+                </div>
+                <div id="chair-assignment-message" class="form-message" role="status" aria-live="polite">
+                  Chair assignment changes are controlled by Admin.
+                </div>
+              </article>
+
+              <article class="workspace-panel permission-preview-card">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Permissions</p>
+                    <h2 id="permission-title">Student access</h2>
+                  </div>
+                  <span class="status-badge status-verified" id="permission-count">5 enabled</span>
+                </div>
+
+                <div class="permission-list" id="permission-list">
+                  <div class="permission-item" data-permission="dashboard">
+                    <span></span>
+                    <p>Dashboard overview</p>
+                  </div>
+                  <div class="permission-item" data-permission="duties">
+                    <span></span>
+                    <p>Duty hours record and history</p>
+                  </div>
+                  <div class="permission-item" data-permission="cases">
+                    <span></span>
+                    <p>Clinical case logs</p>
+                  </div>
+                  <div class="permission-item" data-permission="schedule">
+                    <span></span>
+                    <p>Schedule viewing</p>
+                  </div>
+                  <div class="permission-item" data-permission="validation">
+                    <span></span>
+                    <p>Submission validation queue</p>
+                  </div>
+                  <div class="permission-item" data-permission="users">
+                    <span></span>
+                    <p>User management</p>
+                  </div>
+                  <div class="permission-item" data-permission="reports">
+                    <span></span>
+                    <p>Report generation</p>
+                  </div>
+                  <div class="permission-item" data-permission="roles">
+                    <span></span>
+                    <p>Role assignment</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Links</p>
+                    <h2>Continue</h2>
+                  </div>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <a class="requirement-item action-item" href="manage-users.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>User list</strong>
+                      <p>Return to account management.</p>
+                    </div>
+                  </a>
+                  <a class="requirement-item action-item" href="manage-users.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Open account list</strong>
+                      <p>Return to managed account records.</p>
+                    </div>
+                  </a>
+                  <a class="requirement-item action-item" href="admin-dashboard.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Notifications</strong>
+                      <p>Check recent account updates.</p>
+                    </div>
+                  </a>
+                </div>
+              </article>
+            </aside>
+          </section>
+        </main>
+        <div class="top-toast" id="role-toast" role="status" aria-live="polite" hidden>
+          Juan Dela Cruz Role Updated Successfully
+        </div>
+      </div>
+    </div>
+
+    <script src="../scripts/role-assignment.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

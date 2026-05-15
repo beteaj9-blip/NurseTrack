@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Case Validation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Clinical Instructor</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="instructor-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="select-validation-user.html"><span class="nav-dot"></span>Clinical Cases Review</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="schedule-management.html"><span class="nav-dot"></span>Assigned Schedules</a>
+          <a class="nav-link" href="instructor-student-view.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="instructor-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Clinical Instructor</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Validation</p>
+              <h1>Case Validation</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+            <a class="icon-button notification-button button-link" href="instructor-notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace validation-workspace">
+          <section class="validation-layout">
+            <article class="workspace-panel detail-main-card">
+              <div class="panel-heading">
+                <div>
+                  <h2>Case Information</h2>
+                </div>
+              </div>
+
+              <div class="student-validation-card">
+                <div class="avatar" id="selected-student-avatar">TA</div>
+                <div>
+                  <strong id="selected-student-name">Treasure Abadinas</strong>
+                  <p id="selected-student-meta">BSN 3A - Student ID 22-1845-103</p>
+                </div>
+              </div>
+
+              <div class="detail-summary-grid">
+                <div class="detail-summary-item">
+                  <span>Case date</span>
+                  <strong id="selected-case-date">April 24, 2026</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Time of shift</span>
+                  <strong id="selected-case-shift-time">6:00 AM - 2:00 PM</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Patient name</span>
+                  <strong id="selected-case-code">J. A. K.</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Category</span>
+                  <strong id="selected-case-category">Major Case - Assist</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Procedure performed</span>
+                  <strong id="selected-case-procedure">Primary Lower Segment Transverse Cesarean Section</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Name of hospital</span>
+                  <strong id="selected-case-site">CCMC</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Supervising clinical instructor</span>
+                  <strong id="selected-case-supervising-ci">Patricia Reyes, RN, MAN</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Duty area</span>
+                  <strong id="selected-case-area">Delivery Room</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Submitted date</span>
+                  <strong id="selected-case-submitted-date">April 24, 2026</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Submitted time</span>
+                  <strong id="selected-case-submitted-time">4:35 PM</strong>
+                </div>
+              </div>
+
+              <div class="notes-card">
+                <p class="section-kicker">Student reflection</p>
+                <p id="selected-case-reflection">I learned how to assist properly during a DR major case, maintain sterile technique, and document accurately for instructor validation.</p>
+              </div>
+            </article>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel validation-comment-card">
+                <div class="panel-heading">
+                  <div>
+                    <h2 id="validation-panel-title">Instructor Action</h2>
+                  </div>
+                </div>
+
+                <div class="reviewed-case-panel" id="reviewed-case-panel" hidden>
+                  <div class="reviewed-status-line">
+                    <span class="status-badge status-verified" id="reviewed-status-badge">Approved</span>
+                    <strong id="reviewed-status-title">Reviewed case</strong>
+                  </div>
+                  <p id="reviewed-status-copy">This clinical case has already been reviewed.</p>
+
+                  <div class="reviewed-comment-box">
+                    <p class="section-kicker" id="reviewed-by-label">Approved by</p>
+                    <p id="reviewed-by-name">Patricia Reyes, RN, MAN</p>
+                  </div>
+
+                  <div class="reviewed-comment-box">
+                    <p class="section-kicker">Instructor comment</p>
+                    <p id="reviewed-comment">No comment added.</p>
+                  </div>
+
+                  <button class="ghost-button" type="button" id="edit-review">Edit</button>
+                </div>
+
+                <div class="validation-comment-form" id="validation-comment-form">
+                  <label class="form-label" for="validation-comment">
+                    Comment (Required for rejection)
+                    <textarea id="validation-comment" rows="5" placeholder="Add a comment or feedback for the student"></textarea>
+                  </label>
+
+                  <div id="form-message" class="form-message" role="status" aria-live="polite">
+                    Review the case details, then make an approval decision.
+                  </div>
+
+                  <div class="button-row validation-comment-actions">
+                    <button class="ghost-button" type="button" id="reject-case" style="color: #dc2626; border-color: #fca5a5;">Reject case</button>
+                    <button class="primary-button workspace-action" type="button" id="approve-case" style="background-color: #16a34a; border-color: #15803d;">Approve case</button>
+                  </div>
+                </div>
+              </article>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/clinical-instructor-data.js"></script>
+    <script src="../scripts/case-validation.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Duty Submission</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Duty Hours</p>
+              <h1>Duty Submission</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Submitted</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace confirmation-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <p class="section-kicker">Submission sent</p>
+              <h2>Duty hours are ready for instructor validation.</h2>
+              <p>The submitted duty entry now appears in the clinical instructor review queue for approval or return.</p>
+            </div>
+            <a class="primary-button workspace-action button-link" href="duty-history.html">View duty history</a>
+          </section>
+
+          <section class="confirmation-layout">
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Submitted record</p>
+                  <h2>Emergency Room Rotation</h2>
+                </div>
+                <span class="status-badge status-pending">Pending validation</span>
+              </div>
+
+              <div class="detail-list">
+                <div class="detail-row">
+                  <span>Date</span>
+                  <strong>April 25, 2026</strong>
+                </div>
+                <div class="detail-row">
+                  <span>Time</span>
+                  <strong>7:00 AM - 3:00 PM</strong>
+                </div>
+                <div class="detail-row">
+                  <span>Total hours</span>
+                  <strong>8.0 hrs</strong>
+                </div>
+                <div class="detail-row">
+                  <span>Clinical site</span>
+                  <strong>CCMC</strong>
+                </div>
+                <div class="detail-row">
+                  <span>Assigned instructor</span>
+                  <strong>Prof. Reyes</strong>
+                </div>
+              </div>
+            </article>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Next step</p>
+                    <h2>Instructor review</h2>
+                  </div>
+                  <span class="status-badge status-pending">Queued</span>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Review submitted details</strong>
+                      <p>Instructor checks date, time, site, area, and notes.</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Approve or return</strong>
+                      <p>Approved records count toOperating Roomuty progress.</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/duty-verification.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

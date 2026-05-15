@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Clearance Review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .validation-layout-single {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .detail-main-card {
+        width: 100%;
+      }
+
+      .detail-main-card .student-validation-card {
+        width: 100%;
+        max-width: none;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .detail-main-card .student-validation-card > div:nth-child(2) {
+        width: 100%;
+      }
+
+      .case-selection-section {
+        display: grid;
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .case-selection-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 0;
+      }
+
+      .case-selection-title h3 {
+        margin: 0;
+        color: #8A252C;
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.2;
+      }
+
+      .case-selection-title span {
+        color: #475569;
+        font-size: 0.85rem;
+        font-weight: 800;
+        line-height: 1.35;
+      }
+
+      .history-row.case-row,
+      .history-row-head.case-row {
+        display: grid;
+        grid-template-columns:
+          minmax(180px, 1.2fr)
+          minmax(300px, 2.2fr)
+          minmax(120px, 0.9fr)
+          minmax(120px, 0.9fr)
+          minmax(96px, 0.6fr)
+          minmax(88px, 0.5fr);
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .history-row.case-row span,
+      .history-row-head.case-row span {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: left;
+      }
+
+      .clearance-decision-section {
+        display: grid;
+        gap: 16px;
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .clearance-decision-section .panel-heading {
+        margin-bottom: 0;
+      }
+
+      .clearance-decision-body {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.85fr) minmax(320px, 1.15fr);
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .clearance-decision-card {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+
+      .clearance-decision-card .student-validation-card {
+        grid-template-columns: auto minmax(0, 1fr);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-muted);
+        padding: 14px;
+      }
+
+      .clearance-decision-card .student-validation-card strong {
+        display: block;
+        color: var(--text);
+        font-size: 0.96rem;
+        font-weight: 800;
+        line-height: 1.25;
+      }
+
+      .clearance-decision-card .student-validation-card p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.84rem;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .clearance-approval-box {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background:
+          linear-gradient(135deg, rgba(255, 207, 1, 0.1), rgba(255, 255, 255, 0) 60%),
+          var(--surface);
+      }
+
+      .clearance-approval-box h3 {
+        margin: 0;
+        color: var(--text);
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.25;
+      }
+
+      .clearance-approval-box p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .clearance-detail-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 2px;
+      }
+
+      .clearance-detail-actions .primary-button {
+        width: auto;
+        min-width: 205px;
+        min-height: 46px;
+        padding: 0 24px;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      .clearance-detail-actions .form-message {
+        flex: 1;
+        min-width: 260px;
+        min-height: 46px;
+        display: flex;
+        align-items: center;
+        margin: 0;
+        padding: 0.8rem 1rem;
+        line-height: 1.35;
+      }
+
+      .clearance-approval-note {
+        margin: 0;
+      }
+
+      @media (max-width: 900px) {
+        .clearance-decision-body {
+          grid-template-columns: 1fr;
+        }
+
+        .clearance-detail-actions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .clearance-detail-actions .primary-button,
+        .clearance-detail-actions .form-message {
+          width: 100%;
+          min-width: 0;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .detail-main-card .student-validation-card,
+        .history-row.case-row,
+        .history-row-head.case-row {
+          grid-template-columns: 1fr;
+        }
+
+        .case-selection-title {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link is-active" href="student-clearance.html" aria-current="page"><span class="nav-dot"></span>Clearance</a>
+          <a class="nav-link" href="clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases View</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Workspace</p>
+              <h1>Clearance Review</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace validation-workspace">
+          <section class="validation-layout validation-layout-single">
+            <article class="workspace-panel detail-main-card">
+              <div class="panel-heading">
+                <div>
+                  <h2 id="case-selection-student-heading">Student Information</h2>
+                </div>
+                <span class="status-badge status-pending" id="case-selection-count">0 submitted cases</span>
+              </div>
+
+              <div class="student-validation-card">
+                <div class="avatar" id="clearance-detail-avatar">MC</div>
+                <div>
+                  <strong id="clearance-detail-name">Maria Cruz</strong>
+                  <p id="clearance-detail-meta">BSN 3A - Student ID 12-3456-789</p>
+                </div>
+                <span class="status-badge status-pending" id="clearance-detail-status">Submitted</span>
+              </div>
+
+              <div id="clearance-submitted-cases">
+                <section class="case-selection-section" aria-label="Delivery Room clinical case records">
+                  <div class="case-selection-title">
+                    <h3>DR</h3>
+                    <span>Delivery Room Cases</span>
+                  </div>
+
+                  <div class="history-table">
+                    <div class="history-row history-row-head case-row">
+                      <span>Category</span>
+                      <span>Procedure Performed</span>
+                      <span>Status</span>
+                      <span>Date</span>
+                      <span>Time</span>
+                      <span>Action</span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div id="case-selection-message" class="form-message" role="status" aria-live="polite">
+                Submitted clinical cases are shown for Chair clearance review.
+              </div>
+
+              <section class="clearance-decision-section" aria-label="Chair clearance decision">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Chair Decision</h2>
+                  </div>
+                  <span class="status-badge status-pending">Final review</span>
+                </div>
+
+                <div class="clearance-decision-body">
+                  <div class="clearance-decision-card">
+                    <div class="student-validation-card">
+                      <div class="avatar" id="clearance-decision-avatar">MC</div>
+                      <div>
+                        <strong id="clearance-decision-name">Maria Cruz</strong>
+                        <p id="clearance-decision-meta">2025-2026 - 2nd Semester</p>
+                      </div>
+                    </div>
+
+                    <div class="form-message" id="clearance-detail-message" role="status" aria-live="polite">
+                      Review the selected student before approval.
+                    </div>
+                  </div>
+
+                  <div class="clearance-approval-box">
+                    <h3>Clearance Approval</h3>
+                    <p>Approve only after the student’s submitted clinical cases are complete and already reviewed.</p>
+
+                    <div class="clearance-detail-actions">
+                      <button class="primary-button" id="approve-clearance" type="button">Approve Clearance</button>
+                      <button class="ghost-button danger-button" id="edit-clearance-approval" type="button" hidden>Cancel Approval</button>
+                      <span class="form-message clearance-approval-note" role="status" aria-live="polite">
+                        This will mark the student as cleared for this semester.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="clearance-confirm-modal" hidden>
+      <section class="modal-card confirm-modal" role="dialog" aria-modal="true" aria-labelledby="clearance-confirm-title" aria-describedby="clearance-confirm-copy">
+        <div class="modal-heading">
+          <div>
+            <h2 id="clearance-confirm-title">Approve clearance?</h2>
+          </div>
+        </div>
+        <p class="modal-copy" id="clearance-confirm-copy">This will mark the selected student as cleared for this semester.</p>
+        <div class="modal-actions">
+          <button class="ghost-button" type="button" id="cancel-clearance-confirm">Cancel</button>
+          <button class="primary-button" type="button" id="confirm-clearance-approval">Approve Clearance</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="../scripts/clinical-instructor-data.js"></script>
+    <script src="../scripts/chair-clearance.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

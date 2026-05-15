@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Hospitals / Duty Areas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .admin-location-workspace {
+        padding-top: 2rem;
+      }
+
+      .admin-location-columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem;
+        align-items: stretch;
+      }
+
+      .admin-location-panel {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .admin-location-panel .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.25rem;
+        align-items: start;
+        flex: 1;
+      }
+
+      .admin-location-panel .form-label {
+        margin: 0;
+      }
+
+      .admin-location-message-row {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: center;
+        margin-top: 0.15rem;
+      }
+
+      .admin-location-panel .form-message {
+        width: 100%;
+        min-height: 56px;
+        display: flex;
+        align-items: center;
+        margin: 0;
+        padding: 0.9rem 1rem;
+      }
+
+      .admin-location-submit-row {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      .admin-location-submit-row .primary-button {
+        width: auto;
+        min-width: 210px;
+        min-height: 50px;
+        padding: 0 30px;
+        white-space: nowrap;
+      }
+
+      .admin-location-table-panel {
+        margin-top: 1.5rem;
+      }
+
+      .admin-location-table {
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 12px;
+      }
+
+      .admin-location-table .user-row {
+        display: grid;
+        align-items: center;
+        column-gap: 1rem;
+        width: 100%;
+        padding: 1rem 1.25rem;
+      }
+
+      #hospital-list .user-row,
+      #duty-area-list .user-row {
+        grid-template-columns: minmax(0, 1fr) 160px 130px;
+      }
+
+      .admin-location-table .user-row > span {
+        min-width: 0;
+        white-space: nowrap;
+      }
+
+      .admin-location-table .user-row > span strong {
+        white-space: nowrap;
+      }
+
+      .admin-location-table .user-row-head {
+        background: #f8fafc;
+        border-bottom: 1px solid #dbe3ee;
+      }
+
+      .admin-location-table .user-row:not(.user-row-head) {
+        border-bottom: 1px solid #e5eaf1;
+      }
+
+      .admin-location-table .user-row:last-child {
+        border-bottom: 0;
+      }
+
+      .admin-location-table .user-row-head > span {
+        color: #0b1b3a;
+        font-size: 0.85rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .admin-location-table .user-row > span:last-child,
+      .admin-location-table .user-row-head > span:last-child {
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .admin-location-table .user-action {
+        width: 88px;
+        min-width: 88px;
+        min-height: 42px;
+        justify-content: center;
+        padding: 0 18px;
+        white-space: nowrap;
+      }
+
+      .modal-backdrop[hidden] {
+        display: none !important;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+        background: rgba(15, 23, 42, 0.45);
+      }
+
+      .admin-location-modal-card {
+        width: min(620px, calc(100vw - 2rem));
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .admin-location-modal-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 48px;
+        gap: 1rem;
+        align-items: start;
+        padding: 1.65rem 1.75rem 1.1rem;
+        border-bottom: 1px solid #e5eaf1;
+        background: #ffffff;
+      }
+
+      .admin-location-modal-title {
+        min-width: 0;
+      }
+
+      .admin-location-modal-close {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #0f1b33;
+        cursor: pointer;
+        transition:
+          background-color 0.2s ease,
+          border-color 0.2s ease,
+          color 0.2s ease,
+          box-shadow 0.2s ease,
+          transform 0.2s ease;
+      }
+
+      .admin-location-modal-close::before,
+      .admin-location-modal-close::after {
+        content: "";
+        position: absolute;
+        width: 15px;
+        height: 2px;
+        border-radius: 999px;
+        background: currentColor;
+        transition: background-color 0.2s ease;
+      }
+
+      .admin-location-modal-close::before {
+        transform: rotate(45deg);
+      }
+
+      .admin-location-modal-close::after {
+        transform: rotate(-45deg);
+      }
+
+      .admin-location-modal-close:hover,
+      .admin-location-modal-close:focus-visible {
+        border-color: #8a252c;
+        background: #ffffff;
+        color: #8a252c;
+        box-shadow: 0 10px 22px rgba(138, 37, 44, 0.12);
+        transform: translateY(-1px);
+        outline: none;
+      }
+
+      .admin-location-modal-close:active {
+        transform: translateY(0);
+        box-shadow: none;
+      }
+
+      .admin-location-modal-header h2 {
+        margin: 0;
+        color: #111827;
+        font-size: 1.45rem;
+        line-height: 1.2;
+      }
+
+      .admin-location-modal-header p {
+        margin: 0.45rem 0 0;
+        color: #4c5d7d;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .edit-location-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem 1.15rem;
+        padding: 1.4rem 1.75rem 1.25rem;
+      }
+
+      .edit-location-form .form-label.full-width {
+        grid-column: 1 / -1;
+      }
+
+      .admin-location-edit-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 1.25rem 1.75rem 1.65rem;
+        border-top: 1px solid #e5eaf1;
+        background: #f8fafc;
+      }
+
+      .admin-location-edit-actions-main {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+        margin-left: 0;
+      }
+
+      .admin-location-modal-actions,
+      .admin-location-delete-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        margin-top: 1.75rem;
+      }
+
+      .admin-location-edit-actions .ghost-button,
+      .admin-location-edit-actions .primary-button {
+        width: auto;
+        min-width: 150px;
+        min-height: 50px;
+        padding: 0 26px;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .admin-location-modal-actions .ghost-button,
+      .admin-location-modal-actions .primary-button,
+      .admin-location-delete-actions .ghost-button,
+      .admin-location-delete-actions .primary-button {
+        width: 100%;
+        min-width: 0;
+        min-height: 52px;
+        padding: 0 28px;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .danger-modal-button {
+        border-color: rgba(138, 37, 44, 0.32);
+        color: #8a252c;
+        background: #fff;
+      }
+
+      .danger-modal-button:hover {
+        border-color: rgba(138, 37, 44, 0.55);
+        background: #fff5f5;
+      }
+
+      .admin-location-table .user-row.is-inactive {
+        opacity: 0.62;
+      }
+
+      .location-inactive-badge {
+        display: block;
+        margin-top: 0.35rem;
+        color: #b42318;
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      @media (max-width: 1100px) {
+        #hospital-list .user-row,
+        #duty-area-list .user-row {
+          grid-template-columns: minmax(0, 1fr) 140px 120px;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .admin-location-columns {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 780px) {
+        .admin-location-panel .form-grid,
+        .edit-location-form {
+          grid-template-columns: 1fr;
+        }
+
+        .admin-location-message-row {
+          grid-template-columns: 1fr;
+        }
+
+        .admin-location-submit-row {
+          justify-content: stretch;
+        }
+
+        .admin-location-submit-row .primary-button {
+          width: 100%;
+        }
+
+        .admin-location-table {
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+
+        .admin-location-table .user-row,
+        #hospital-list .user-row,
+        #duty-area-list .user-row {
+          grid-template-columns: minmax(240px, 1fr) 130px 110px;
+          min-width: 540px;
+        }
+
+        .admin-location-table .user-row > span:last-child,
+        .admin-location-table .user-row-head > span:last-child {
+          justify-content: center;
+          text-align: center;
+        }
+
+        .admin-location-edit-actions {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .admin-location-edit-actions-main,
+        .admin-location-modal-actions,
+        .admin-location-delete-actions {
+          justify-content: stretch;
+        }
+
+        .admin-location-edit-actions-main {
+          margin-left: 0;
+        }
+
+        .admin-location-edit-actions .ghost-button,
+        .admin-location-edit-actions .primary-button,
+        .admin-location-modal-actions .ghost-button,
+        .admin-location-modal-actions .primary-button,
+        .admin-location-delete-actions .ghost-button,
+        .admin-location-delete-actions .primary-button {
+          width: 100%;
+          min-width: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Admin</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="section-import.html"><span class="nav-dot"></span>Section Import</a>
+          <a class="nav-link is-active" href="hospital-duty-area.html" aria-current="page"><span class="nav-dot"></span>Hospitals / Duty Areas</a>
+          <a class="nav-link" href="audit-logs.html"><span class="nav-dot"></span>Audit Logs</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">AS</div>
+          <div>
+            <strong>Admin Santos</strong>
+            <span>System Admin</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Admin Workspace</p>
+              <h1>Hospitals / Duty Areas</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill" id="location-sync-pill">Setup active</span>
+
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace dashboard-workspace admin-location-workspace">
+          <section class="admin-location-columns">
+            <article class="workspace-panel admin-location-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Hospital Record</h2>
+                </div>
+                <span class="status-badge status-pending">Required</span>
+              </div>
+
+              <form class="form-grid" id="hospital-form">
+                <label class="form-label" for="hospital-name">
+                  Hospital Name
+                  <input id="hospital-name" type="text" placeholder="Enter hospital name" required>
+                </label>
+
+                <label class="form-label" for="hospital-code">
+                  Short Code
+                  <input id="hospital-code" type="text" placeholder="CCMC / VSMMC" required>
+                </label>
+
+                <div class="admin-location-message-row">
+                  <div id="hospital-message" class="form-message" role="status" aria-live="polite">
+                    Complete the hospital fields before saving.
+                  </div>
+
+                  <div class="admin-location-submit-row">
+                    <button class="primary-button workspace-action" type="submit">Add Hospital</button>
+                  </div>
+                </div>
+              </form>
+            </article>
+
+            <article class="workspace-panel admin-location-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Area Record</h2>
+                </div>
+                <span class="status-badge status-pending">Required</span>
+              </div>
+
+              <form class="form-grid" id="duty-area-form">
+                <label class="form-label" for="duty-area-name">
+                  Duty Area
+                  <input id="duty-area-name" type="text" placeholder="Emergency Room" required>
+                </label>
+
+                <label class="form-label" for="duty-area-hospital">
+                  Hospital
+                  <select id="duty-area-hospital" required>
+                    <option>CCMC</option>
+                    <option>VSMMC</option>
+                    <option>SAMCH</option>
+                    <option>Mactan Medical Hospital</option>
+                  </select>
+                </label>
+
+                <div class="admin-location-message-row">
+                  <div id="duty-area-message" class="form-message" role="status" aria-live="polite">
+                    Complete the duty area fields before saving.
+                  </div>
+
+                  <div class="admin-location-submit-row">
+                    <button class="primary-button workspace-action" type="submit">Add Duty Area</button>
+                  </div>
+                </div>
+              </form>
+            </article>
+          </section>
+
+          <section class="workspace-panel admin-location-table-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Hospital List</h2>
+              </div>
+              <span class="status-badge status-verified" id="hospital-list-badge">4 active</span>
+            </div>
+
+            <div class="user-table admin-location-table" id="hospital-list">
+              <div class="user-row user-row-head">
+                <span>Hospital</span>
+                <span>Code</span>
+                <span>Action</span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="hospital">
+                <span data-hospital-name><strong>Cebu City Medical Center</strong></span>
+                <span data-hospital-code>CCMC</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="hospital">
+                <span data-hospital-name><strong>Vicente Sotto Memorial Medical Center</strong></span>
+                <span data-hospital-code>VSMMC</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="hospital">
+                <span data-hospital-name><strong>Southwestern University Medical Center</strong></span>
+                <span data-hospital-code>SAMCH</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="hospital">
+                <span data-hospital-name><strong>Mactan Medical Hospital</strong></span>
+                <span data-hospital-code>MMH</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="workspace-panel admin-location-table-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Duty Area List</h2>
+              </div>
+              <span class="status-badge status-verified" id="duty-area-list-badge">8 active</span>
+            </div>
+
+            <div class="user-table admin-location-table" id="duty-area-list">
+              <div class="user-row user-row-head">
+                <span>Duty Area</span>
+                <span>Hospital</span>
+                <span>Action</span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="duty">
+                <span data-duty-name><strong>Emergency Room</strong></span>
+                <span data-duty-hospital>CCMC</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="duty">
+                <span data-duty-name><strong>Pedia Pulmo Ward</strong></span>
+                <span data-duty-hospital>CCMC</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="duty">
+                <span data-duty-name><strong>SP St 201</strong></span>
+                <span data-duty-hospital>VSMMC</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+
+              <div class="user-row" data-location-row data-location-type="duty">
+                <span data-duty-name><strong>Operating Room</strong></span>
+                <span data-duty-hospital>VSMMC</span>
+                <span><button class="ghost-button user-action" type="button" data-edit-location>Edit</button></span>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="add-location-modal" hidden>
+      <section class="modal-card confirm-modal" role="dialog" aria-modal="true" aria-labelledby="add-location-title">
+        <div class="modal-heading">
+          <div>
+            <h2 id="add-location-title">Confirm Add</h2>
+          </div>
+        </div>
+
+        <p class="modal-copy" id="add-location-copy">Are you sure you want to add this record?</p>
+
+        <div class="admin-location-modal-actions">
+          <button class="ghost-button" type="button" id="cancel-add-location">Cancel</button>
+          <button class="primary-button workspace-action" type="button" id="confirm-add-location">Yes, Add</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="edit-location-modal" hidden>
+      <section class="modal-card admin-location-modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-location-title">
+        <div class="admin-location-modal-header">
+          <div class="admin-location-modal-title">
+            <h2 id="edit-location-title">Edit Record</h2>
+            <p id="edit-location-subtitle">Update this record before saving changes.</p>
+          </div>
+          <button class="icon-button admin-location-modal-close" type="button" id="close-edit-location" aria-label="Close modal"></button>
+        </div>
+
+        <form class="edit-location-form" id="edit-location-form">
+          <label class="form-label" for="edit-location-name">
+            <span id="edit-location-name-label">Name</span>
+            <input id="edit-location-name" type="text" required>
+          </label>
+
+          <label class="form-label" for="edit-location-code">
+            <span id="edit-location-code-label">Code / Hospital</span>
+            <input id="edit-location-code" type="text" required>
+            <select id="edit-location-hospital" hidden>
+              <option>CCMC</option>
+              <option>VSMMC</option>
+              <option>SAMCH</option>
+              <option>Mactan Medical Hospital</option>
+            </select>
+          </label>
+
+          <label class="form-label full-width" for="edit-location-extra" id="edit-location-extra-wrapper">
+            <span id="edit-location-extra-label">Duty Areas</span>
+            <input id="edit-location-extra" type="text">
+          </label>
+        </form>
+
+        <div class="admin-location-edit-actions">
+          <button class="ghost-button danger-modal-button" type="button" id="open-delete-location">Deactivate</button>
+
+          <div class="admin-location-edit-actions-main">
+            <button class="primary-button workspace-action" type="submit" form="edit-location-form">Review Changes</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="save-location-modal" hidden>
+      <section class="modal-card confirm-modal" role="dialog" aria-modal="true" aria-labelledby="save-location-title">
+        <div class="modal-heading">
+          <div>
+            <h2 id="save-location-title">Save These Changes?</h2>
+          </div>
+        </div>
+
+        <p class="modal-copy" id="save-location-copy">Are you sure you want to apply these updates?</p>
+
+        <div class="admin-location-modal-actions">
+          <button class="ghost-button" type="button" id="cancel-save-location">Cancel</button>
+          <button class="primary-button workspace-action" type="button" id="confirm-save-location">Save Changes</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="delete-location-modal" hidden>
+      <section class="modal-card confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-location-title">
+        <div class="modal-heading">
+          <div>
+            <h2 id="delete-location-title">Deactivate This Hospital?</h2>
+          </div>
+        </div>
+
+        <p class="modal-copy" id="delete-location-copy">
+          This keeps the hospital record visible but marks it inactive for future use.
+        </p>
+
+        <div class="admin-location-delete-actions">
+          <button class="ghost-button" type="button" id="cancel-delete-location">Cancel</button>
+          <button class="primary-button workspace-action" type="button" id="confirm-delete-location">Deactivate Hospital</button>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const hospitalForm = document.querySelector("#hospital-form");
+      const dutyAreaForm = document.querySelector("#duty-area-form");
+      const hospitalMessage = document.querySelector("#hospital-message");
+      const dutyAreaMessage = document.querySelector("#duty-area-message");
+      const hospitalListBadge = document.querySelector("#hospital-list-badge");
+      const dutyAreaListBadge = document.querySelector("#duty-area-list-badge");
+      const locationModal = document.querySelector("#add-location-modal");
+      const locationModalTitle = document.querySelector("#add-location-title");
+      const locationModalCopy = document.querySelector("#add-location-copy");
+      const cancelAddLocation = document.querySelector("#cancel-add-location");
+      const confirmAddLocation = document.querySelector("#confirm-add-location");
+
+      const editLocationModal = document.querySelector("#edit-location-modal");
+      const editLocationTitle = document.querySelector("#edit-location-title");
+      const editLocationSubtitle = document.querySelector("#edit-location-subtitle");
+      const editLocationForm = document.querySelector("#edit-location-form");
+      const editLocationName = document.querySelector("#edit-location-name");
+      const editLocationCode = document.querySelector("#edit-location-code");
+      const editLocationHospital = document.querySelector("#edit-location-hospital");
+      const editLocationExtra = document.querySelector("#edit-location-extra");
+      const editLocationNameLabel = document.querySelector("#edit-location-name-label");
+      const editLocationCodeLabel = document.querySelector("#edit-location-code-label");
+      const editLocationExtraLabel = document.querySelector("#edit-location-extra-label");
+      const editLocationExtraWrapper = document.querySelector("#edit-location-extra-wrapper");
+      const closeEditLocation = document.querySelector("#close-edit-location");
+      const openDeleteLocation = document.querySelector("#open-delete-location");
+
+      const saveLocationModal = document.querySelector("#save-location-modal");
+      const saveLocationCopy = document.querySelector("#save-location-copy");
+      const cancelSaveLocation = document.querySelector("#cancel-save-location");
+      const confirmSaveLocation = document.querySelector("#confirm-save-location");
+
+      const deleteLocationModal = document.querySelector("#delete-location-modal");
+      const deleteLocationCopy = document.querySelector("#delete-location-copy");
+      const cancelDeleteLocation = document.querySelector("#cancel-delete-location");
+      const confirmDeleteLocation = document.querySelector("#confirm-delete-location");
+
+      let pendingLocationForm = null;
+      let pendingLocationType = "";
+      let activeEditRow = null;
+      let activeEditType = "";
+      let pendingEditValues = null;
+
+      function showLocationMessage(element, message, state) {
+        if (!element) return;
+
+        element.textContent = message;
+        element.classList.remove("is-success", "is-error");
+
+        if (state) {
+          element.classList.add(state);
+        }
+      }
+
+      function updateHospitalActiveCount() {
+        if (!hospitalListBadge) return;
+
+        const activeHospitals = document.querySelectorAll('[data-location-type="hospital"]:not(.is-inactive)').length;
+        hospitalListBadge.textContent = `${activeHospitals} active`;
+      }
+
+      function updateDutyAreaActiveCount() {
+        if (!dutyAreaListBadge) return;
+
+        const activeDutyAreas = document.querySelectorAll('[data-location-type="duty"]:not(.is-inactive)').length;
+        dutyAreaListBadge.textContent = `${activeDutyAreas} active`;
+      }
+
+      function openModal(modal) {
+        if (!modal) return;
+        modal.hidden = false;
+        document.body.classList.add("modal-open");
+      }
+
+      function hideModal(modal) {
+        if (!modal) return;
+        modal.hidden = true;
+      }
+
+      function closeAllModals() {
+        hideModal(locationModal);
+        hideModal(editLocationModal);
+        hideModal(saveLocationModal);
+        hideModal(deleteLocationModal);
+        document.body.classList.remove("modal-open");
+      }
+
+      function openAddLocationModal(type, form) {
+        pendingLocationForm = form;
+        pendingLocationType = type;
+
+        locationModalTitle.textContent = type === "hospital" ? "Add This Hospital?" : "Add This Duty Area?";
+        locationModalCopy.textContent =
+          type === "hospital"
+            ? "Are you sure you want to add this hospital to the approved hospital list?"
+            : "Are you sure you want to add this duty area to the approved duty area list?";
+
+        confirmAddLocation.textContent = type === "hospital" ? "Add Hospital" : "Add Duty Area";
+        openModal(locationModal);
+      }
+
+      function closeAddLocationModal() {
+        hideModal(locationModal);
+        document.body.classList.remove("modal-open");
+        pendingLocationForm = null;
+        pendingLocationType = "";
+      }
+
+      function openEditLocationModal(row) {
+        activeEditRow = row;
+        activeEditType = row.dataset.locationType || "";
+
+        if (activeEditType === "hospital") {
+          const hospitalName = row.querySelector("[data-hospital-name] strong")?.textContent.trim() || "";
+          const hospitalCode = row.querySelector("[data-hospital-code]")?.textContent.trim() || "";
+
+          editLocationTitle.textContent = "Edit Hospital";
+          editLocationSubtitle.textContent = "Rename the hospital or update the short code.";
+          editLocationNameLabel.textContent = "Hospital Name";
+          editLocationCodeLabel.textContent = "Short Code";
+          editLocationExtraWrapper.hidden = true;
+          editLocationExtra.required = false;
+          editLocationExtra.value = "";
+          editLocationCode.hidden = false;
+          editLocationCode.required = true;
+          editLocationHospital.hidden = true;
+          editLocationHospital.required = false;
+          openDeleteLocation.hidden = false;
+          openDeleteLocation.textContent = "Deactivate";
+
+          editLocationName.value = hospitalName;
+          editLocationCode.value = hospitalCode;
+          editLocationHospital.value = "CCMC";
+        }
+
+        if (activeEditType === "duty") {
+          const dutyName = row.querySelector("[data-duty-name] strong")?.textContent.trim() || "";
+          const dutyHospital = row.querySelector("[data-duty-hospital]")?.textContent.trim() || "";
+
+          editLocationTitle.textContent = "Edit Duty Area";
+          editLocationSubtitle.textContent = "Rename the duty area or update its hospital.";
+          editLocationNameLabel.textContent = "Duty Area";
+          editLocationCodeLabel.textContent = "Hospital";
+          editLocationExtraWrapper.hidden = true;
+          editLocationExtra.required = false;
+          editLocationExtra.value = "";
+          editLocationCode.hidden = true;
+          editLocationCode.required = false;
+          editLocationHospital.hidden = false;
+          editLocationHospital.required = true;
+          openDeleteLocation.hidden = false;
+          openDeleteLocation.textContent = "Deactivate";
+
+          editLocationName.value = dutyName;
+          editLocationCode.value = "";
+          editLocationHospital.value = dutyHospital;
+        }
+
+        openModal(editLocationModal);
+      }
+
+      function closeEditLocationModal() {
+        closeAllModals();
+        activeEditRow = null;
+        activeEditType = "";
+        pendingEditValues = null;
+      }
+
+      function openSaveConfirmModal() {
+        pendingEditValues = {
+          name: editLocationName.value.trim(),
+          code: activeEditType === "duty" ? editLocationHospital.value.trim() : editLocationCode.value.trim(),
+          extra: editLocationExtra.value.trim()
+        };
+
+        const recordType = activeEditType === "hospital" ? "hospital" : "duty area";
+        saveLocationCopy.textContent = `Are you sure you want to save these ${recordType} changes?`;
+
+        hideModal(editLocationModal);
+        openModal(saveLocationModal);
+      }
+
+      function applyEditChanges() {
+        if (!activeEditRow || !pendingEditValues) {
+          closeAllModals();
+          return;
+        }
+
+        if (activeEditType === "hospital") {
+          const nameStrong = activeEditRow.querySelector("[data-hospital-name] strong");
+          const codeCell = activeEditRow.querySelector("[data-hospital-code]");
+
+          if (nameStrong) nameStrong.textContent = pendingEditValues.name;
+          if (codeCell) codeCell.textContent = pendingEditValues.code;
+
+          showLocationMessage(hospitalMessage, "Hospital record updated successfully.", "is-success");
+        }
+
+        if (activeEditType === "duty") {
+          const nameStrong = activeEditRow.querySelector("[data-duty-name] strong");
+          const hospitalCell = activeEditRow.querySelector("[data-duty-hospital]");
+
+          if (nameStrong) nameStrong.textContent = pendingEditValues.name;
+          if (hospitalCell) hospitalCell.textContent = pendingEditValues.code;
+
+          showLocationMessage(dutyAreaMessage, "Duty area record updated successfully.", "is-success");
+        }
+
+        closeAllModals();
+        activeEditRow = null;
+        activeEditType = "";
+        pendingEditValues = null;
+      }
+
+      function openDeleteConfirmModal() {
+        if (!activeEditRow || !["hospital", "duty"].includes(activeEditType)) return;
+
+        const recordName = activeEditType === "hospital"
+          ? activeEditRow.querySelector("[data-hospital-name] strong")?.textContent.trim()
+          : activeEditRow.querySelector("[data-duty-name] strong")?.textContent.trim();
+        const recordType = activeEditType === "hospital" ? "hospital" : "duty area";
+
+        document.querySelector("#delete-location-title").textContent = activeEditType === "hospital" ? "Deactivate This Hospital?" : "Deactivate This Duty Area?";
+        confirmDeleteLocation.textContent = activeEditType === "hospital" ? "Deactivate Hospital" : "Deactivate Duty Area";
+        deleteLocationCopy.textContent = `Deactivate ${recordName || `this ${recordType}`}? The record stays in the ${recordType} list, but it will be marked inactive.`;
+
+        hideModal(editLocationModal);
+        openModal(deleteLocationModal);
+      }
+
+      hospitalForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!hospitalForm.checkValidity()) {
+          hospitalForm.reportValidity();
+          showLocationMessage(hospitalMessage, "Complete the hospital fields before saving.", "is-error");
+          return;
+        }
+
+        openAddLocationModal("hospital", hospitalForm);
+      });
+
+      dutyAreaForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!dutyAreaForm.checkValidity()) {
+          dutyAreaForm.reportValidity();
+          showLocationMessage(dutyAreaMessage, "Complete the duty area fields before saving.", "is-error");
+          return;
+        }
+
+        openAddLocationModal("duty-area", dutyAreaForm);
+      });
+
+      cancelAddLocation?.addEventListener("click", closeAddLocationModal);
+
+      confirmAddLocation?.addEventListener("click", () => {
+        if (pendingLocationType === "hospital") {
+          showLocationMessage(hospitalMessage, "Hospital added successfully.", "is-success");
+          pendingLocationForm?.reset();
+        }
+
+        if (pendingLocationType === "duty-area") {
+          showLocationMessage(dutyAreaMessage, "Duty area added successfully.", "is-success");
+          pendingLocationForm?.reset();
+        }
+
+        closeAddLocationModal();
+      });
+
+      document.addEventListener("click", (event) => {
+        const editButton = event.target.closest("[data-edit-location]");
+        if (!editButton) return;
+
+        const row = editButton.closest("[data-location-row]");
+        if (row) openEditLocationModal(row);
+      });
+
+      editLocationForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!activeEditRow || !editLocationForm.checkValidity()) {
+          editLocationForm.reportValidity();
+          return;
+        }
+
+        openSaveConfirmModal();
+      });
+
+      closeEditLocation?.addEventListener("click", closeEditLocationModal);
+      openDeleteLocation?.addEventListener("click", openDeleteConfirmModal);
+
+      cancelSaveLocation?.addEventListener("click", () => {
+        hideModal(saveLocationModal);
+        openModal(editLocationModal);
+      });
+
+      confirmSaveLocation?.addEventListener("click", applyEditChanges);
+
+      cancelDeleteLocation?.addEventListener("click", () => {
+        hideModal(deleteLocationModal);
+        openModal(editLocationModal);
+      });
+
+      confirmDeleteLocation?.addEventListener("click", () => {
+        if (!activeEditRow) {
+          closeAllModals();
+          return;
+        }
+
+        if (activeEditType === "hospital") {
+          const hospitalNameCell = activeEditRow.querySelector("[data-hospital-name]");
+          activeEditRow.classList.add("is-inactive");
+          activeEditRow.dataset.locationStatus = "inactive";
+
+          if (hospitalNameCell && !hospitalNameCell.querySelector(".location-inactive-badge")) {
+            hospitalNameCell.insertAdjacentHTML("beforeend", `<small class="location-inactive-badge">Inactive</small>`);
+          }
+
+          showLocationMessage(hospitalMessage, "Hospital deactivated.", "is-success");
+          updateHospitalActiveCount();
+        }
+
+        if (activeEditType === "duty") {
+          const dutyNameCell = activeEditRow.querySelector("[data-duty-name]");
+          activeEditRow.classList.add("is-inactive");
+          activeEditRow.dataset.locationStatus = "inactive";
+
+          if (dutyNameCell && !dutyNameCell.querySelector(".location-inactive-badge")) {
+            dutyNameCell.insertAdjacentHTML("beforeend", `<small class="location-inactive-badge">Inactive</small>`);
+          }
+
+          showLocationMessage(dutyAreaMessage, "Duty area deactivated.", "is-success");
+          updateDutyAreaActiveCount();
+        }
+
+        closeAllModals();
+        activeEditRow = null;
+        activeEditType = "";
+        pendingEditValues = null;
+      });
+
+      [locationModal, editLocationModal, saveLocationModal, deleteLocationModal].forEach((modal) => {
+        modal?.addEventListener("click", (event) => {
+          if (event.target === modal) {
+            if (modal === saveLocationModal && activeEditRow) {
+              hideModal(saveLocationModal);
+              openModal(editLocationModal);
+              return;
+            }
+
+            if (modal === deleteLocationModal && activeEditRow) {
+              hideModal(deleteLocationModal);
+              openModal(editLocationModal);
+              return;
+            }
+
+            closeAllModals();
+          }
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+
+        if (saveLocationModal && !saveLocationModal.hidden && activeEditRow) {
+          hideModal(saveLocationModal);
+          openModal(editLocationModal);
+          return;
+        }
+
+        if (deleteLocationModal && !deleteLocationModal.hidden && activeEditRow) {
+          hideModal(deleteLocationModal);
+          openModal(editLocationModal);
+          return;
+        }
+
+        closeAllModals();
+      });
+    </script>
+
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

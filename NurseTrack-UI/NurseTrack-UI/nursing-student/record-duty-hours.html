@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Record Duty Hours</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Duty Hours</p>
+              <h1>Record Duty Hours</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Draft autosaved</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace duty-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <p class="section-kicker">Duty entry</p>
+              <h2>Record completed clinical duty hours.</h2>
+              <p>Enter the completed duty details and submit the record for clinical instructor validation.</p>
+            </div>
+            <span class="status-badge status-pending">Ready to submit</span>
+          </section>
+
+          <section class="duty-layout">
+            <form id="duty-hours-form" class="workspace-panel duty-form" novalidate>
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Entry form</p>
+                  <h2>Duty details</h2>
+                </div>
+                <span class="status-badge status-pending">Pending</span>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="duty-date">
+                  Duty date
+                  <input id="duty-date" name="dutyDate" type="date" required>
+                </label>
+
+                <label class="form-label" for="clinical-site">
+                  Clinical site
+                  <select id="clinical-site" name="clinicalSite" required>
+                    <option value="">Select clinical site</option>
+                    <option>CCMC</option>
+                    <option>VSMMC</option>
+                    <option>CIT-U Nursing CSMC</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="duty-area">
+                  Duty area
+                  <select id="duty-area" name="dutyArea" required>
+                    <option value="">Select duty area</option>
+                    <option>Emergency Room</option>
+                    <option>Delivery Room</option>
+                    <option>Pedia Pulmo Ward</option>
+                    <option>Emergency Room</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="clinical-instructor">
+                  Clinical instructor
+                  <input id="clinical-instructor" name="clinicalInstructor" type="text" placeholder="Prof. Reyes" required>
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label class="form-label" for="time-in">
+                  Time in
+                  <input id="time-in" name="timeIn" type="time" required>
+                </label>
+
+                <label class="form-label" for="time-out">
+                  Time out
+                  <input id="time-out" name="timeOut" type="time" required>
+                </label>
+              </div>
+
+              <div class="hours-summary" aria-live="polite">
+                <div>
+                  <span>Total duty hours</span>
+                  <strong id="total-hours">0.0 hrs</strong>
+                </div>
+                <p id="hours-note">Time in and time out are required to calculate completed hours.</p>
+              </div>
+
+              <label class="form-label" for="duty-notes">
+                Notes
+                <textarea id="duty-notes" name="dutyNotes" rows="4" placeholder="Add notes about the completed duty shift"></textarea>
+              </label>
+
+              <div id="form-message" class="form-message" role="status" aria-live="polite">
+                Complete the duty details, then submit for instructor validation.
+              </div>
+
+              <div class="button-row duty-form-actions">
+                <button class="ghost-button" type="button" id="save-draft">Save draft</button>
+                <button class="primary-button workspace-action" type="submit">Submit duty hours</button>
+              </div>
+            </form>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Assigned duty</p>
+                    <h2>Today's shift</h2>
+                  </div>
+                  <span class="status-badge status-pending">Scheduled</span>
+                </div>
+
+                <div class="schedule-card">
+                  <div class="schedule-date">
+                    <strong>25</strong>
+                    <span>Apr</span>
+                  </div>
+                  <div>
+                    <h3>Emergency Room Rotation</h3>
+                    <p>7:00 AM - 3:00 PM</p>
+                    <p>CCMC</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Progress</p>
+                    <h2>Duty completion</h2>
+                  </div>
+                  <span class="status-badge status-verified">48 / 72 hrs</span>
+                </div>
+
+                <div class="progress-track large-track"><span style="width: 67%"></span></div>
+                <p class="panel-note">24 hours remaining after currently verified records.</p>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Status</p>
+                    <h2>Entry checklist</h2>
+                  </div>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Duty details</strong>
+                      <p>Date, site, area, and instructor</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Time record</strong>
+                      <p>Time in and time out</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Verification</strong>
+                      <p>Required after submission</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/record-duty-hours.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

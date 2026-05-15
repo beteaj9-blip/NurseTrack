@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Schedule Details</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link is-active" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Schedule</p>
+              <h1>Schedule Details</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Updated now</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace schedule-detail-workspace">
+          <section class="workspace-hero dashboard-hero">
+            <div>
+              <p class="section-kicker">Assigned duty</p>
+              <h2>Emergency Room Rotation</h2>
+              <p>April 24, 2026 &bull; CCMC &bull; 7:00 AM - 3:00 PM</p>
+            </div>
+            <div class="quick-actions no-margin">
+              <span class="status-badge status-pending">Today</span>
+            </div>
+          </section>
+
+          <section class="schedule-detail-layout">
+            <article class="workspace-panel detail-main-card">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Details</p>
+                  <h2>Duty assignment</h2>
+                </div>
+                <a class="primary-button workspace-action button-link" href="add-clinical-case.html">Add clinical case</a>
+              </div>
+
+              <div class="detail-summary-grid">
+                <div class="detail-summary-item">
+                  <span>Date</span>
+                  <strong>April 24, 2026</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Time</span>
+                  <strong>7:00 AM - 3:00 PM</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Clinical site</span>
+                  <strong>CCMC</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Duty area</span>
+                  <strong>Emergency Room</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Duty Type</span>
+                  <strong>Regular</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Instructor</span>
+                  <strong>Prof. Reyes</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Rotation group</span>
+                  <strong>BSN 3A - Group 2</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Schedule ID</span>
+                  <strong>SCH-2026-0424-003</strong>
+                </div>
+                <div class="detail-summary-item">
+                  <span>Status</span>
+                  <strong>Assigned</strong>
+                </div>
+              </div>
+
+              <div class="schedule-location-card">
+                <div class="location-pin">CC</div>
+                <div>
+                  <p class="section-kicker">Clinical site</p>
+                  <h3>CCMC</h3>
+                  <p>Proceed to Emergency Room and keep case notes ready for CI validation after the shift.</p>
+                </div>
+              </div>
+            </article>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Instructor</p>
+                    <h2>Clinical instructor</h2>
+                  </div>
+                  <span class="status-badge status-verified">Assigned</span>
+                </div>
+
+                <div class="review-comment no-margin">
+                  <div class="avatar small-avatar">PR</div>
+                  <div>
+                    <strong>Prof. Reyes</strong>
+                    <p>Assigned clinical instructor for this Emergency Room rotation.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Preparation</p>
+                    <h2>Before duty</h2>
+                  </div>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Arrive early</strong>
+                      <p>Be ready before the 7:00 AM time-in.</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Check duty details</strong>
+                      <p>Confirm your assigned site, area, and schedule time.</p>
+                    </div>
+                  </div>
+                  <div class="requirement-item">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Prepare case notes</strong>
+                      <p>Keep clinical case checklist entries updated.</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </aside>
+          </section>
+
+          <section class="dashboard-columns">
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Rotation</p>
+                  <h2>Group assignment</h2>
+                </div>
+              </div>
+
+              <div class="review-list">
+                <div class="review-item">
+                  <div class="avatar small-avatar">MC</div>
+                  <div>
+                    <strong>Maria Cruz</strong>
+                    <p>BSN 3A - Group 2</p>
+                  </div>
+                  <span class="status-badge status-verified">Assigned</span>
+                </div>
+                <div class="review-item">
+                  <div class="avatar small-avatar">LU</div>
+                  <div>
+                    <strong>Lichael Ursulo</strong>
+                    <p>BSN 3A - Group 2</p>
+                  </div>
+                  <span class="status-badge status-verified">Assigned</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Timeline</p>
+                  <h2>Schedule updates</h2>
+                </div>
+              </div>
+
+              <div class="timeline-list">
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>Schedule assigned</strong>
+                    <p>Emergency Room rotation added by Prof. Reyes.</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>Reminder sent</strong>
+                    <p>Duty reminder was posted to notifications.</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>Ready for time-in</strong>
+                    <p>Clinical case notes can be submitted after shift completion.</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/schedule-details.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

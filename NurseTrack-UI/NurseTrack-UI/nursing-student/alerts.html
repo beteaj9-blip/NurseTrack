@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Alerts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+  </head>
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="about.html" aria-label="About NurseTrack">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </a>
+
+        <div class="role-chip">Nursing Student</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="student-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="case-history.html"><span class="nav-dot"></span>Clinical Cases</a>
+          <a class="nav-link" href="view-schedule.html"><span class="nav-dot"></span>Schedule</a>
+          <a class="nav-link" href="student-progress.html"><span class="nav-dot"></span>Progress</a>
+          <a class="nav-link" href="student-reports.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">MC</div>
+          <div>
+            <strong>Maria Cruz</strong>
+            <span>BSN 3A</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Student Workspace</p>
+              <h1>Alerts</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">4 active</span>
+            <a class="icon-button notification-button button-link" href="notifications.html" aria-label="Notifications" title="Notifications"><svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></a>
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace alerts-workspace">
+          <section class="workspace-hero dashboard-hero alert-hero">
+            <div>
+              <p class="section-kicker">Active alerts</p>
+              <h2>Resolve urgent items before they block progress.</h2>
+              <p>Review returned records, failed checks, upcoming duties, and overdue updates.</p>
+            </div>
+            <button class="primary-button workspace-action" type="button" id="acknowledge-all">Acknowledge all</button>
+          </section>
+
+          <section class="dashboard-stats" aria-label="Alert summary">
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">High priority</span>
+                <span class="status-badge status-rejected">High</span>
+              </div>
+              <h3>High priority</h3>
+              <p>Needs action soon</p>
+              <strong class="stat-value">2</strong>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Medium priority</span>
+                <span class="status-badge status-pending">Medium</span>
+              </div>
+              <h3>Medium priority</h3>
+              <p>Monitor today</p>
+              <strong class="stat-value">2</strong>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Active alerts</span>
+                <span class="status-badge status-pending">Active</span>
+              </div>
+              <h3>Active alerts</h3>
+              <p>Open items</p>
+              <strong class="stat-value" id="active-alert-count">4</strong>
+            </article>
+
+            <article class="workspace-card stat-card">
+              <div class="workspace-card-header">
+                <span class="card-icon">Resolved</span>
+                <span class="status-badge status-verified">Resolved</span>
+              </div>
+              <h3>Resolved</h3>
+              <p>Handled this week</p>
+              <strong class="stat-value">6</strong>
+            </article>
+          </section>
+
+          <section class="alerts-layout">
+            <article class="workspace-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-kicker">Alert queue</p>
+                  <h2>Items needing attention</h2>
+                </div>
+                <button class="ghost-button" type="button" id="refresh-alerts">Refresh</button>
+              </div>
+
+              <div class="history-filters alert-filters" aria-label="Alert filters">
+                <label class="form-label" for="severity-filter">
+                  Severity
+                  <select id="severity-filter">
+                    <option value="all">All severities</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="alert-status-filter">
+                  Status
+                  <select id="alert-status-filter">
+                    <option value="all">All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="acknowledged">Acknowledged</option>
+                  </select>
+                </label>
+
+                <label class="form-label" for="alert-search">
+                  Search
+                  <input id="alert-search" type="search" placeholder="Search alert">
+                </label>
+              </div>
+
+              <div class="alert-list" id="alert-list">
+                <article class="alert-card alert-high" data-severity="high" data-status="active">
+                  <span class="alert-icon">!</span>
+                  <div class="alert-content">
+                    <div class="notification-card-header">
+                      <div>
+                        <strong>Medication checklist returned</strong>
+                        <p>Required medication details are missing and must be corrected.</p>
+                      </div>
+                      <span class="status-badge status-rejected">High</span>
+                    </div>
+                    <div class="notification-meta">
+                      <span>Apr 25, 2026 - Due today</span>
+                      <a class="text-link" href="edit-case.html">Update case</a>
+                    </div>
+                  </div>
+                  <button class="ghost-button acknowledge-button" type="button">Acknowledge</button>
+                </article>
+
+                <article class="alert-card alert-high" data-severity="high" data-status="active">
+                  <span class="alert-icon">!</span>
+                  <div class="alert-content">
+                    <div class="notification-card-header">
+                      <div>
+                        <strong>Duty entry needs correction</strong>
+                        <p>Community Health Nursing Area record has details that need review before validation.</p>
+                      </div>
+                      <span class="status-badge status-rejected">High</span>
+                    </div>
+                    <div class="notification-meta">
+                      <span>Apr 25, 2026 - 11:08 AM</span>
+                      <a class="text-link" href="record-duty-hours.html">Update duty entry</a>
+                    </div>
+                  </div>
+                  <button class="ghost-button acknowledge-button" type="button">Acknowledge</button>
+                </article>
+
+                <article class="alert-card alert-medium" data-severity="medium" data-status="active">
+                  <span class="alert-icon">i</span>
+                  <div class="alert-content">
+                    <div class="notification-card-header">
+                      <div>
+                        <strong>Duty starts tomorrow</strong>
+                        <p>Emergency Room rotation begins at 7:00 AM at CCMC.</p>
+                      </div>
+                      <span class="status-badge status-pending">Medium</span>
+                    </div>
+                    <div class="notification-meta">
+                      <span>Apr 25, 2026 - Reminder</span>
+                      <a class="text-link" href="schedule-details.html">View schedule</a>
+                    </div>
+                  </div>
+                  <button class="ghost-button acknowledge-button" type="button">Acknowledge</button>
+                </article>
+
+                <article class="alert-card alert-medium" data-severity="medium" data-status="active">
+                  <span class="alert-icon">i</span>
+                  <div class="alert-content">
+                    <div class="notification-card-header">
+                      <div>
+                        <strong>Pending case validation</strong>
+                        <p>Pediatric procedure log is still waiting for instructor review.</p>
+                      </div>
+                      <span class="status-badge status-pending">Medium</span>
+                    </div>
+                    <div class="notification-meta">
+                      <span>Apr 24, 2026 - Waiting</span>
+                      <a class="text-link" href="case-history.html">View history</a>
+                    </div>
+                  </div>
+                  <button class="ghost-button acknowledge-button" type="button">Acknowledge</button>
+                </article>
+
+                <article class="alert-card alert-low" data-severity="low" data-status="acknowledged">
+                  <span class="alert-icon alert-check-icon" aria-label="Acknowledged"></span>
+                  <div class="alert-content">
+                    <div class="notification-card-header">
+                      <div>
+                        <strong>Report export ready</strong>
+                        <p>Compliance summary export has been prepared.</p>
+                      </div>
+                      <span class="status-badge status-verified">Acknowledged</span>
+                    </div>
+                    <div class="notification-meta">
+                      <span>Apr 23, 2026 - Ready</span>
+                      <a class="text-link" href="../admin-manager/export-page.html">Open export</a>
+                    </div>
+                  </div>
+                  <button class="ghost-button acknowledge-button" type="button">Acknowledged</button>
+                </article>
+              </div>
+
+              <div id="alert-empty" class="empty-state" hidden>
+                No alerts match the selected filters.
+              </div>
+
+              <div id="alert-message" class="form-message alert-message" role="status" aria-live="polite">
+                Showing all alerts.
+              </div>
+            </article>
+
+            <aside class="duty-side-panel">
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Priority</p>
+                    <h2>Action summary</h2>
+                  </div>
+                  <span class="status-badge status-rejected">High</span>
+                </div>
+
+                <div class="report-mini-table" aria-label="Alert priority summary">
+                  <div class="report-mini-row report-mini-head">
+                    <span>Priority</span>
+                    <span>Total</span>
+                  </div>
+                  <div class="report-mini-row">
+                    <span>High</span>
+                    <strong>2</strong>
+                  </div>
+                  <div class="report-mini-row">
+                    <span>Medium</span>
+                    <strong>2</strong>
+                  </div>
+                  <div class="report-mini-row">
+                    <span>Acknowledged</span>
+                    <strong>1</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Quick actions</p>
+                    <h2>Resolve alerts</h2>
+                  </div>
+                </div>
+
+                <div class="requirement-list compact-list">
+                  <a class="requirement-item action-item" href="edit-case.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Fix returned case</strong>
+                      <p>Update medication checklist details.</p>
+                    </div>
+                  </a>
+                  <a class="requirement-item action-item" href="record-duty-hours.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>Update duty entry</strong>
+                      <p>Review the submitted duty details.</p>
+                    </div>
+                  </a>
+                  <a class="requirement-item action-item" href="notifications.html">
+                    <span class="requirement-status"></span>
+                    <div>
+                      <strong>View notifications</strong>
+                      <p>View all recent updates.</p>
+                    </div>
+                  </a>
+                </div>
+              </article>
+
+              <article class="workspace-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="section-kicker">Settings</p>
+                    <h2>Alert delivery</h2>
+                  </div>
+                </div>
+
+                <div class="notification-settings">
+                  <label class="settings-row">
+                    <span>
+                      <strong>High priority alerts</strong>
+                      <small>Failed verification and returned records</small>
+                    </span>
+                    <input type="checkbox" checked>
+                  </label>
+                  <label class="settings-row">
+                    <span>
+                      <strong>Duty reminders</strong>
+                      <small>Upcoming duty schedule alerts</small>
+                    </span>
+                    <input type="checkbox" checked>
+                  </label>
+                </div>
+              </article>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script src="../scripts/alerts.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

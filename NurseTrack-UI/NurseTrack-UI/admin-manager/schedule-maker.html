@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Schedule Maker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .roster-count-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: fit-content;
+        min-height: 34px;
+        margin-top: 0.5rem;
+        padding: 0.45rem 0.85rem;
+        border: 1px solid rgba(138, 37, 44, 0.18);
+        border-radius: 999px;
+        background: #fff7d6;
+        color: #8a252c;
+        font-family: "Kumbh Sans", sans-serif;
+        font-size: 0.86rem;
+        font-weight: 800;
+        line-height: 1;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+      }
+
+      .roster-count-button:hover {
+        background: #ffefad;
+        border-color: rgba(138, 37, 44, 0.35);
+        text-decoration: none;
+        transform: translateY(-1px);
+      }
+
+      .schedule-roster-modal-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .schedule-roster-modal .modal-heading {
+        align-items: flex-start;
+        gap: 16px;
+        padding-right: 58px;
+      }
+
+      .schedule-roster-modal {
+        position: relative;
+        width: min(980px, calc(100vw - 32px));
+      }
+
+      .schedule-roster-title-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        width: 100%;
+      }
+
+      .schedule-roster-close {
+        position: absolute !important;
+        top: 18px !important;
+        right: 18px !important;
+        display: grid !important;
+        place-items: center !important;
+        width: 48px !important;
+        min-width: 48px !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        border-radius: 8px !important;
+        border: 1px solid #dbe3ee !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        text-align: center !important;
+      }
+
+      .schedule-roster-close::before,
+      .schedule-roster-close::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 14px;
+        height: 2px;
+        border-radius: 999px;
+        background: #0f172a;
+        transform-origin: center;
+      }
+
+      .schedule-roster-close::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+
+      .schedule-roster-close::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+      }
+
+      .schedule-roster-add-panel {
+        display: grid;
+        gap: 10px;
+        margin: 0 0 1rem;
+      }
+
+      .schedule-roster-add-panel label {
+        color: #14213d;
+        font-weight: 900;
+      }
+
+      .schedule-roster-add-panel input {
+        width: 100%;
+        min-height: 58px;
+        border: 1px solid rgba(138, 37, 44, 0.28);
+        border-radius: 8px;
+        background: #ffffff;
+        color: #14213d;
+        font-weight: 800;
+        padding: 0 18px;
+      }
+
+      .schedule-roster-add-panel input:focus {
+        border-color: #8a252c;
+        box-shadow: 0 0 0 4px rgba(138, 37, 44, 0.1);
+        outline: none;
+      }
+
+      .schedule-roster-add-results {
+        max-height: 280px;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .schedule-roster-add-results[hidden] {
+        display: none;
+      }
+
+      .schedule-roster-add-option,
+      .schedule-roster-add-empty {
+        width: 100%;
+        display: block;
+        border: 0;
+        border-bottom: 1px solid #eef2f7;
+        background: #ffffff;
+        color: #14213d;
+        padding: 18px 20px;
+        text-align: left;
+      }
+
+      .schedule-roster-add-option {
+        cursor: pointer;
+      }
+
+      .schedule-roster-add-option:hover,
+      .schedule-roster-add-option:focus-visible {
+        background: #fff7d6;
+        outline: none;
+      }
+
+      .schedule-roster-add-option strong,
+      .schedule-roster-add-empty strong {
+        display: block;
+        color: #001f3f;
+        font-size: 1.02rem;
+        font-weight: 900;
+      }
+
+      .schedule-roster-add-option span,
+      .schedule-roster-add-empty span {
+        display: block;
+        margin-top: 4px;
+        color: #14213d;
+        font-weight: 800;
+      }
+
+      .schedule-roster-add-option:last-child,
+      .schedule-roster-add-empty:last-child {
+        border-bottom: 0;
+      }
+
+      .schedule-break-field {
+        display: grid;
+        grid-column: 1 / -1;
+        gap: 12px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+
+      .schedule-break-field > span {
+        color: #344054;
+        font-size: 0.88rem;
+        font-weight: 800;
+      }
+
+      .schedule-break-controls {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .schedule-break-controls input {
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #14213d;
+        font-weight: 800;
+        padding: 0 14px;
+      }
+
+      .schedule-break-controls .ghost-button {
+        min-height: 48px;
+        white-space: nowrap;
+      }
+
+      .schedule-break-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 34px;
+      }
+
+      .schedule-break-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        border: 1px solid rgba(138, 37, 44, 0.18);
+        border-radius: 999px;
+        background: #ffffff;
+        color: #8a252c;
+        font-family: "Kumbh Sans", sans-serif;
+        font-size: 0.82rem;
+        font-weight: 850;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+
+      .schedule-break-chip:hover,
+      .schedule-break-chip:focus-visible {
+        background: #fff7d6;
+        outline: none;
+      }
+
+      .schedule-break-empty {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        color: #667085;
+        font-size: 0.84rem;
+        font-weight: 800;
+      }
+
+      .schedule-roster-modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .schedule-roster-modal-footer .ghost-button,
+      .schedule-roster-modal-footer .primary-button {
+        width: auto;
+        min-width: 130px;
+        min-height: 46px;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 720px) {
+        .schedule-roster-modal-actions,
+        .schedule-roster-modal-footer {
+          justify-content: flex-start;
+        }
+
+        .schedule-roster-modal-footer .ghost-button,
+        .schedule-roster-modal-footer .primary-button {
+          width: 100%;
+        }
+
+        .schedule-break-controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link is-active" href="admin-schedules.html" aria-current="page"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Scheduling</p>
+              <h1>Schedule Maker</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace schedule-management-workspace chair-schedule-maker-workspace">
+          <section class="workspace-panel chair-import-panel chair-schedule-import-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Upload Schedule Source File</h2>
+              </div>
+              <span class="status-badge status-pending" id="chair-import-status">Review required</span>
+            </div>
+
+            <div class="import-dropzone">
+              <strong>Drop Excel or CSV file here</strong>
+              <p>Accepted data: section/group, inclusive dates, RLE rotation, hospital or area, shift, case presentation date, student count, clinical instructor, and remarks. Student names are kept in the source file but hidden from this review to keep the page readable.</p>
+              <div class="button-row">
+                <input type="file" accept=".xlsx,.xls,.csv,.pdf" data-chair-file-input hidden>
+                <button class="ghost-button" type="button" data-chair-file-select>Choose schedule file</button>
+                <button class="ghost-button" type="button" data-create-manual-schedule>Create schedule manually</button>
+              </div>
+            </div>
+
+            <div id="chair-import-message" class="form-message" role="status" aria-live="polite">
+              Upload an imported file or create a schedule manually before publishing.
+            </div>
+          </section>
+
+          <section class="workspace-panel chair-schedule-maker-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Review Imported Schedule Before Publishing</h2>
+              </div>
+              <span class="status-badge status-pending" id="chair-schedule-status">Draft review</span>
+            </div>
+
+            <div class="schedule-maker-summary">
+              <div><span>Imported file</span><strong id="chair-imported-file">LEVEL-III-RLE-ROTATION-April-27-30.xlsx</strong></div>
+              <div><span>Review records</span><strong>6 groups / 58 students</strong></div>
+              <div><span>Publish scope</span><strong>Students and Clinical Instructors</strong></div>
+            </div>
+
+            <div class="schedule-draft-list" aria-label="Editable schedule draft">
+              <div class="schedule-draft-row" data-schedule-draft-row data-break-dates="2026-04-29">
+                <div class="schedule-draft-main">
+                  <div>
+                    <strong>N1 G1</strong>
+                    <button class="roster-count-button" type="button" data-view-draft-roster data-roster-group="N1 G1">View students (10)</button>
+                  </div>
+                </div>
+
+                <div class="schedule-draft-actions">
+                  <button class="ghost-button" type="button" data-save-draft-row>Save edits</button>
+                  <button class="ghost-button danger-action" type="button" data-remove-draft-row>Remove</button>
+                </div>
+
+                <div class="schedule-draft-fields">
+                  <label class="form-label">Start Date
+                    <input type="date" value="2026-04-27" data-schedule-start-date>
+                  </label>
+
+                  <label class="form-label">End Date
+                    <input type="date" value="2026-04-30" data-schedule-end-date>
+                  </label>
+
+                  <div class="schedule-break-field" data-break-date-manager>
+                    <span>Break Dates</span>
+                    <div class="schedule-break-controls">
+                      <input type="date" data-break-date-input>
+                      <button class="ghost-button" type="button" data-add-break-date>Add break</button>
+                    </div>
+                    <div class="schedule-break-list" data-break-date-list></div>
+                  </div>
+
+                  <label class="form-label schedule-draft-shift-start">Shift Start
+                    <input type="time" value="06:00">
+                  </label>
+
+                  <label class="form-label schedule-draft-shift-end">Shift End
+                    <input type="time" value="14:00">
+                  </label>
+
+                  <label class="form-label schedule-draft-hospital-area">Hospital / Area
+                    <select>
+                      <option>VSMMC - SP St 201</option>
+                      <option>VSMMC - SP ST 301</option>
+                      <option>CCMC - Pedia Pulmo Ward</option>
+                      <option>LCH - 4th Floor</option>
+                    </select>
+                  </label>
+
+                  <label class="form-label schedule-draft-duty-type" data-duty-type-field>Duty Type
+                    <select>
+                      <option>Regular</option>
+                      <option>Extension</option>
+                      <option>Completion</option>
+                    </select>
+                  </label>
+
+                  <label class="form-label schedule-draft-case-date">Case Presentation date
+                    <input type="date" value="2026-05-02" data-case-presentation-input>
+                  </label>
+
+                  <label class="form-label schedule-draft-case-time">Case Presentation time
+                    <input type="time" value="08:00" data-case-presentation-input>
+                  </label>
+
+                  <label class="checkbox-line schedule-draft-tba">
+                    <input type="checkbox" data-case-presentation-tba>
+                  No Case Presentation
+                  </label>
+
+                  <label class="form-label schedule-draft-ci-field">Supervising CI
+                    <select>
+                      <option>Louise Wong</option>
+                      <option>Rivelyn Altamira</option>
+                      <option>Rommel Andre Amit</option>
+                      <option>Arlene G. Vecino</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="schedule-draft-row" data-schedule-draft-row>
+                <div class="schedule-draft-main">
+                  <div>
+                    <strong>N2 G4</strong>
+                    <button class="roster-count-button" type="button" data-view-draft-roster data-roster-group="N2 G4">View students (9)</button>
+                  </div>
+                </div>
+
+                <div class="schedule-draft-actions">
+                  <button class="ghost-button" type="button" data-save-draft-row>Save edits</button>
+                  <button class="ghost-button danger-action" type="button" data-remove-draft-row>Remove</button>
+                </div>
+
+                <div class="schedule-draft-fields">
+                  <label class="form-label">Start Date
+                    <input type="date" value="2026-04-27" data-schedule-start-date>
+                  </label>
+
+                  <label class="form-label">End Date
+                    <input type="date" value="2026-04-30" data-schedule-end-date>
+                  </label>
+
+                  <div class="schedule-break-field" data-break-date-manager>
+                    <span>Break Dates</span>
+                    <div class="schedule-break-controls">
+                      <input type="date" data-break-date-input>
+                      <button class="ghost-button" type="button" data-add-break-date>Add break</button>
+                    </div>
+                    <div class="schedule-break-list" data-break-date-list></div>
+                  </div>
+
+                  <label class="form-label schedule-draft-shift-start">Shift Start
+                    <input type="time" value="14:00">
+                  </label>
+
+                  <label class="form-label schedule-draft-shift-end">Shift End
+                    <input type="time" value="22:00">
+                  </label>
+
+                  <label class="form-label schedule-draft-hospital-area">Hospital / Area
+                    <select>
+                      <option>CCMC - Emergency Room</option>
+                      <option>LCH - 3rd Floor</option>
+                      <option>VSMMC - Main Station 205</option>
+                    </select>
+                  </label>
+
+                  <label class="form-label schedule-draft-duty-type" data-duty-type-field>Duty Type
+                    <select>
+                      <option>Regular</option>
+                      <option>Extension</option>
+                      <option>Completion</option>
+                    </select>
+                  </label>
+
+                  <label class="form-label schedule-draft-case-date">Case Presentation date
+                    <input type="date" data-case-presentation-input>
+                  </label>
+
+                  <label class="form-label schedule-draft-case-time">Case Presentation time
+                    <input type="time" data-case-presentation-input>
+                  </label>
+
+                  <label class="checkbox-line schedule-draft-tba">
+                    <input type="checkbox" data-case-presentation-tba checked>
+                  No Case Presentation
+                  </label>
+
+                  <label class="form-label schedule-draft-ci-field">Supervising CI
+                    <select>
+                      <option>Arlene G. Vecino</option>
+                      <option>Annalyn A. Hole</option>
+                      <option>Maria Carmina Villardar</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="schedule-maker-actions">
+              <button class="primary-button workspace-action" type="button" data-publish-schedule>Publish Schedule</button>
+            </div>
+
+            <div id="chair-schedule-message" class="form-message" role="status" aria-live="polite">
+              Schedule Maker is ready for review.
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop roster-modal-backdrop" id="schedule-roster-modal" hidden>
+      <section class="modal-card schedule-roster-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-roster-title">
+        <div class="modal-heading">
+          <div class="schedule-roster-title-row">
+            <div>
+              <h2 id="schedule-roster-title">Schedule Students</h2>
+            </div>
+
+            <button class="modal-close schedule-roster-close" type="button" data-close-roster-modal aria-label="Close student roster"></button>
+          </div>
+
+          <div class="schedule-roster-modal-actions">
+            <button class="ghost-button" type="button" data-undo-roster-remove disabled>Undo</button>
+          </div>
+        </div>
+
+        <div class="schedule-roster-add-panel">
+          <label for="schedule-roster-add-search">Search student to add</label>
+          <input id="schedule-roster-add-search" type="search" placeholder="Search by name, ID, section, or clinical site" autocomplete="off">
+          <div class="schedule-roster-add-results" id="schedule-roster-add-results" hidden></div>
+        </div>
+
+        <div class="assigned-roster-table" id="schedule-roster-list"></div>
+
+        <div class="schedule-roster-modal-footer">
+          <button class="ghost-button" type="button" data-close-roster-modal>Cancel</button>
+          <button class="primary-button workspace-action" type="button" data-save-roster-modal>Save Changes</button>
+        </div>
+      </section>
+    </div>
+
+    <script src="../scripts/instructor-dashboard.js"></script>
+    <script src="../scripts/chair-schedule-maker.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>

@@ -1,0 +1,229 @@
+Complete  Web  Page  Structure  of  the  
+Proposed
+ 
+System
+ 
+The  proposed  NurseTrack  system  will  be  implemented  as  a  role-based  web  application  
+composed
+ 
+of
+ 
+interconnected
+ 
+pages
+ 
+that
+ 
+support
+ 
+the
+ 
+system’s
+ 
+core
+ 
+modules:
+ 
+User
+ 
+Management,
+ 
+Duty
+ 
+Hours
+ 
+Tracking
+ 
+and
+ 
+Verification,
+ 
+Digital
+ 
+Clinical
+ 
+Case
+ 
+and
+ 
+Procedure
+ 
+Checklist,
+ 
+Scheduling,
+ 
+and
+ 
+Instructor
+ 
+Validation,
+ 
+Progress
+ 
+Monitoring,
+ 
+and
+ 
+Reporting
+ 
+.
+ 
+The  web  interface  is  organized  into  the  following  functional  page  groups:  
+ 
+1.  Authentication  and  Access  Control  Pages  
+These  pages  handle  user  identity,  authentication,  and  secure  system  access.  
+●  Login  Page  ●  Registration  Page  ●  Forgot  Password  Page  ●  Reset  Password  Page  ●  Logout  Function  (system  action)  
+These  pages  support  the  User  Management  Module ,  which  enables  account  creation,  
+authentication,
+ 
+and
+ 
+role-based
+ 
+access
+ 
+for
+ 
+nursing
+ 
+students
+ 
+and
+ 
+clinical
+ 
+instructors
+ 
+.
+ 
+ 
+2.  Role-Based  Dashboard  Pages  
+Dashboards  provide  a  centralized  overview  of  system  data  and  quick  navigation.  
+Student  Dashboard  
+●  Duty  hours  progress  overview  ●  Completed  and  pending  clinical  cases  ●  Assigned  duty  schedule  ●  Notifications  and  reminders  
+ 
+Instructor  Dashboard  
+●  Student  compliance  overview  ●  Pending  validations  and  submissions  ●  Schedule  summary  ●  Quick  access  to  reports  and  approvals  
+These  dashboards  reflect  the  system  requirement  to  display  progress  status,  completed  
+requirements,
+ 
+and
+ 
+pending
+ 
+tasks
+ 
+in
+ 
+real
+ 
+time
+ 
+.
+ 
+ 
+3.  User  Profile  and  Account  Management  Pages  
+These  pages  allow  users  to  manage  personal  information  and  account  settings.  
+●  View  Profile  Page  ●  Edit  Profile  Page  ●  Change  Password  Page  ●  Role  Assignment  Page  (Instructor/Admin)  ●  User  List  /  Manage  Users  Page  (Instructor/Admin)  
+ 
+4.  Duty  Hours  Tracking  and  Verification  Pages  
+These  pages  implement  the  Duty  Hours  Tracking  and  Verification  Module.  
+●  Record  Duty  Hours  Page  ●  Duty  Hours  History  Page  ●  Duty  Hours  Detail  View  Page  ●  Duty  Verification  Page  (Bluetooth-based  confirmation)  ●  Duty  Hours  Progress  Page  
+These  pages  support  recording,  verifying,  and  monitoring  duty-hour  completion  with  
+proximity-based
+ 
+validation
+ 
+mechanisms
+ 
+.
+ 
+ 
+ 
+ 
+5.  Digital  Clinical  Case  and  Procedure  Checklist  Pages  
+These  pages  implement  structured  documentation  of  clinical  cases.  
+●  Add  Clinical  Case  Page  ●  Edit  Clinical  Case  Page  ●  Clinical  Case  Checklist  Form  Page  ●  Clinical  Case  History  Page  ●  Clinical  Case  Detail  View  Page  
+These  pages  ensure  standardized  documentation  through  structured  digital  checklists  for  
+required
+ 
+clinical
+ 
+cases
+ 
+and
+ 
+procedures
+ 
+.
+ 
+ 
+6.  Scheduling  Module  Pages  
+These  pages  support  scheduling,  assignment,  and  coordination  of  clinical  duties.  
+Student  Side  
+●  View  Schedule  Page  ●  Schedule  Details  Page  
+Instructor  Side  
+●  Create  Schedule  Page  ●  Assign  Duty  Page  ●  Edit  /  Update  Schedule  Page  ●  Schedule  Management  Page  (calendar  or  list  view)  
+These  pages  address  the  requirement  for  centralized  management  of  clinical  duty  
+assignments
+ 
+and
+ 
+rotation
+ 
+schedules
+ 
+.
+ 
+ 
+7.  Instructor  Validation  and  Approval  Pages  
+These  pages  enable  instructors  to  review  and  validate  submitted  records.  
+●  Review  Student  Submissions  Page  ●  Duty  Hours  Validation  Page  ●  Clinical  Case  Validation  Page  ●  Approval  /  Rejection  Page  
+●  Validation  History  Page  
+These  pages  fulfill  the  requirement  for  instructors  to  review,  validate,  and  monitor  submitted  
+duty-hour
+ 
+and
+ 
+case
+ 
+records
+ 
+.
+ 
+ 
+8.  Progress  Monitoring  Pages  
+These  pages  provide  real-time  tracking  of  student  compliance.  
+●  Student  Progress  Tracking  Page  ●  Individual  Student  Progress  View  (Instructor)  ●  Completion  Status  Page  ●  Pending  Requirements  Page  
+These  pages  support  visibility  of  completed,  ongoing,  and  pending  requirements  in  the  
+system
+ 
+.
+ 
+ 
+9.  Reporting  and  Compliance  Pages  
+These  pages  generate  and  display  system  reports  and  summaries.  
+●  Generate  Report  Page  ●  Compliance  Summary  Page  ●  Duty  Hours  Report  Page  ●  Clinical  Case  Report  Page  ●  Schedule  Report  Page  ●  Export  /  Download  Report  Page  
+These  pages  align  with  the  system  requirement  to  generate  organized  compliance  
+summaries
+ 
+and
+ 
+monitoring
+ 
+reports
+ 
+efficiently
+ 
+.
+ 
+ 
+10.  Notification  and  System  Feedback  Pages  
+These  pages  improve  usability  and  system  interaction.  
+●  Notifications  Page  ●  Alerts  /  System  Messages  Page  ●  Submission  Confirmation  Page  
+●  Error  /  Validation  Feedback  Page  
+ 
+11.  System  Utility  Pages  
+These  are  supporting  pages  for  system  completeness  and  usability.  
+●  Home  /  Landing  Page  (optional  public  page)  ●  Help  /  User  Guide  Page  ●  About  System  Page  
+ 

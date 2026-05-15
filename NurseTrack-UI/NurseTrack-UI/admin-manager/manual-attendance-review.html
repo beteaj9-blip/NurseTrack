@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NurseTrack | Manual Attendance Review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/nursetrack.css">
+    <link rel="icon" type="image/png" href="../assets/cit-u-logo.png">
+
+    <style>
+      .validation-user-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      .validation-user-card {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .validation-user-card:hover {
+        background-color: #f8fafc;
+      }
+
+      .validation-user-card.is-selected {
+        background-color: #f1f5f9;
+        border-left: 4px solid #800000;
+      }
+
+      .validation-user-card:last-child {
+        border-bottom: none;
+      }
+
+      .validation-user-card > span:nth-child(2) {
+        flex: 1;
+        margin-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+
+      .validation-user-card small {
+        color: #64748b;
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+
+  <body class="app-body">
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand">
+          <img class="sidebar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+          <div>
+            <strong>NurseTrack</strong>
+            <span>CIT-U Nursing</span>
+          </div>
+        </div>
+
+        <div class="role-chip">Chair</div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-link" href="admin-dashboard.html"><span class="nav-dot"></span>Dashboard</a>
+          <a class="nav-link" href="admin-schedules.html"><span class="nav-dot"></span>Schedules</a>
+          <a class="nav-link" href="live-attendance-tracker.html"><span class="nav-dot"></span>Live Attendance</a>
+          <a class="nav-link is-active" href="manual-attendance-review.html" aria-current="page"><span class="nav-dot"></span>Manual Backup</a>
+          <a class="nav-link" href="chair-student-progress.html"><span class="nav-dot"></span>Student Progress</a>
+          <a class="nav-link" href="student-clearance.html"><span class="nav-dot"></span>Clearance</a>
+          <a class="nav-link" href="clinical-cases-view.html"><span class="nav-dot"></span>Clinical Cases View</a>
+          <a class="nav-link" href="student-appeals.html"><span class="nav-dot"></span>CI Recommendations</a>
+          <a class="nav-link" href="overtime-details.html"><span class="nav-dot"></span>Overtime Details</a>
+          <a class="nav-link" href="generate-report.html"><span class="nav-dot"></span>Reports</a>
+        </nav>
+
+        <div class="sidebar-account">
+          <div class="avatar">CR</div>
+          <div>
+            <strong>Reyes</strong>
+            <span>Chair</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="sidebar-backdrop" data-close-sidebar></div>
+
+      <div class="app-main">
+        <header class="topbar">
+          <button class="menu-button" type="button" data-menu-button>Menu</button>
+
+          <div class="topbar-title">
+            <img class="topbar-logo" src="../assets/cit-u-logo.png" alt="Cebu Institute of Technology - University logo">
+            <div>
+              <p>Chair Workspace</p>
+              <h1>Manual Attendance Review</h1>
+            </div>
+          </div>
+
+          <div class="topbar-actions">
+            <span class="sync-pill">Review queue</span>
+            <a class="icon-button notification-button button-link" href="admin-notifications.html" aria-label="Notifications" title="Notifications">
+              <svg class="notification-bell" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </a>
+
+            <a class="icon-button topbar-profile-button button-link" href="view-profile.html" aria-label="Profile" title="Profile">
+              <svg class="profile-user-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4 21a8 8 0 0 1 16 0"></path>
+              </svg>
+            </a>
+
+            <a class="logout-link" href="../index.html">Logout</a>
+          </div>
+        </header>
+
+        <main class="workspace validation-workspace">
+          <section class="workspace-panel validation-lookup-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Clinical Instructor List</h2>
+              </div>
+              <span class="status-badge status-verified" id="validation-user-count">3 visible</span>
+            </div>
+
+            <div class="history-filters validation-lookup-filters" aria-label="Clinical instructor search">
+              <label class="form-label" for="validation-user-search">
+                Search CI
+                <input id="validation-user-search" type="search" placeholder="Search CI name, attendance record, or review status">
+              </label>
+            </div>
+
+            <div class="validation-user-list" id="validation-user-list">
+              <a class="validation-user-card" href="manual-attendance-review-detail.html?ci=Patricia%20Reyes" data-validation-user data-name="Patricia Reyes" data-section="pending" data-case="1">
+                <span class="avatar small-avatar">PR</span>
+                <span>
+                  <strong>Patricia Reyes, RN, MAN</strong>
+                  <small>1 encoded attendance record - Latest: May 3, 2026, 8:18 PM</small>
+                </span>
+                <span class="status-badge status-pending">1 pending</span>
+              </a>
+
+              <a class="validation-user-card" href="manual-attendance-review-detail.html?ci=Miguel%20Santos" data-validation-user data-name="Miguel Santos" data-section="no records" data-case="0">
+                <span class="avatar small-avatar">MS</span>
+                <span>
+                  <strong>Miguel Santos, RN, MAN</strong>
+                  <small>0 encoded attendance records - Latest: No manual record encoded yet</small>
+                </span>
+                <span class="status-badge status-muted">No records</span>
+              </a>
+
+              <a class="validation-user-card" href="manual-attendance-review-detail.html?ci=Elena%20Dela%20Cruz" data-validation-user data-name="Elena Dela Cruz" data-section="no records" data-case="0">
+                <span class="avatar small-avatar">ED</span>
+                <span>
+                  <strong>Elena Dela Cruz, RN, MN</strong>
+                  <small>0 encoded attendance records - Latest: No manual record encoded yet</small>
+                </span>
+                <span class="status-badge status-muted">No records</span>
+              </a>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const validationSearch = document.querySelector("#validation-user-search");
+      const validationUsers = Array.from(document.querySelectorAll("[data-validation-user]"));
+      const validationUserCount = document.querySelector("#validation-user-count");
+
+      function updateValidationUsers() {
+        const searchValue = validationSearch.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        validationUsers.forEach((card) => {
+          const text = card.textContent.toLowerCase();
+          const matchesSearch = text.includes(searchValue);
+
+          card.hidden = !matchesSearch;
+
+          if (matchesSearch) {
+            visibleCount += 1;
+          }
+        });
+
+        validationUserCount.textContent = visibleCount + " visible";
+      }
+
+      validationSearch.addEventListener("input", updateValidationUsers);
+      updateValidationUsers();
+    </script>
+
+    <script src="../scripts/live-attendance-tracker.js"></script>
+    <script src="../scripts/logout-confirm.js"></script>
+    <script src="../scripts/sidebar-icons.js"></script>
+    <script src="../scripts/consultation-update.js"></script>
+    <script src="../scripts/global-back-button.js"></script>
+  </body>
+</html>
