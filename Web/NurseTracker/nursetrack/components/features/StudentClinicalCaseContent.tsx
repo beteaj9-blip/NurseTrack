@@ -121,54 +121,9 @@ export default function StudentClinicalCaseContent() {
                   ))
                 ) : (
                   <tr className="border-b border-[#e2e8f0] hover:bg-[#fcfcfc] transition-colors">
-                    <td className="p-4 text-[#111827] text-[0.9rem] font-semibold">Major Case - Assist</td>
-                    <td className="p-4 text-[#111827] text-[0.9rem] font-medium">Primary Lower Segment Transverse Cesarean Section</td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#fff8e1] !text-[#6c4c00] !text-[0.75rem] font-bold">
-                        Pending
-                      </span>
-                    </td>
-                    <td className="p-4 text-[#111827] text-[0.9rem] font-semibold">Apr 24, 2026</td>
-                    <td className="p-4 text-[#111827] text-[0.9rem] font-semibold">4:35 PM</td>
-                    <td className="p-4">
-                      <a href="#" className="!text-[#8A252C] text-[0.9rem] font-bold hover:underline">View</a>
-                    </td>
+                    <td colSpan={6} className="p-4 text-center text-[#64748b] text-[0.9rem] font-semibold">No clinical cases submitted yet.</td>
                   </tr>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* All Cases from API */}
-        <div className="mb-8">
-          <h3 className="text-[#8A252C] text-[1.1rem] font-[800] mb-4 m-0">My Clinical Cases</h3>
-          <div className="w-full overflow-x-auto border border-[#e2e8f0] rounded-lg">
-            <table className="w-full min-w-[800px] text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f8fafc] border-b border-[#e2e8f0]">
-                  <th className="p-4 text-[#475467] text-[0.75rem] font-bold uppercase tracking-wider">Area</th>
-                  <th className="p-4 text-[#475467] text-[0.75rem] font-bold uppercase tracking-wider">Procedure</th>
-                  <th className="p-4 text-[#475467] text-[0.75rem] font-bold uppercase tracking-wider">Status</th>
-                  <th className="p-4 text-[#475467] text-[0.75rem] font-bold uppercase tracking-wider">Date</th>
-                  <th className="p-4 text-[#475467] text-[0.75rem] font-bold uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="hover:bg-[#fcfcfc] transition-colors">
-                  <td className="p-4 text-[#111827] text-[0.9rem] font-semibold">Major Case - Circulate</td>
-                  <td className="p-4 text-[#111827] text-[0.9rem] font-medium">Laparoscopic Cholecystectomy</td>
-                  <td className="p-4">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#e9f8ef] !text-[#03703c] !text-[0.75rem] font-bold">
-                      Approved
-                    </span>
-                  </td>
-                  <td className="p-4 text-[#111827] text-[0.9rem] font-semibold">Apr 23, 2026</td>
-                  <td className="p-4 text-[#111827] text-[0.9rem] font-semibold">2:10 PM</td>
-                  <td className="p-4">
-                    <a href="#" className="!text-[#8A252C] text-[0.9rem] font-bold hover:underline">View</a>
-                  </td>
-                </tr>
               </tbody>
             </table>
           </div>

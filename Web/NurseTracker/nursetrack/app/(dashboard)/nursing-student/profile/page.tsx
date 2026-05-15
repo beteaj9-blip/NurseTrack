@@ -17,7 +17,7 @@ export default function ProfilePage() {
     context: user?.sectionInfo ?? "Nursing Student",
     role: "Nursing Student",
     email: user?.email ?? "",
-    mobile: "", // not in backend entity yet
+    mobile: user?.mobileNumber ?? "",
     schoolId: user?.schoolId ?? "",
     lastLogin: user?.updatedAt
       ? new Date(user.updatedAt).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })

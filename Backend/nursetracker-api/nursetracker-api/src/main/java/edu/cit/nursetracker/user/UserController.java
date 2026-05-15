@@ -57,6 +57,7 @@ public class UserController {
         return userService.getUserById(id).map(user -> {
             if (updates.containsKey("fullName")) user.setFullName(updates.get("fullName"));
             if (updates.containsKey("email")) user.setEmail(updates.get("email"));
+            if (updates.containsKey("mobileNumber")) user.setMobileNumber(updates.get("mobileNumber"));
             if (updates.containsKey("schoolId")) user.setSchoolId(updates.get("schoolId"));
             if (updates.containsKey("sectionInfo")) user.setSectionInfo(updates.get("sectionInfo"));
             return ResponseEntity.ok(userService.saveUser(user));
@@ -68,6 +69,7 @@ public class UserController {
         User user = new User();
         user.setFullName(payload.get("fullName"));
         user.setEmail(payload.get("email"));
+        user.setMobileNumber(payload.get("mobileNumber"));
         user.setSchoolId(payload.get("schoolId"));
         user.setSectionInfo(payload.get("sectionInfo"));
         user.setPasswordHash(payload.get("password")); // Direct map password to passwordHash

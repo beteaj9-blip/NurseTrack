@@ -1,25 +1,58 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { useUpdateUser } from "@/core/api/hooks/useUsers";
+import { useAuthStore } from "@/core/store/authStore";
+
+function getInitials(name?: string) {
+  if (!name) return "?";
+  return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
+}
 
 export function StudentProfileEditContent() {
-  const [fullName, setFullName] = useState("Maria Cruz");
-  const [schoolEmail, setSchoolEmail] = useState("maria.cruz@cit.edu");
-  const [mobileNumber, setMobileNumber] = useState("+63 917 000 1234");
+  const user = useAuthStore((state) => state.user);
+  const login = useAuthStore((state) => state.login);
+  const updateUser = useUpdateUser();
+  const [fullName, setFullName] = useState<string | null>(null);
+  const [schoolEmail, setSchoolEmail] = useState<string | null>(null);
+  const [mobileNumber, setMobileNumber] = useState<string | null>(null);
   const [message, setMessage] = useState({ text: "Review your information before saving.", type: "" });
+  const currentFullName = fullName ?? user?.fullName ?? "";
+  const currentSchoolEmail = schoolEmail ?? user?.email ?? "";
+  const currentMobileNumber = mobileNumber ?? user?.mobileNumber ?? "";
+
+  const profileCompletion = useMemo(() => {
+    const fields = [currentFullName, currentSchoolEmail, currentMobileNumber, user?.schoolId, user?.sectionInfo];
+    return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+  }, [currentFullName, currentSchoolEmail, currentMobileNumber, user?.schoolId, user?.sectionInfo]);
 
   const handleReset = () => {
-    setFullName("Maria Cruz");
-    setSchoolEmail("maria.cruz@cit.edu");
-    setMobileNumber("+63 917 000 1234");
+    setFullName(null);
+    setSchoolEmail(null);
+    setMobileNumber(null);
     setMessage({ text: "Review your information before saving.", type: "" });
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage({ text: "Profile changes saved successfully.", type: "is-success" });
-    setTimeout(() => setMessage({ text: "Review your information before saving.", type: "" }), 4000);
+    if (!user) return;
+
+    try {
+      const updatedUser = await updateUser.mutateAsync({
+        userId: user.id,
+        updates: {
+          fullName: currentFullName,
+          email: currentSchoolEmail,
+          mobileNumber: currentMobileNumber,
+        },
+      });
+      login(updatedUser);
+      setMessage({ text: "Profile changes saved successfully.", type: "is-success" });
+      setTimeout(() => setMessage({ text: "Review your information before saving.", type: "" }), 4000);
+    } catch {
+      setMessage({ text: "Profile changes could not be saved.", type: "is-error" });
+    }
   };
 
   const inputCls = "w-full min-h-[44px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white text-[#111827] font-bold focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all text-[0.9rem]";
@@ -35,7 +68,7 @@ export function StudentProfileEditContent() {
           {/* Avatar with edit pencil */}
           <div className="relative w-[72px] h-[72px] shrink-0">
             <div className="w-[72px] h-[72px] rounded-full bg-[#ffc107] text-[#111827] flex items-center justify-center text-[1.4rem] font-[900]">
-              MC
+              {getInitials(currentFullName)}
             </div>
             <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#8A252C] border-2 border-white flex items-center justify-center">
               <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
@@ -51,7 +84,7 @@ export function StudentProfileEditContent() {
             <p className="text-[#64748b] text-[0.88rem] font-semibold m-0 mb-3">Keep contact details, section, and student account records current.</p>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#e9f8ef] text-[#03703c] text-[0.75rem] font-[800]">Active account</span>
-              <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#fff8e1] text-[#6c4c00] text-[0.75rem] font-[800]">92% complete</span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#fff8e1] text-[#6c4c00] text-[0.75rem] font-[800]">{profileCompletion}% complete</span>
             </div>
           </div>
 
@@ -88,19 +121,19 @@ export function StudentProfileEditContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
               <div>
                 <label className={labelCls} htmlFor="fullName">Full Name</label>
-                <input id="fullName" className={inputCls} type="text" value={fullName} onChange={e => setFullName(e.target.value)} />
+                <input id="fullName" className={inputCls} type="text" value={currentFullName} onChange={e => setFullName(e.target.value)} />
               </div>
               <div>
                 <label className={labelCls} htmlFor="schoolId">School ID number</label>
-                <input id="schoolId" className={`${inputCls} bg-[#f8fafc] text-[#64748b] cursor-not-allowed`} type="text" value="12-3456-789" readOnly />
+                <input id="schoolId" className={`${inputCls} bg-[#f8fafc] text-[#64748b] cursor-not-allowed`} type="text" value={user?.schoolId ?? ""} readOnly />
               </div>
               <div>
                 <label className={labelCls} htmlFor="schoolEmail">School Email</label>
-                <input id="schoolEmail" className={inputCls} type="email" value={schoolEmail} onChange={e => setSchoolEmail(e.target.value)} />
+                <input id="schoolEmail" className={inputCls} type="email" value={currentSchoolEmail} onChange={e => setSchoolEmail(e.target.value)} />
               </div>
               <div>
                 <label className={labelCls} htmlFor="mobileNumber">Mobile Number</label>
-                <input id="mobileNumber" className={inputCls} type="tel" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} />
+                <input id="mobileNumber" className={inputCls} type="tel" value={currentMobileNumber} onChange={e => setMobileNumber(e.target.value)} />
               </div>
             </div>
 
@@ -129,21 +162,21 @@ export function StudentProfileEditContent() {
 
           <div className="flex flex-col items-center text-center gap-3">
             <div className="w-[64px] h-[64px] rounded-full bg-[#ffc107] text-[#111827] flex items-center justify-center text-[1.2rem] font-[900]">
-              MC
+              {getInitials(currentFullName)}
             </div>
             <div>
-              <p className="text-[#111827] text-[1rem] font-[800] m-0 mb-0.5">{fullName || "Maria Cruz"}</p>
-              <p className="text-[#64748b] text-[0.85rem] font-bold m-0 mb-0.5">BSN 3A</p>
-              <p className="text-[#64748b] text-[0.82rem] font-semibold m-0">{schoolEmail || "maria.cruz@cit.edu"}</p>
+              <p className="text-[#111827] text-[1rem] font-[800] m-0 mb-0.5">{currentFullName || "Nursing Student"}</p>
+              <p className="text-[#64748b] text-[0.85rem] font-bold m-0 mb-0.5">{user?.sectionInfo ?? "Nursing Student"}</p>
+              <p className="text-[#64748b] text-[0.82rem] font-semibold m-0">{currentSchoolEmail}</p>
             </div>
 
             <div className="w-full mt-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[#64748b] text-[0.8rem] font-bold">Profile completion</span>
-                <span className="text-[#111827] text-[0.8rem] font-[800]">92%</span>
+                <span className="text-[#111827] text-[0.8rem] font-[800]">{profileCompletion}%</span>
               </div>
               <div className="w-full h-[8px] rounded-full bg-[#e2e8f0] overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#8A252C] to-[#ffc107]" style={{ width: "92%" }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-[#8A252C] to-[#ffc107]" style={{ width: `${profileCompletion}%` }} />
               </div>
             </div>
           </div>

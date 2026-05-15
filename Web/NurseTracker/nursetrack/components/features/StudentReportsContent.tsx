@@ -1,25 +1,50 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { apiClient } from "@/core/api/axios";
+import { useAuthStore } from "@/core/store/authStore";
+
+function toInputDate(date: Date) {
+  return date.toISOString().split("T")[0];
+}
 
 export function StudentReportsContent() {
-  const [startDate, setStartDate] = useState("2026-04-01");
-  const [endDate, setEndDate] = useState("2026-05-01");
-  const [message, setMessage] = useState({ text: "Generate a general report for Maria Cruz.", type: "" });
+  const user = useAuthStore((state) => state.user);
+  const defaultDates = useMemo(() => {
+    const today = new Date();
+    return {
+      start: toInputDate(new Date(today.getFullYear(), today.getMonth(), 1)),
+      end: toInputDate(today),
+    };
+  }, []);
+  const [startDate, setStartDate] = useState(defaultDates.start);
+  const [endDate, setEndDate] = useState(defaultDates.end);
+  const reportName = user?.fullName ?? "Nursing Student";
+  const defaultMessage = `Generate a general report for ${reportName}.`;
+  const [message, setMessage] = useState({ text: "", type: "" });
 
   const resetForm = () => {
-    setStartDate("2026-04-01");
-    setEndDate("2026-05-01");
-    setMessage({ text: "Generate a general report for Maria Cruz.", type: "" });
+    setStartDate(defaultDates.start);
+    setEndDate(defaultDates.end);
+    setMessage({ text: "", type: "" });
   };
 
-  const generateReport = (e: React.FormEvent) => {
+  const generateReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage({ text: "General report successfully generated for Maria Cruz.", type: "is-success" });
-    
-    setTimeout(() => {
-      setMessage({ text: "Generate a general report for Maria Cruz.", type: "" });
-    }, 5000);
+    if (!user) return;
+
+    try {
+      const { data } = await apiClient.get(`/reports/student/${user.id}`, {
+        params: { startDate, endDate },
+      });
+      setMessage({ text: data.message ?? `General report successfully generated for ${reportName}.`, type: "is-success" });
+
+      setTimeout(() => {
+        setMessage({ text: "", type: "" });
+      }, 5000);
+    } catch {
+      setMessage({ text: "General report could not be generated.", type: "is-error" });
+    }
   };
 
   const inputClass = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
@@ -44,7 +69,7 @@ export function StudentReportsContent() {
           <div className={labelClass}>
             Report About
             <div className="w-full min-h-[48px] px-3 py-3 border border-[#dbe3ee] rounded-lg bg-[#f8fafc] text-[#111827] font-bold text-[0.95rem]">
-              Maria Cruz
+              {reportName}
             </div>
           </div>
         </div>
@@ -96,7 +121,7 @@ export function StudentReportsContent() {
 
         {/* Info Box */}
         <div className={`flex items-center px-4 py-3 rounded-lg text-[0.85rem] font-bold ${message.type === 'is-error' ? 'bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]' : message.type === 'is-success' ? 'bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0]' : 'bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]'}`} role="status" aria-live="polite">
-          {message.text}
+          {message.text || defaultMessage}
         </div>
 
         {/* Action Buttons */}

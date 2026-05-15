@@ -1,10 +1,5 @@
-import { StudentProgressDetailContent } from "@/components/features/StudentProgressDetailContent";
+import { StudentProgressContent } from "@/components/features/StudentProgressContent";
 
 export default function StudentProgressPage() {
-  return (
-    <StudentProgressDetailContent 
-      basePath="/nursing-student" 
-      searchParams={Promise.resolve({ student: "treasure-abadinas" })} 
-    />
-  );
+  return <StudentProgressContent basePath="/nursing-student" />;
 }

@@ -17,6 +17,7 @@ export interface User {
   schoolId: string;
   fullName: string;
   email: string;
+  mobileNumber?: string;
   role: UserRole;
   sectionInfo?: string;
   status: UserStatus;

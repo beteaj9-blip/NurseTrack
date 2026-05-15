@@ -1,4 +1,4 @@
-package edu.cit.nursetracker.clinicalcase;
+package edu.cit.nursetracker.appeal;
 
 import edu.cit.nursetracker.user.User;
 import jakarta.persistence.*;
@@ -10,13 +10,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "clinical_cases")
+@Table(name = "student_appeals")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ClinicalCase {
+public class StudentAppeal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,45 +27,37 @@ public class ClinicalCase {
     private User student;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "instructor_id", nullable = false)
+    @JoinColumn(name = "instructor_id")
     private User instructor;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CaseType caseType;
+    private String appealType;
+
+    private LocalDate relatedDutyDate;
 
     @Column(nullable = false)
-    private String patientInitials;
+    private String clinicalSite;
 
-    private Integer patientAge;
-
-    private String category;
-
-    private String hospital;
-
+    @Column(nullable = false)
     private String dutyArea;
 
-    private String shiftTime;
-
     @Column(nullable = false)
-    private LocalDate caseDate;
+    private String title;
 
-    // e.g., "Normal Spontaneous Delivery", "Appendectomy"
-    @Column(nullable = false)
-    private String diagnosis;
-
-    @Column(nullable = false)
-    private String procedureDetails;
+    @Column(nullable = false, length = 2000)
+    private String studentReason;
 
     @Column(length = 2000)
-    private String studentReflection;
+    private String evidenceNotes;
+
+    private String supportingFiles;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private CaseStatus status = CaseStatus.PENDING;
+    private AppealStatus status = AppealStatus.PENDING;
 
-    private String instructorFeedback;
+    private String instructorRemarks;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

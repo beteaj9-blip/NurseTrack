@@ -1,13 +1,40 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 
+function formatDate(dateTime?: string) {
+  return dateTime ? dateTime.split('T')[0] : '';
+}
+
+function formatTime(dateTime?: string) {
+  if (!dateTime) return '';
+  const [, time = ''] = dateTime.split('T');
+  const [hours = '0', minutes = '00'] = time.split(':');
+  const hourNumber = Number(hours);
+  const period = hourNumber >= 12 ? 'PM' : 'AM';
+  const displayHour = hourNumber % 12 || 12;
+  return `${displayHour}:${minutes} ${period}`;
+}
+
+function normalizeDuty(record: any) {
+  return {
+    ...record,
+    studentId: record.studentId ?? record.student?.id,
+    instructorId: record.instructorId ?? record.instructor?.id,
+    area: record.area ?? record.ward,
+    dutyDate: record.dutyDate ?? formatDate(record.timeIn),
+    timeInLabel: record.timeInLabel ?? formatTime(record.timeIn),
+    timeOutLabel: record.timeOutLabel ?? formatTime(record.timeOut),
+    hours: Number(record.totalHours ?? record.hours ?? 0),
+  };
+}
+
 export const useAttendance = (studentId?: string) => {
   return useQuery({
     queryKey: ['attendance', studentId],
     queryFn: async () => {
       if (!studentId) return [];
       const { data } = await apiClient.get(`/duties/student/${studentId}`);
-      return data;
+      return data.map(normalizeDuty);
     },
     enabled: !!studentId,
   });

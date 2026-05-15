@@ -1,5 +1,6 @@
 package edu.cit.nursetracker.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -29,7 +30,10 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    private String mobileNumber;
+
     @Column(nullable = false)
+    @JsonIgnore
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)

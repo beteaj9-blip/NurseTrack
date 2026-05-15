@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import React from "react";
+import { useAttendance } from "@/core/api/hooks/useAttendance";
+import { useStudentCases } from "@/core/api/hooks/useClinicalCases";
+import { useAuthStore } from "@/core/store/authStore";
 
 type RequirementItem = {
   label: string;
@@ -9,7 +12,20 @@ type RequirementItem = {
   total: number;
 };
 
-const student = {
+const requirementTemplate = [
+  {
+    code: "DR",
+    label: "Delivery Room Cases",
+    items: ["Handled Cases", "Assisted Cases", "Newborn Care", "Labor Watch"],
+  },
+  {
+    code: "OR",
+    label: "Operating Room Cases",
+    items: ["Minor Cases", "Major Cases - Scrub", "Major Cases - Circulating"],
+  },
+];
+
+const staticStudent = {
   name: "Maria Cruz",
   initials: "MC",
   id: "12-3456-789",
@@ -19,29 +35,16 @@ const student = {
   pending: 14,
 };
 
-const requirements = [
-  {
-    code: "DR",
-    label: "Delivery Room Cases",
-    items: [
-      { label: "Handled Cases", completed: 3, total: 3 },
-      { label: "Assisted Cases", completed: 2, total: 3 },
-      { label: "Newborn Care", completed: 1, total: 3 },
-      { label: "Labor Watch", completed: 0, total: 3 },
-    ],
-  },
-  {
-    code: "OR",
-    label: "Operating Room Cases",
-    items: [
-      { label: "Minor Cases", completed: 3, total: 3 },
-      { label: "Major Cases - Scrub", completed: 2, total: 3 },
-      { label: "Major Cases - Circulating", completed: 1, total: 3 },
-    ],
-  },
-];
+const staticRequirements = requirementTemplate.map((group) => ({
+  ...group,
+  items: group.items.map((label, index) => ({
+    label,
+    completed: index === 0 ? 3 : index === 1 ? 2 : index === 2 ? 1 : 0,
+    total: 3,
+  })),
+}));
 
-const dutyEntries = [
+const staticDutyEntries = [
   { day: "Monday", date: "Apr 20", area: "Emergency Room", hours: 8, overtime: 0 },
   { day: "Tuesday", date: "Apr 21", area: "Emergency Room", hours: 9.5, overtime: 1.5 },
   { day: "Thursday", date: "Apr 23", area: "Operating Room", hours: 8, overtime: 0 },
@@ -53,10 +56,60 @@ function formatHours(hours: number) {
   return Number(hours) === 1 ? `${cleanHours} hr` : `${cleanHours} hrs`;
 }
 
+function getInitials(name?: string) {
+  if (!name) return "?";
+  return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
+}
+
+function formatDutyDate(date?: string) {
+  if (!date) return "";
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatDutyDay(date?: string) {
+  if (!date) return "";
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { weekday: "long" });
+}
+
 function getRequirementBadgeClass(item: RequirementItem) {
   if (item.completed === item.total) return "bg-[#e9f8ef] !text-[#03703c]";
   if (item.completed === 0) return "bg-[#fef2f2] !text-[#991b1b]";
   return "bg-[#fff8e1] !text-[#6c4c00]";
+}
+
+function normalizeCategory(value?: string) {
+  return (value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function buildRequirements(cases: any[]) {
+  return requirementTemplate.map((group) => ({
+    ...group,
+    items: group.items.map((label) => {
+      const completed = cases.filter((clinicalCase) => {
+        const category = normalizeCategory(clinicalCase.category ?? clinicalCase.area);
+        return category === normalizeCategory(label) && clinicalCase.status === "APPROVED";
+      }).length;
+
+      return {
+        label,
+        completed: Math.min(completed, 3),
+        total: 3,
+      };
+    }),
+  }));
+}
+
+function buildDutyEntries(records: any[]) {
+  return records.map((record) => {
+    const hours = Number(record.totalHours ?? record.hours ?? 0);
+    return {
+      day: formatDutyDay(record.dutyDate),
+      date: formatDutyDate(record.dutyDate),
+      area: record.area ?? record.ward ?? "Assigned Area",
+      hours,
+      overtime: Math.max(hours - 8, 0),
+    };
+  });
 }
 
 function getPendingItemsHref(basePath: string) {
@@ -66,8 +119,30 @@ function getPendingItemsHref(basePath: string) {
 }
 
 export function StudentProgressContent({ basePath }: { basePath: string }) {
+  const isStudentSide = basePath === "/nursing-student";
+  const user = useAuthStore((state) => state.user);
+  const userId = isStudentSide && user?.id != null ? String(user.id) : undefined;
+  const { data: cases = [] } = useStudentCases(userId);
+  const { data: dutyRecords = [] } = useAttendance(userId);
+
+  const student = isStudentSide
+    ? {
+        name: user?.fullName ?? "Nursing Student",
+        initials: getInitials(user?.fullName),
+        id: user?.schoolId ?? "",
+        section: user?.sectionInfo ?? "Nursing Student",
+        status: "In progress",
+        extensionDays: dutyRecords.filter((record: any) => record.status === "REJECTED").length,
+        pending: cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length + dutyRecords.filter((record: any) => record.status === "PENDING").length,
+      }
+    : staticStudent;
+
+  const requirements = isStudentSide ? buildRequirements(cases) : staticRequirements;
+  const dutyEntries = isStudentSide ? buildDutyEntries(dutyRecords) : staticDutyEntries;
   const totalHours = dutyEntries.reduce((sum, entry) => sum + entry.hours, 0);
   const totalOvertime = dutyEntries.reduce((sum, entry) => sum + entry.overtime, 0);
+  const completedCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.completed, 0), 0);
+  const totalRequiredCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.total, 0), 0);
 
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
@@ -97,7 +172,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
           icon="cases"
           status="In progress"
           title="Clinical Cases"
-          description="12 of 21 cases completed"
+          description={`${completedCases} of ${totalRequiredCases} cases completed`}
         />
         <SummaryCard
           icon="alert"
@@ -171,7 +246,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
               <strong className="block !text-[#111827] !text-[1.25rem] leading-[1.2]">{formatHours(totalHours)} recorded</strong>
             </div>
             <p className="m-0 max-w-[240px] !text-[#64748b] !text-[0.84rem] !font-[800] leading-[1.45] text-right">
-              {formatHours(totalOvertime)} overtime across {dutyEntries.length} duty days.
+              {formatHours(totalOvertime)} overtime across {dutyEntries.length} duty day{dutyEntries.length === 1 ? "" : "s"}.
             </p>
           </div>
 
@@ -196,7 +271,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
               const [month = "", dayNumber = ""] = entry.date.split(" ");
 
               return (
-                <article key={`${entry.date}-${entry.day}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-[14px] items-center border rounded-[8px] p-[12px_14px] ${hasOvertime ? "border-[rgba(180,35,24,0.2)] bg-[linear-gradient(90deg,#ffffff,#fff8f7)]" : "border-[#e2e8f0] bg-[linear-gradient(90deg,#ffffff,#f8fafc)]"}`}>
+                <article key={`${entry.date}-${entry.day}-${entry.area}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-[14px] items-center border rounded-[8px] p-[12px_14px] ${hasOvertime ? "border-[rgba(180,35,24,0.2)] bg-[linear-gradient(90deg,#ffffff,#fff8f7)]" : "border-[#e2e8f0] bg-[linear-gradient(90deg,#ffffff,#f8fafc)]"}`}>
                   <div className="grid place-items-center min-w-[52px] min-h-[56px] border border-[rgba(255,207,1,0.45)] rounded-[8px] bg-[rgba(255,207,1,0.12)] !text-[#6c4c00] p-[7px] text-center">
                     <span className="m-0 !text-[0.66rem] !font-[900] uppercase leading-[1]">{month}</span>
                     <strong className="mt-[3px] !text-[1.04rem] leading-[1] !font-bold">{dayNumber}</strong>
@@ -218,7 +293,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
           </div>
 
           <div className="mt-[14px] p-[12px_16px] border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] !text-[#475569] !text-[0.9rem] !font-[700] leading-[1.5]" role="status" aria-live="polite">
-            Showing {student.name}'s weekly duty attendance and overtime status.
+            Showing {student.name}&apos;s weekly duty attendance and overtime status.
           </div>
         </article>
       </div>

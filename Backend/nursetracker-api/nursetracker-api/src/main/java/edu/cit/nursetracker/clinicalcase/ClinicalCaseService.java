@@ -48,7 +48,12 @@ public class ClinicalCaseService {
             existingCase.setProcedureDetails(updatedCase.getProcedureDetails());
             existingCase.setPatientInitials(updatedCase.getPatientInitials());
             existingCase.setPatientAge(updatedCase.getPatientAge());
+            existingCase.setCategory(updatedCase.getCategory());
+            existingCase.setHospital(updatedCase.getHospital());
+            existingCase.setDutyArea(updatedCase.getDutyArea());
+            existingCase.setShiftTime(updatedCase.getShiftTime());
             existingCase.setCaseDate(updatedCase.getCaseDate());
+            existingCase.setStudentReflection(updatedCase.getStudentReflection());
             existingCase.setStatus(CaseStatus.PENDING);
             return caseRepository.save(existingCase);
         }
