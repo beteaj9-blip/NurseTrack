@@ -1,133 +1,276 @@
 "use client";
-import React, { useState } from "react";
-import { useAuthStore } from "@/core/store/authStore";
-import { useAttendance } from "@/core/api/hooks/useAttendance";
 
-const statusStyle: Record<string, string> = {
-  COMPLETED:  "bg-[#e9f8ef] !text-[#03703c]",
-  VALIDATED:  "bg-[#e9f8ef] !text-[#03703c]",
-  PENDING:    "bg-[#fff8e1] !text-[#6c4c00]",
-  ABSENT:     "bg-[#fef2f2] !text-[#991b1b]",
-  LATE:       "bg-[#fef2f2] !text-[#991b1b]",
+import Link from "next/link";
+import React from "react";
+
+type RequirementItem = {
+  label: string;
+  completed: number;
+  total: number;
 };
 
-function formatDate(dateStr?: string) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-PH", {
-    month: "short", day: "numeric", year: "numeric",
-  });
+const student = {
+  name: "Maria Cruz",
+  initials: "MC",
+  id: "12-3456-789",
+  section: "BSN 3A",
+  status: "In progress",
+  extensionDays: 11,
+  pending: 14,
+};
+
+const requirements = [
+  {
+    code: "DR",
+    label: "Delivery Room Cases",
+    items: [
+      { label: "Handled Cases", completed: 3, total: 3 },
+      { label: "Assisted Cases", completed: 2, total: 3 },
+      { label: "Newborn Care", completed: 1, total: 3 },
+      { label: "Labor Watch", completed: 0, total: 3 },
+    ],
+  },
+  {
+    code: "OR",
+    label: "Operating Room Cases",
+    items: [
+      { label: "Minor Cases", completed: 3, total: 3 },
+      { label: "Major Cases - Scrub", completed: 2, total: 3 },
+      { label: "Major Cases - Circulating", completed: 1, total: 3 },
+    ],
+  },
+];
+
+const dutyEntries = [
+  { day: "Monday", date: "Apr 20", area: "Emergency Room", hours: 8, overtime: 0 },
+  { day: "Tuesday", date: "Apr 21", area: "Emergency Room", hours: 9.5, overtime: 1.5 },
+  { day: "Thursday", date: "Apr 23", area: "Operating Room", hours: 8, overtime: 0 },
+  { day: "Friday", date: "Apr 24", area: "Operating Room", hours: 10, overtime: 2 },
+];
+
+function formatHours(hours: number) {
+  const cleanHours = Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
+  return Number(hours) === 1 ? `${cleanHours} hr` : `${cleanHours} hrs`;
 }
 
-function formatTime(timeStr?: string) {
-  if (!timeStr) return "—";
-  const [h, m] = timeStr.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ampm}`;
+function getRequirementBadgeClass(item: RequirementItem) {
+  if (item.completed === item.total) return "bg-[#e9f8ef] !text-[#03703c]";
+  if (item.completed === 0) return "bg-[#fef2f2] !text-[#991b1b]";
+  return "bg-[#fff8e1] !text-[#6c4c00]";
+}
+
+function getPendingItemsHref(basePath: string) {
+  if (basePath === "/nursing-student") return `${basePath}/clinical-cases`;
+  if (basePath === "/enrollment-team") return `${basePath}/student-progress/detail?student=maria-cruz`;
+  return `${basePath}/clinical-cases/selection?student=maria-cruz`;
 }
 
 export function StudentProgressContent({ basePath }: { basePath: string }) {
-  const user = useAuthStore((state) => state.user);
-  const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: records, isLoading } = useAttendance(userId);
-
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const PER_PAGE = 10;
-
-  const filtered = (records ?? []).filter((r: any) => {
-    const q = search.toLowerCase();
-    const matchSearch = !search ||
-      r.area?.toLowerCase().includes(q) ||
-      r.hospital?.toLowerCase().includes(q) ||
-      r.dutyDate?.toLowerCase().includes(q);
-    const matchStatus = statusFilter === "all" || r.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
-
-  const btnCls = "inline-flex items-center justify-center min-h-[32px] px-[1rem] py-[0.5rem] rounded-[8px] bg-transparent !text-[#334155] !text-[0.875rem] font-bold hover:bg-[#e2e8f0] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
-  const inputCls = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
-  const labelCls = "flex flex-col gap-1.5 m-0 p-[0.1rem] !text-sm !font-bold !text-[#344054]";
+  const totalHours = dutyEntries.reduce((sum, entry) => sum + entry.hours, 0);
+  const totalOvertime = dutyEntries.reduce((sum, entry) => sum + entry.overtime, 0);
 
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
-      <section className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem]">
-        <div className="flex items-center justify-between gap-4 mb-[1.1rem] pb-3 border-b border-[#e5eaf1] flex-wrap">
+      <section className="flex items-center justify-between gap-[28px] p-[clamp(24px,4vw,34px)] border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] mb-[18px]">
+        <div className="flex items-center gap-[16px] min-w-0">
+          <div className="w-[68px] h-[68px] shrink-0 bg-[#ffc107] !text-[#111827] rounded-full flex items-center justify-center !font-[800] text-[1.05rem]">
+            {student.initials}
+          </div>
           <div>
-            <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">My Duty Progress</h2>
-            <p className="m-0 mt-1 !text-[0.82rem] !text-[#64748b] font-semibold">{user?.sectionInfo || "—"} · {user?.fullName}</p>
-          </div>
-          <div className="flex items-center gap-[0.75rem] flex-wrap">
-            <button className="inline-flex items-center justify-center w-auto min-h-[38px] px-[1rem] rounded-[8px] bg-transparent !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f1f5f9] transition-colors cursor-pointer" type="button" onClick={() => window.print()}>Print</button>
-            <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{filtered.length} records</span>
+            <h2 className="m-0 mb-[8px] !text-[#111827] !text-[clamp(1.55rem,3vw,2.15rem)] !font-bold">{student.name}</h2>
+            <p className="m-0 !text-[#64748b] !font-[600] leading-[1.55]">{student.section} - Student ID {student.id}</p>
           </div>
         </div>
+        <span className="inline-flex items-center justify-start w-max max-w-full min-h-[28px] px-[10px] py-[6px] rounded-full bg-[#fff8e1] !text-[#6c4c00] !text-[0.76rem] !font-extrabold whitespace-nowrap">
+          {student.status}
+        </span>
+      </section>
 
-        {/* Filters */}
-        <div className="grid gap-[1rem] mb-[1rem] grid-cols-2 max-[720px]:grid-cols-1">
-          <label className={labelCls} htmlFor="sp-search">
-            Search
-            <input className={inputCls} id="sp-search" type="search" placeholder="Search area or hospital…" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} />
-          </label>
-          <label className={labelCls} htmlFor="sp-status">
-            Status
-            <select className={`${inputCls} cursor-pointer`} id="sp-status" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
-              <option value="all">All statuses</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="VALIDATED">Validated</option>
-              <option value="PENDING">Pending</option>
-              <option value="ABSENT">Absent</option>
-              <option value="LATE">Late</option>
-            </select>
-          </label>
-        </div>
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[18px] mb-[18px]" aria-label="Student progress summary">
+        <SummaryCard
+          icon="calendar"
+          status="Open"
+          title="Extension Days"
+          description={`${student.extensionDays} extension days recorded`}
+        />
+        <SummaryCard
+          icon="cases"
+          status="In progress"
+          title="Clinical Cases"
+          description="12 of 21 cases completed"
+        />
+        <SummaryCard
+          icon="alert"
+          status="Open"
+          title="Pending Items"
+          description={`${student.pending} records need student or instructor action`}
+        />
+      </section>
 
-        {/* Table */}
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-[160px] text-[#64748b] font-bold">Loading records…</div>
-        ) : paged.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[160px] p-6 border-2 border-dashed border-[#dbe3ee] rounded-xl bg-[#f8fafc] text-[#475569] font-medium text-center">
-            {records?.length === 0 ? "No duty records found. Records will appear here once assigned." : "No records match the current filter."}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[18px] items-start">
+        <article className="border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[24px]">
+          <div className="flex justify-between items-start gap-[22px] mb-[20px]">
+            <h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Requirement Progress</h2>
+            <Link
+              className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all duration-[160ms] ease cursor-pointer no-underline whitespace-nowrap"
+              href={getPendingItemsHref(basePath)}
+            >
+              Pending items
+            </Link>
           </div>
-        ) : (
-          <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? '' : 'rounded-b-lg'}`}>
-            {/* Table header */}
-            <div className="hidden md:grid grid-cols-[2fr_2fr_1fr_1fr_1fr] bg-[#f8fafc] border-b border-[#e2e8f0] px-[1.5rem] py-[0.75rem]">
-              {["Hospital / Area", "Duty Date", "Time In", "Time Out", "Status"].map(h => (
-                <span key={h} className="!text-[#475467] !text-[0.72rem] !font-[800] uppercase tracking-wider">{h}</span>
-              ))}
-            </div>
-            {paged.map((r: any, i: number) => {
-              const badgeCls = statusStyle[r.status] ?? "bg-[#f1f5f9] !text-[#475569]";
-              return (
-                <div key={r.id ?? i} className="grid md:grid-cols-[2fr_2fr_1fr_1fr_1fr] items-center gap-2 px-[1.5rem] py-[1rem] border-b border-[#e2e8f0] last:border-b-0 hover:bg-[#f8fafc] transition-colors">
-                  <div>
-                    <strong className="block !text-[#111827] !text-[0.95rem] !font-[850] leading-[1.25]">{r.hospital ?? "—"}</strong>
-                    <small className="!text-[#64748b] !text-[0.82rem] !font-[700]">{r.area ?? "—"}</small>
-                  </div>
-                  <span className="!text-[#475569] !text-[0.9rem] font-semibold">{formatDate(r.dutyDate)}</span>
-                  <span className="!text-[#475569] !text-[0.9rem] font-semibold">{formatTime(r.timeIn)}</span>
-                  <span className="!text-[#475569] !text-[0.9rem] font-semibold">{formatTime(r.timeOut)}</span>
-                  <mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${badgeCls}`}>
-                    {r.status}
-                  </mark>
+
+          <div className="grid gap-[18px]">
+            {requirements.map((group) => (
+              <section key={group.code} aria-label={`${group.label} requirements`}>
+                <div className="flex items-baseline justify-between gap-[12px] border-b border-[#e2e8f0] px-[2px] pb-[8px] mb-[10px]">
+                  <strong className="!text-[#8A252C] !text-[1.05rem] !font-bold">{group.code}</strong>
+                  <span className="!text-[#64748b] !text-[0.78rem] !font-[800]">{group.label}</span>
                 </div>
+                <div className="grid gap-[10px]">
+                  {group.items.map((item) => {
+                    const percent = Math.round((item.completed / item.total) * 100);
+                    const badge = `${item.completed} / ${item.total}`;
+
+                    return (
+                      <div key={item.label} className="grid grid-cols-[minmax(150px,1.3fr)_minmax(150px,1fr)_auto] gap-[14px] items-center border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] p-[14px]">
+                        <div className="grid gap-[5px]">
+                          <strong className="!text-[0.96rem] !text-[#111827]">{item.label}</strong>
+                          <span className="!text-[#64748b] !text-[0.82rem] !font-[800] leading-[1.4]">
+                            {badge} completed
+                          </span>
+                        </div>
+                        <div className="h-[9px] overflow-hidden rounded-full bg-[#eceff3]">
+                          <span
+                            className="block h-full rounded-[inherit]"
+                            style={{ width: `${percent}%`, background: "linear-gradient(90deg, #8A252C, #ffc107)" }}
+                          />
+                        </div>
+                        <span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${getRequirementBadgeClass(item)}`}>
+                          {badge}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        </article>
+
+        <article className="border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[24px] overflow-hidden">
+          <div className="flex justify-between items-start gap-[22px] mb-[20px]">
+            <h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Weekly Duty Record</h2>
+          </div>
+
+          <div
+            className="flex items-center justify-between gap-[14px] border border-[rgba(138,37,44,0.14)] rounded-[8px] mb-[14px] p-[16px]"
+            style={{ background: "linear-gradient(135deg, rgba(255,207,1,0.22), rgba(138,37,44,0.04) 62%), #ffffff" }}
+          >
+            <div>
+              <span className="block mb-[5px] !text-[#8A252C] !text-[0.72rem] !font-[900] uppercase">This week</span>
+              <strong className="block !text-[#111827] !text-[1.25rem] leading-[1.2]">{formatHours(totalHours)} recorded</strong>
+            </div>
+            <p className="m-0 max-w-[240px] !text-[#64748b] !text-[0.84rem] !font-[800] leading-[1.45] text-right">
+              {formatHours(totalOvertime)} overtime across {dutyEntries.length} duty days.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-[12px] mb-[16px]" aria-label="Weekly duty summary">
+            {[
+              { label: "Duty Days", value: String(dutyEntries.length) },
+              { label: "Total Hours", value: formatHours(totalHours) },
+              { label: "Overtime", value: formatHours(totalOvertime) },
+            ].map((stat) => (
+              <div key={stat.label} className="relative overflow-hidden border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] p-[13px_14px_13px_16px] before:content-[''] before:absolute before:inset-[0_auto_0_0] before:w-[4px] before:bg-[linear-gradient(180deg,#8A252C,#ffc107)]">
+                <span className="block mb-[5px] !text-[#64748b] !text-[0.74rem] !font-[800] uppercase">{stat.label}</span>
+                <strong className="!text-[#111827] !text-[1.05rem]">{stat.value}</strong>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-[12px] mb-[14px]">
+            {dutyEntries.map((entry) => {
+              const hasOvertime = entry.overtime > 0;
+              const badgeClass = hasOvertime ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#e9f8ef] !text-[#03703c]";
+              const badgeLabel = hasOvertime ? `Overtime +${formatHours(entry.overtime)}` : "No overtime";
+              const [month = "", dayNumber = ""] = entry.date.split(" ");
+
+              return (
+                <article key={`${entry.date}-${entry.day}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-[14px] items-center border rounded-[8px] p-[12px_14px] ${hasOvertime ? "border-[rgba(180,35,24,0.2)] bg-[linear-gradient(90deg,#ffffff,#fff8f7)]" : "border-[#e2e8f0] bg-[linear-gradient(90deg,#ffffff,#f8fafc)]"}`}>
+                  <div className="grid place-items-center min-w-[52px] min-h-[56px] border border-[rgba(255,207,1,0.45)] rounded-[8px] bg-[rgba(255,207,1,0.12)] !text-[#6c4c00] p-[7px] text-center">
+                    <span className="m-0 !text-[0.66rem] !font-[900] uppercase leading-[1]">{month}</span>
+                    <strong className="mt-[3px] !text-[1.04rem] leading-[1] !font-bold">{dayNumber}</strong>
+                  </div>
+                  <div>
+                    <strong className="block mb-[4px] !text-[0.94rem] !text-[#111827]">{entry.day}</strong>
+                    <p className="m-0 !text-[#64748b] !text-[0.82rem] !font-[700] leading-[1.4]">{entry.area}</p>
+                  </div>
+                  <span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${badgeClass}`}>
+                    {badgeLabel}
+                  </span>
+                  <div className="grid gap-[2px] text-right">
+                    <span className="!text-[#111827] !text-[0.96rem] !font-[900] whitespace-nowrap">{formatHours(entry.hours)}</span>
+                    <small className="!text-[#64748b] !text-[0.67rem] !font-[800] uppercase whitespace-nowrap">Duty Record</small>
+                  </div>
+                </article>
               );
             })}
           </div>
-        )}
 
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center p-[1rem_1.5rem] border border-[#e2e8f0] border-t-0 rounded-b-[0.5rem] bg-[#f8fafc]">
-            <button className={btnCls} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</button>
-            <span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {currentPage} of {totalPages}</span>
-            <button className={btnCls} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
+          <div className="mt-[14px] p-[12px_16px] border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] !text-[#475569] !text-[0.9rem] !font-[700] leading-[1.5]" role="status" aria-live="polite">
+            Showing {student.name}'s weekly duty attendance and overtime status.
           </div>
-        )}
-      </section>
+        </article>
+      </div>
     </main>
+  );
+}
+
+function SummaryCard({ icon, status, title, description }: { icon: "calendar" | "cases" | "alert"; status: string; title: string; description: string }) {
+  return (
+    <article className="relative overflow-hidden border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[24px] after:content-[''] after:absolute after:inset-[auto_-32px_-54px_auto] after:w-[126px] after:h-[126px] after:rounded-full after:bg-[rgba(138,37,44,0.06)] after:pointer-events-none">
+      <div className="flex justify-between items-start gap-[22px]">
+        <span className="w-[42px] min-w-[42px] h-[42px] rounded-[8px] bg-[rgba(138,37,44,0.08)] !text-[#8A252C] inline-flex items-center justify-center" aria-label={title}>
+          <SummaryIcon icon={icon} />
+        </span>
+        <span className="inline-flex items-center justify-start w-max max-w-full min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">
+          {status}
+        </span>
+      </div>
+      <h3 className="mt-[18px] mb-[6px] !text-[1.05rem] !text-[#111827] !font-bold">{title}</h3>
+      <p className="mb-[16px] !text-[#64748b] !text-[0.9rem] !font-[700]">{description}</p>
+    </article>
+  );
+}
+
+function SummaryIcon({ icon }: { icon: "calendar" | "cases" | "alert" }) {
+  if (icon === "calendar") {
+    return (
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <path d="M3 10h18" />
+        <path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z" />
+      </svg>
+    );
+  }
+
+  if (icon === "cases") {
+    return (
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M8 4h8" />
+        <path d="M7 8h10" />
+        <path d="M7 12h7" />
+        <path d="M6 3h12v18H6z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 8v5" />
+      <path d="M12 17h.01" />
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    </svg>
   );
 }
