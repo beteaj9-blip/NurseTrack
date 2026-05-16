@@ -37,6 +37,16 @@ export const useStudentAppeal = (appealId?: string) => {
   });
 };
 
+export const useAppealTypes = () => {
+  return useQuery({
+    queryKey: ['appeal-types'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/appeals/types');
+      return data;
+    },
+  });
+};
+
 export const useCreateStudentAppeal = (studentId?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -46,6 +56,33 @@ export const useCreateStudentAppeal = (studentId?: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-appeals', studentId] });
+    },
+  });
+};
+
+export const useUpdateStudentAppeal = (studentId?: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appealId, appeal }: { appealId: string; appeal: any }) => {
+      const { data } = await apiClient.put(`/appeals/${appealId}`, appeal);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['student-appeals', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['student-appeal', variables.appealId] });
+    },
+  });
+};
+
+export const useUploadAppealFile = () => {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await apiClient.post('/uploads/cloudinary', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
     },
   });
 };

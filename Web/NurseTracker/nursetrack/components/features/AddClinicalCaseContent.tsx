@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/core/api/axios";
 import { useSubmitCase } from "@/core/api/hooks/useClinicalCases";
 import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 
-const categories = [
-  { value: "Major Cases - Scrub", label: "Major Case - Assist" },
-  { value: "Major Cases - Circulating", label: "Major Case - Circulate" },
-  { value: "Handled Cases", label: "Handled Case" },
-];
+type CaseCategoryOption = {
+  value: string;
+  label: string;
+};
 
 function getCaseType(category: string, dutyArea: string) {
   const combined = `${category} ${dutyArea}`.toLowerCase();
@@ -26,6 +27,13 @@ export default function AddClinicalCaseContent() {
   const { data: schedules = [] } = useSchedules(userId);
   const { data: hospitals = [] } = useHospitals();
   const { data: instructors = [] } = useInstructors();
+  const { data: categories = [] } = useQuery<CaseCategoryOption[]>({
+    queryKey: ["clinical-case-categories"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/cases/categories");
+      return data as CaseCategoryOption[];
+    },
+  });
   const submitCase = useSubmitCase();
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
   const [patientInitials, setPatientInitials] = useState("");

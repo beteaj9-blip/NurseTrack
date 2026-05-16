@@ -12,45 +12,6 @@ type RequirementItem = {
   total: number;
 };
 
-const requirementTemplate = [
-  {
-    code: "DR",
-    label: "Delivery Room Cases",
-    items: ["Handled Cases", "Assisted Cases", "Newborn Care", "Labor Watch"],
-  },
-  {
-    code: "OR",
-    label: "Operating Room Cases",
-    items: ["Minor Cases", "Major Cases - Scrub", "Major Cases - Circulating"],
-  },
-];
-
-const staticStudent = {
-  name: "Maria Cruz",
-  initials: "MC",
-  id: "12-3456-789",
-  section: "BSN 3A",
-  status: "In progress",
-  extensionDays: 11,
-  pending: 14,
-};
-
-const staticRequirements = requirementTemplate.map((group) => ({
-  ...group,
-  items: group.items.map((label, index) => ({
-    label,
-    completed: index === 0 ? 3 : index === 1 ? 2 : index === 2 ? 1 : 0,
-    total: 3,
-  })),
-}));
-
-const staticDutyEntries = [
-  { day: "Monday", date: "Apr 20", area: "Emergency Room", hours: 8, overtime: 0 },
-  { day: "Tuesday", date: "Apr 21", area: "Emergency Room", hours: 9.5, overtime: 1.5 },
-  { day: "Thursday", date: "Apr 23", area: "Operating Room", hours: 8, overtime: 0 },
-  { day: "Friday", date: "Apr 24", area: "Operating Room", hours: 10, overtime: 2 },
-];
-
 function formatHours(hours: number) {
   const cleanHours = Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
   return Number(hours) === 1 ? `${cleanHours} hr` : `${cleanHours} hrs`;
@@ -77,25 +38,21 @@ function getRequirementBadgeClass(item: RequirementItem) {
   return "bg-[#fff8e1] !text-[#6c4c00]";
 }
 
-function normalizeCategory(value?: string) {
-  return (value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
-}
-
 function buildRequirements(cases: any[]) {
-  return requirementTemplate.map((group) => ({
-    ...group,
-    items: group.items.map((label) => {
-      const completed = cases.filter((clinicalCase) => {
-        const category = normalizeCategory(clinicalCase.category ?? clinicalCase.area);
-        return category === normalizeCategory(label) && clinicalCase.status === "APPROVED";
-      }).length;
+  const grouped = cases.reduce<Record<string, any[]>>((acc, clinicalCase) => {
+    const label = clinicalCase.category ?? clinicalCase.area ?? clinicalCase.caseType ?? "Clinical Cases";
+    acc[label] = [...(acc[label] ?? []), clinicalCase];
+    return acc;
+  }, {});
 
-      return {
-        label,
-        completed: Math.min(completed, 3),
-        total: 3,
-      };
-    }),
+  return Object.entries(grouped).map(([label, records]) => ({
+    code: label.split(" ").map((part) => part[0]).join("").slice(0, 3).toUpperCase(),
+    label,
+    items: [{
+      label,
+      completed: records.filter((clinicalCase) => clinicalCase.status === "APPROVED").length,
+      total: records.length,
+    }],
   }));
 }
 
@@ -119,26 +76,23 @@ function getPendingItemsHref(basePath: string) {
 }
 
 export function StudentProgressContent({ basePath }: { basePath: string }) {
-  const isStudentSide = basePath === "/nursing-student";
   const user = useAuthStore((state) => state.user);
-  const userId = isStudentSide && user?.id != null ? String(user.id) : undefined;
+  const userId = user?.id != null ? String(user.id) : undefined;
   const { data: cases = [] } = useStudentCases(userId);
   const { data: dutyRecords = [] } = useAttendance(userId);
 
-  const student = isStudentSide
-    ? {
-        name: user?.fullName ?? "Nursing Student",
-        initials: getInitials(user?.fullName),
-        id: user?.schoolId ?? "",
-        section: user?.sectionInfo ?? "Nursing Student",
-        status: "In progress",
-        extensionDays: dutyRecords.filter((record: any) => record.status === "REJECTED").length,
-        pending: cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length + dutyRecords.filter((record: any) => record.status === "PENDING").length,
-      }
-    : staticStudent;
+  const student = {
+    name: user?.fullName ?? "Nursing Student",
+    initials: getInitials(user?.fullName),
+    id: user?.schoolId ?? "",
+    section: user?.sectionInfo ?? "Nursing Student",
+    status: "In progress",
+    extensionDays: dutyRecords.filter((record: any) => record.status === "REJECTED").length,
+    pending: cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length + dutyRecords.filter((record: any) => record.status === "PENDING").length,
+  };
 
-  const requirements = isStudentSide ? buildRequirements(cases) : staticRequirements;
-  const dutyEntries = isStudentSide ? buildDutyEntries(dutyRecords) : staticDutyEntries;
+  const requirements = buildRequirements(cases);
+  const dutyEntries = buildDutyEntries(dutyRecords);
   const totalHours = dutyEntries.reduce((sum, entry) => sum + entry.hours, 0);
   const totalOvertime = dutyEntries.reduce((sum, entry) => sum + entry.overtime, 0);
   const completedCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.completed, 0), 0);
@@ -196,7 +150,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
 
           <div className="grid gap-[18px]">
             {requirements.map((group) => (
-              <section key={group.code} aria-label={`${group.label} requirements`}>
+              <section key={group.label} aria-label={`${group.label} requirements`}>
                 <div className="flex items-baseline justify-between gap-[12px] border-b border-[#e2e8f0] px-[2px] pb-[8px] mb-[10px]">
                   <strong className="!text-[#8A252C] !text-[1.05rem] !font-bold">{group.code}</strong>
                   <span className="!text-[#64748b] !text-[0.78rem] !font-[800]">{group.label}</span>

@@ -5,7 +5,11 @@ function normalizeClinicalCase(clinicalCase: any) {
   return {
     ...clinicalCase,
     studentId: clinicalCase.studentId ?? clinicalCase.student?.id,
+    studentName: clinicalCase.studentName ?? clinicalCase.student?.fullName ?? '',
+    studentSchoolId: clinicalCase.studentSchoolId ?? clinicalCase.student?.schoolId ?? '',
+    studentSection: clinicalCase.studentSection ?? clinicalCase.student?.sectionInfo ?? '',
     instructorId: clinicalCase.instructorId ?? clinicalCase.instructor?.id,
+    instructorName: clinicalCase.instructorName ?? clinicalCase.instructor?.fullName ?? '',
     area: clinicalCase.area ?? clinicalCase.category ?? clinicalCase.dutyArea ?? clinicalCase.caseType,
     hospital: clinicalCase.hospital ?? '',
     procedureDate: clinicalCase.procedureDate ?? clinicalCase.caseDate,
@@ -22,6 +26,18 @@ export const useStudentCases = (studentId?: string) => {
       return data.map(normalizeClinicalCase);
     },
     enabled: !!studentId,
+  });
+};
+
+export const useClinicalCase = (caseId?: string) => {
+  return useQuery({
+    queryKey: ['clinical-cases', 'detail', caseId],
+    queryFn: async () => {
+      if (!caseId) return null;
+      const { data } = await apiClient.get(`/cases/${caseId}`);
+      return normalizeClinicalCase(data);
+    },
+    enabled: !!caseId,
   });
 };
 

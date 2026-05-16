@@ -35,7 +35,12 @@ public class StudentReportController {
     public ResponseEntity<Map<String, Object>> getStudentReport(
             @PathVariable Long studentId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProfile,
+            @RequestParam(required = false, defaultValue = "true") boolean includeSchedules,
+            @RequestParam(required = false, defaultValue = "true") boolean includeCases,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProgress,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAppeals) {
 
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found."));
@@ -73,16 +78,28 @@ public class StudentReportController {
                 .count();
 
         Map<String, Object> report = new LinkedHashMap<>();
-        report.put("studentName", student.getFullName());
-        report.put("schoolId", student.getSchoolId());
-        report.put("sectionInfo", student.getSectionInfo());
+        if (includeProfile) {
+            Map<String, Object> profile = new LinkedHashMap<>();
+            profile.put("studentName", student.getFullName());
+            profile.put("schoolId", student.getSchoolId());
+            profile.put("sectionInfo", student.getSectionInfo());
+            profile.put("email", student.getEmail());
+            report.put("profile", profile);
+        }
         report.put("startDate", startDate);
         report.put("endDate", endDate);
-        report.put("scheduleCount", schedules.size());
-        report.put("caseCount", cases.size());
-        report.put("approvedCaseCount", approvedCases);
-        report.put("dutyRecordCount", duties.size());
-        report.put("appealCount", appealCount);
+        report.put("includeProfile", includeProfile);
+        report.put("includeSchedules", includeSchedules);
+        report.put("includeCases", includeCases);
+        report.put("includeProgress", includeProgress);
+        report.put("includeAppeals", includeAppeals);
+        if (includeSchedules) report.put("scheduleCount", schedules.size());
+        if (includeCases) {
+            report.put("caseCount", cases.size());
+            report.put("approvedCaseCount", approvedCases);
+        }
+        if (includeProgress) report.put("dutyRecordCount", duties.size());
+        if (includeAppeals) report.put("appealCount", appealCount);
         report.put("message", "General report successfully generated for " + student.getFullName() + ".");
         return ResponseEntity.ok(report);
     }

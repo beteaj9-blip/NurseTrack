@@ -12,6 +12,12 @@ import java.util.List;
 public class StudentAppealController {
 
     private final StudentAppealService appealService;
+    private final AppealTypeOptionRepository appealTypeOptionRepository;
+
+    @GetMapping("/types")
+    public ResponseEntity<List<AppealTypeOption>> getAppealTypes() {
+        return ResponseEntity.ok(appealTypeOptionRepository.findAllByOrderByIdAsc());
+    }
 
     @PostMapping
     public ResponseEntity<StudentAppeal> createAppeal(@RequestBody StudentAppeal appeal) {
@@ -26,6 +32,11 @@ public class StudentAppealController {
     @GetMapping("/{id}")
     public ResponseEntity<StudentAppeal> getAppeal(@PathVariable Long id) {
         return ResponseEntity.ok(appealService.getAppeal(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<StudentAppeal> updateAppeal(@PathVariable Long id, @RequestBody StudentAppeal appeal) {
+        return ResponseEntity.ok(appealService.updateAppeal(id, appeal));
     }
 
     @PutMapping("/{id}/status")

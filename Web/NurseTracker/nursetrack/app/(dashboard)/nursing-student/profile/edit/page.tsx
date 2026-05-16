@@ -1,5 +1,5 @@
-﻿import { redirect } from "next/navigation";
+﻿import { StudentProfileEditContent } from "@/components/features/StudentProfileEditContent";
 
-export default function ProfileEditRedirect() {
-  redirect("/nursing-student/profile");
+export default function ProfileEditPage() {
+  return <StudentProfileEditContent />;
 }

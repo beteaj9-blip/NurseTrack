@@ -99,5 +99,5 @@ export const roleUserContexts: Record<string, any> = {
   coordinator: { role: "Coordinator", userName: "Ana Santos", userContext: "Coordinator", avatarInitials: "CS" },
   "clinical-instructor": { role: "Clinical Instructor", userName: "Patricia Reyes", userContext: "Clinical Instructor", avatarInitials: "PR" },
   "enrollment-team": { role: "Enrollment Team", userName: "Enrollment Office", userContext: "CIT-U Nursing", avatarInitials: "ET" },
-  "nursing-student": { role: "Nursing Student", userName: "Maria Cruz", userContext: "BSN 3A", avatarInitials: "MC" },
+  "nursing-student": { role: "Nursing Student", userName: "Student", userContext: "Nursing Student", avatarInitials: "NS" },
 };

@@ -34,7 +34,8 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
 
   const user = useAuthStore((state) => state.user);
   const { data: schedules, isLoading } = useSchedules(
-    user?.id != null ? String(user.id) : undefined
+    user?.id != null ? String(user.id) : undefined,
+    user?.role
   );
 
   // Build a set of dates that have schedules: "YYYY-MM-DD" -> schedule
@@ -119,7 +120,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                   return (
                     <button
                       key={i} type="button"
-                      onClick={sched ? () => router.push(`${basePath}/schedules/day`) : undefined}
+                      onClick={sched ? () => router.push(`${basePath}/schedules/day?schedule=${sched.id}`) : undefined}
                       className={`relative flex flex-col min-h-[110px] overflow-hidden border rounded-lg p-3 text-left outline-none max-[980px]:min-h-[90px]
                         ${sched ? "cursor-pointer border-[#ffcf01]/82 bg-[linear-gradient(145deg,#fff8d9_0%,#fff3bc_58%,#fffdf4_100%)] shadow-[0_12px_30px_rgba(161,92,7,0.1)] transition-all hover:-translate-y-0.5 hover:border-[#8a252c]/34 hover:shadow-[0_16px_34px_rgba(32,33,36,0.11)] before:absolute before:inset-[0_auto_0_0] before:w-1 before:bg-[#ffcf01]" : "cursor-default border-[#e4e7ec]/95 bg-[#fcfcfd] shadow-[0_1px_2px_rgba(32,33,36,0.03)]"}
                         ${isToday && !sched ? "!border-[#8a252c]/50 !bg-[linear-gradient(135deg,#fff8d6_0%,#fafafb_100%)] !shadow-[0_12px_26px_rgba(138,37,44,0.08)]" : ""}
@@ -129,10 +130,11 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                       <span className={`inline-flex items-center justify-center w-fit min-w-[28px] min-h-[28px] rounded-lg !text-[0.76rem] !font-[900] uppercase
                         ${isToday ? "!bg-[#8A252C] !text-white" : sched ? "!bg-[#8a252c]/10 !text-[#8a252c]" : "!text-[#475467]"}
                       `}>{cell.day}</span>
-                      {sched && <strong className="block mt-[10px] !text-[#111827] !text-[0.88rem] leading-[1.25] !font-[850]">{sched.area}</strong>}
-                      {sched && <p className="m-[6px_0_0] !text-[0.76rem] leading-[1.4] !text-[#344054] !font-[800]">{sched.hospital}</p>}
-                      {isToday && <small className="inline-flex items-center justify-center w-fit mt-auto border border-[#8a252c]/18 rounded-full bg-white/78 !text-[#8a252c] !text-[0.76rem] !font-[900] px-[8px] py-[5px]">Today</small>}
-                    </button>
+                       {sched && <strong className="block mt-[10px] !text-[#111827] !text-[0.88rem] leading-[1.25] !font-[850]">{sched.area}</strong>}
+                       {sched && <p className="m-[6px_0_0] !text-[0.76rem] leading-[1.4] !text-[#344054] !font-[800]">{sched.hospital}</p>}
+                      {!sched && !isOtherMonth && <p className="m-[10px_0_0] !text-[0.76rem] leading-[1.4] !text-[#94a3b8] !font-[800]">No assigned duty</p>}
+                       {isToday && <small className="inline-flex items-center justify-center w-fit mt-auto border border-[#8a252c]/18 rounded-full bg-white/78 !text-[#8a252c] !text-[0.76rem] !font-[900] px-[8px] py-[5px]">Today</small>}
+                     </button>
                   );
                 })}
               </div>
@@ -152,7 +154,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="inline-flex items-center justify-center px-3 py-1 bg-[#fef3c7] !text-[#92400e] !text-[0.75rem] !font-[800] rounded-full whitespace-nowrap">{item.status ?? "Scheduled"}</span>
-                      <button type="button" onClick={() => router.push(`${basePath}/schedules/day`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap">View roster</button>
+                      <button type="button" onClick={() => router.push(`${basePath}/schedules/day?schedule=${item.id}`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap">View roster</button>
                     </div>
                   </div>
                 ))

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
+import { UserRole } from '@/core/types/user';
 
 function formatTime(time?: string) {
   if (!time) return '';
@@ -14,7 +15,11 @@ function normalizeSchedule(schedule: any) {
   return {
     ...schedule,
     studentId: schedule.studentId ?? schedule.student?.id,
+    studentName: schedule.studentName ?? schedule.student?.fullName ?? '',
+    studentSchoolId: schedule.studentSchoolId ?? schedule.student?.schoolId ?? '',
+    studentSection: schedule.studentSection ?? schedule.student?.sectionInfo ?? '',
     instructorId: schedule.instructorId ?? schedule.instructor?.id,
+    instructorName: schedule.instructorName ?? schedule.instructor?.fullName ?? '',
     date: schedule.date ?? schedule.shiftDate,
     area: schedule.area ?? schedule.ward,
     startTime: formatTime(schedule.startTime),
@@ -22,15 +27,20 @@ function normalizeSchedule(schedule: any) {
   };
 }
 
-export const useSchedules = (studentId?: string) => {
+export const useSchedules = (userId?: string, role?: UserRole) => {
   return useQuery({
-    queryKey: ['schedules', studentId],
+    queryKey: ['schedules', role ?? 'STUDENT', userId],
     queryFn: async () => {
-      if (!studentId) return [];
-      const { data } = await apiClient.get(`/schedules/student/${studentId}`);
+      if (!userId && role !== 'ADMIN' && role !== 'CHAIR' && role !== 'COORDINATOR' && role !== 'ASSISTANT') return [];
+      const endpoint = role === 'INSTRUCTOR'
+        ? `/schedules/instructor/${userId}`
+        : role === 'ADMIN' || role === 'CHAIR' || role === 'COORDINATOR' || role === 'ASSISTANT'
+          ? '/schedules/all'
+          : `/schedules/student/${userId}`;
+      const { data } = await apiClient.get(endpoint);
       return data.map(normalizeSchedule);
     },
-    enabled: !!studentId,
+    enabled: !!userId || role === 'ADMIN' || role === 'CHAIR' || role === 'COORDINATOR' || role === 'ASSISTANT',
   });
 };
 
@@ -41,8 +51,8 @@ export const useCreateSchedule = () => {
       const { data } = await apiClient.post('/schedules', scheduleData);
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['schedules', data.studentId] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
     },
   });
 };

@@ -2,9 +2,10 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
-import { useCreateStudentAppeal, useStudentAppeals } from "@/core/api/hooks/useStudentAppeals";
+import { useAppealTypes, useCreateStudentAppeal, useStudentAppeals, useUpdateStudentAppeal, useUploadAppealFile } from "@/core/api/hooks/useStudentAppeals";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 
@@ -42,18 +43,41 @@ const emptyForm = {
   title: "",
   studentReason: "",
   evidenceNotes: "",
+  supportingFiles: "",
 };
 
 export function StudentAppealsContent() {
+  const searchParams = useSearchParams();
+  const editingAppealId = searchParams.get("edit");
   const user = useAuthStore((state) => state.user);
   const userId = user?.id != null ? String(user.id) : undefined;
   const { data: appeals = [] } = useStudentAppeals(userId);
   const createAppeal = useCreateStudentAppeal(userId);
+  const updateAppeal = useUpdateStudentAppeal(userId);
+  const uploadAppealFile = useUploadAppealFile();
   const { data: hospitals = [] } = useHospitals();
   const { data: instructors = [] } = useInstructors();
   const { data: schedules = [] } = useSchedules(userId);
+  const { data: appealTypes = [] } = useAppealTypes();
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState("Complete the appeal details to submit it for CI recommendation.");
+  const editingAppeal = appeals.find((appeal: any) => String(appeal.id) === editingAppealId);
+
+  React.useEffect(() => {
+    if (!editingAppeal) return;
+    setForm({
+      appealType: editingAppeal.appealType ?? "",
+      relatedDutyDate: editingAppeal.relatedDutyDate ?? "",
+      clinicalSite: editingAppeal.clinicalSite ?? "",
+      dutyArea: editingAppeal.dutyArea ?? "",
+      instructorId: editingAppeal.instructorId != null ? String(editingAppeal.instructorId) : "",
+      title: editingAppeal.title ?? "",
+      studentReason: editingAppeal.studentReason ?? "",
+      evidenceNotes: editingAppeal.evidenceNotes ?? "",
+      supportingFiles: editingAppeal.supportingFiles ?? "",
+    });
+    setMessage("Edit the appeal details and submit changes for CI recommendation.");
+  }, [editingAppeal]);
 
   const selectedHospital = hospitals.find((hospital: any) => hospital.name === form.clinicalSite);
   const dutyAreas = selectedHospital?.wards ?? [];
@@ -76,6 +100,20 @@ export function StudentAppealsContent() {
     setMessage("Complete the appeal details to submit it for CI recommendation.");
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setMessage("Uploading supporting file...");
+      const uploaded = await uploadAppealFile.mutateAsync(file);
+      updateForm("supportingFiles", uploaded.secure_url ?? uploaded.url ?? file.name);
+      setMessage("Supporting file uploaded.");
+    } catch {
+      setMessage("Supporting file could not be uploaded. Check Cloudinary configuration.");
+    }
+  };
+
   const submitAppeal = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!user || !form.appealType || !form.relatedDutyDate || !form.clinicalSite || !form.dutyArea || !form.instructorId || !form.title || !form.studentReason) {
@@ -84,7 +122,7 @@ export function StudentAppealsContent() {
     }
 
     try {
-      await createAppeal.mutateAsync({
+      const appealPayload = {
         student: { id: user.id },
         instructor: { id: Number(form.instructorId) },
         appealType: form.appealType,
@@ -94,10 +132,15 @@ export function StudentAppealsContent() {
         title: form.title,
         studentReason: form.studentReason,
         evidenceNotes: form.evidenceNotes,
-        supportingFiles: "",
-      });
+        supportingFiles: form.supportingFiles,
+      };
+      if (editingAppealId) {
+        await updateAppeal.mutateAsync({ appealId: editingAppealId, appeal: appealPayload });
+      } else {
+        await createAppeal.mutateAsync(appealPayload);
+      }
       clearForm();
-      setMessage("Appeal submitted for CI recommendation.");
+      setMessage(editingAppealId ? "Appeal changes submitted for CI recommendation." : "Appeal submitted for CI recommendation.");
     } catch {
       setMessage("Appeal could not be submitted.");
     }
@@ -109,9 +152,9 @@ export function StudentAppealsContent() {
       {/* Create Appeal Form */}
       <section className="bg-white rounded-xl shadow-[0_4px_24px_rgba(32,33,36,0.04)] border border-[#e2e8f0] p-[clamp(20px,4vw,32px)]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <h2 className="text-[1.25rem] font-[800] text-[#111827] m-0">Appeal Details</h2>
+          <h2 className="text-[1.25rem] font-[800] text-[#111827] m-0">{editingAppealId ? "Edit Appeal Details" : "Appeal Details"}</h2>
           <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#fff8e1] text-[#6c4c00] text-[0.75rem] font-bold">
-            Draft
+            {editingAppealId ? "Editing" : "Draft"}
           </span>
         </div>
 
@@ -122,9 +165,9 @@ export function StudentAppealsContent() {
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Appeal Type</label>
               <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={form.appealType} onChange={(event) => updateForm("appealType", event.target.value)}>
                 <option value="" disabled hidden>Select appeal type</option>
-                <option value="Attendance">Attendance</option>
-                <option value="Grade">Grade</option>
-                <option value="Other">Other</option>
+                {appealTypes.map((appealType: any) => (
+                  <option key={appealType.id ?? appealType.value} value={appealType.value}>{appealType.label}</option>
+                ))}
               </select>
             </div>
             <div className="flex flex-col">
@@ -217,10 +260,11 @@ export function StudentAppealsContent() {
           <div className="flex flex-col">
             <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Supporting Files</label>
             <div className="flex items-center gap-4 w-full p-3 border border-[#dbe3ee] rounded-lg bg-white shadow-sm">
-              <button type="button" className="h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors">
-                Choose files
-              </button>
-              <span className="text-[#64748b] text-[0.85rem] font-semibold">No files selected</span>
+              <label className="h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center cursor-pointer">
+                Choose file
+                <input type="file" className="hidden" onChange={handleFileChange} />
+              </label>
+              <span className="text-[#64748b] text-[0.85rem] font-semibold truncate">{form.supportingFiles || "No file selected"}</span>
             </div>
             <p className="mt-2 text-[#64748b] text-[0.8rem] font-semibold">Attach screenshots, PDFs, or documents that support the appeal.</p>
           </div>
@@ -236,7 +280,7 @@ export function StudentAppealsContent() {
               Clear
             </button>
             <button type="submit" className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.9rem] font-bold shadow-sm hover:bg-[#681920] transition-colors">
-              Submit Appeal
+              {editingAppealId ? "Submit Changes" : "Submit Appeal"}
             </button>
           </div>
         </form>

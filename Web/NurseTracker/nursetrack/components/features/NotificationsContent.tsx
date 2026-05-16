@@ -4,17 +4,6 @@ import React from 'react';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/core/api/hooks/useNotifications';
 import { useAuthStore } from '@/core/store/authStore';
 
-const staticNotifications = [
-  {
-    id: 0,
-    title: "Duty Entry Verified",
-    message: "Your Emergency Room duty record was verified and added to your progress.",
-    createdAt: "2026-04-25T15:18:00",
-    createdAtLabel: "Apr 25, 2026 - 3:18 PM",
-    read: false,
-  },
-];
-
 function isUnread(notification: any) {
   return !(notification.read ?? notification.isRead);
 }
@@ -27,10 +16,10 @@ function formatNotificationDate(date?: string) {
 export default function NotificationsContent({ studentOnly = false }: { studentOnly?: boolean }) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: apiNotifications = [], refetch } = useNotifications(userId, studentOnly);
+  const { data: apiNotifications = [], refetch } = useNotifications(userId, true);
   const markRead = useMarkNotificationRead(userId);
   const markAllRead = useMarkAllNotificationsRead(userId);
-  const notifications = studentOnly ? apiNotifications : staticNotifications;
+  const notifications = apiNotifications;
 
   return (
     <div className="p-6">
@@ -46,34 +35,6 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
             <button onClick={() => studentOnly && refetch()} className="h-[40px] px-4 rounded-lg border border-[#dbe3ee] bg-white text-[#344054] text-[0.92rem] font-bold hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] hover:-translate-y-px transition-all">
               Refresh
             </button>
-          </div>
-        </div>
-
-        {/* Filters Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div>
-            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Type</label>
-            <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] appearance-none" defaultValue="Validation">
-              <option value="Validation">Validation</option>
-              <option value="System">System</option>
-              <option value="Update">Update</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Status</label>
-            <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] appearance-none" defaultValue="Unread">
-              <option value="Unread">Unread</option>
-              <option value="Read">Read</option>
-              <option value="All">All</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Search</label>
-            <input 
-              type="search" 
-              placeholder="Search notification"
-              className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] placeholder:text-[#94a3b8]"
-            />
           </div>
         </div>
 

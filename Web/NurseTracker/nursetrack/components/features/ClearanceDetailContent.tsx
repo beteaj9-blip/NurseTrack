@@ -2,6 +2,7 @@
 
 import React, { useState, use } from "react";
 import Link from "next/link";
+import { useSystemInfo } from "@/core/api/hooks/useSystemInfo";
 
 const fallbackStudents: Record<string, any> = {
   "maria-cruz": {
@@ -98,6 +99,7 @@ export function ClearanceDetailContent({ basePath, searchParams: searchParamsPro
   const searchParams = use(searchParamsPromise);
   const [showModal, setShowModal] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
+  const { data: systemInfo } = useSystemInfo();
 
   const studentKey = (typeof searchParams.student === 'string' ? searchParams.student : "treasure-abadinas");
   const student = fallbackStudents[studentKey] || fallbackStudents["treasure-abadinas"];
@@ -164,7 +166,7 @@ export function ClearanceDetailContent({ basePath, searchParams: searchParamsPro
                   </div>
                   <div>
                     <strong className="block !text-[#111827] !text-[1rem] !font-bold leading-[1.3]">{student.name}</strong>
-                    <p className="m-0 !text-[#64748b] !text-[0.875rem] !font-[700]">2025-2026 - 2nd Semester</p>
+                    <p className="m-0 !text-[#64748b] !text-[0.875rem] !font-[700]">{[systemInfo?.schoolYear, systemInfo?.semester].filter(Boolean).join(" - ")}</p>
                   </div>
                 </div>
                 <div className="px-[1.25rem] py-[0.85rem] bg-[#f8fafc] border border-[#e2e8f0] rounded-lg !text-[0.85rem] !text-[#64748b] !font-[700] leading-[1.4]">

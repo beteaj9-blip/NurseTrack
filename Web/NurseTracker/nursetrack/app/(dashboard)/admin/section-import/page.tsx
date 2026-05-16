@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useSystemInfo } from "@/core/api/hooks/useSystemInfo";
 
 export default function SectionImportPage() {
+  const { data: systemInfo } = useSystemInfo();
   const [fileName, setFileName] = useState<string>("No file selected");
   const [status, setStatus] = useState<string>("Waiting for file");
   const [message, setMessage] = useState<string>("Upload an imported file before importing section assignments.");
@@ -47,16 +49,14 @@ export default function SectionImportPage() {
             <div className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="semester-name">
                 Semester
-                <select className="min-h-[48px] px-3 py-2 border border-[#d0d5dd] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all cursor-pointer" id="semester-name" required defaultValue="1st Semester">
-                  <option>1st Semester</option>
-                  <option>2nd Semester</option>
-                  <option>Summer</option>
+                <select className="min-h-[48px] px-3 py-2 border border-[#d0d5dd] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all cursor-pointer" id="semester-name" required value={systemInfo?.semester ?? ""} onChange={() => {}}>
+                  <option value={systemInfo?.semester ?? ""}>{systemInfo?.semester ?? ""}</option>
                 </select>
               </label>
 
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="school-year">
                 School Year
-                <input className="min-h-[48px] px-3 py-2 border border-[#d0d5dd] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="school-year" type="text" defaultValue="2026-2027" required />
+                <input className="min-h-[48px] px-3 py-2 border border-[#d0d5dd] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="school-year" type="text" value={systemInfo?.schoolYear ?? ""} required readOnly />
               </label>
 
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="effective-date">

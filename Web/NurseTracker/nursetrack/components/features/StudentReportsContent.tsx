@@ -19,6 +19,12 @@ export function StudentReportsContent() {
   }, []);
   const [startDate, setStartDate] = useState(defaultDates.start);
   const [endDate, setEndDate] = useState(defaultDates.end);
+  const [includeProfile, setIncludeProfile] = useState(true);
+  const [includeSchedules, setIncludeSchedules] = useState(true);
+  const [includeCases, setIncludeCases] = useState(true);
+  const [includeProgress, setIncludeProgress] = useState(true);
+  const [includeAppeals, setIncludeAppeals] = useState(true);
+  const [report, setReport] = useState<any>(null);
   const reportName = user?.fullName ?? "Nursing Student";
   const defaultMessage = `Generate a general report for ${reportName}.`;
   const [message, setMessage] = useState({ text: "", type: "" });
@@ -26,6 +32,12 @@ export function StudentReportsContent() {
   const resetForm = () => {
     setStartDate(defaultDates.start);
     setEndDate(defaultDates.end);
+    setIncludeProfile(true);
+    setIncludeSchedules(true);
+    setIncludeCases(true);
+    setIncludeProgress(true);
+    setIncludeAppeals(true);
+    setReport(null);
     setMessage({ text: "", type: "" });
   };
 
@@ -35,8 +47,9 @@ export function StudentReportsContent() {
 
     try {
       const { data } = await apiClient.get(`/reports/student/${user.id}`, {
-        params: { startDate, endDate },
+        params: { startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals },
       });
+      setReport(data);
       setMessage({ text: data.message ?? `General report successfully generated for ${reportName}.`, type: "is-success" });
 
       setTimeout(() => {
@@ -51,6 +64,13 @@ export function StudentReportsContent() {
   const labelClass = "flex flex-col gap-[6px] m-0 !text-[0.875rem] !font-[800] !text-[#344054]";
   const ghostBtn = "inline-flex items-center justify-center min-h-[42px] px-[24px] py-[8px] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.9rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-sm transition-all cursor-pointer";
   const primaryBtn = "inline-flex items-center justify-center min-h-[42px] px-[24px] py-[8px] rounded-[8px] bg-[#8A252C] border border-[#8A252C] !text-white !text-[0.9rem] !font-[800] hover:bg-[#6b1d22] hover:border-[#6b1d22] hover:shadow-md transition-all cursor-pointer";
+  const summaryItems = report ? [
+    includeSchedules ? { label: "Assigned schedules", value: report.scheduleCount ?? 0 } : null,
+    includeCases ? { label: "Clinical cases", value: report.caseCount ?? 0 } : null,
+    includeCases ? { label: "Approved cases", value: report.approvedCaseCount ?? 0 } : null,
+    includeProgress ? { label: "Duty records", value: report.dutyRecordCount ?? 0 } : null,
+    includeAppeals ? { label: "Appeals", value: report.appealCount ?? 0 } : null,
+  ].filter(Boolean) : [];
 
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)] content-start w-full">
@@ -93,27 +113,27 @@ export function StudentReportsContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 mt-2">
             <label className="flex items-start gap-3 cursor-pointer font-semibold text-[0.95rem] text-[#334155] select-none">
-              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" defaultChecked />
+              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" checked={includeProfile} onChange={(e) => setIncludeProfile(e.target.checked)} />
               Student profile and section details
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer font-semibold text-[0.95rem] text-[#334155] select-none">
-              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" defaultChecked />
+              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" checked={includeSchedules} onChange={(e) => setIncludeSchedules(e.target.checked)} />
               Assigned schedule details
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer font-semibold text-[0.95rem] text-[#334155] select-none">
-              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" defaultChecked />
+              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" checked={includeCases} onChange={(e) => setIncludeCases(e.target.checked)} />
               Clinical case records and validation status
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer font-semibold text-[0.95rem] text-[#334155] select-none">
-              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" defaultChecked />
+              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" checked={includeProgress} onChange={(e) => setIncludeProgress(e.target.checked)} />
               Progress, completion, and pending requirements
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer font-semibold text-[0.95rem] text-[#334155] select-none">
-              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" defaultChecked />
+              <input className="w-5 h-5 mt-0.5 cursor-pointer accent-[#8A252C]" type="checkbox" checked={includeAppeals} onChange={(e) => setIncludeAppeals(e.target.checked)} />
               Student appeal records
             </label>
           </div>
@@ -123,6 +143,17 @@ export function StudentReportsContent() {
         <div className={`flex items-center px-4 py-3 rounded-lg text-[0.85rem] font-bold ${message.type === 'is-error' ? 'bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]' : message.type === 'is-success' ? 'bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0]' : 'bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]'}`} role="status" aria-live="polite">
           {message.text || defaultMessage}
         </div>
+
+        {summaryItems.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
+            {summaryItems.map((item: any) => (
+              <div key={item.label} className="border border-[#e2e8f0] rounded-lg bg-[#f8fafc] p-4">
+                <span className="block mb-1 text-[#64748b] text-[0.72rem] font-[900] uppercase">{item.label}</span>
+                <strong className="text-[#111827] text-[1.35rem] font-[900]">{item.value}</strong>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-[#e2e8f0]">

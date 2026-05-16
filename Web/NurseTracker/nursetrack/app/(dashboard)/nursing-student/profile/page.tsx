@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
 
   const profileUser = {
+    id: user?.id,
     name: user?.fullName ?? "",
     initials: getInitials(user?.fullName),
     context: user?.sectionInfo ?? "Nursing Student",

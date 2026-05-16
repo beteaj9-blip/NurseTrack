@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cases")
@@ -27,6 +28,15 @@ public class ClinicalCaseController {
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<List<ClinicalCase>> getInstructorCases(@PathVariable Long instructorId) {
         return ResponseEntity.ok(caseService.getInstructorCases(instructorId));
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<Map<String, String>>> getCaseCategories() {
+        return ResponseEntity.ok(List.of(
+                Map.of("value", "Major Cases - Scrub", "label", "Major Case - Assist"),
+                Map.of("value", "Major Cases - Circulating", "label", "Major Case - Circulate"),
+                Map.of("value", "Handled Cases", "label", "Handled Case")
+        ));
     }
 
     @PutMapping("/{id}/validate")

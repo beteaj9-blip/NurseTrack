@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
+import { useUpdateUser } from "@/core/api/hooks/useUsers";
+import { useAuthStore } from "@/core/store/authStore";
 
 interface ProfileUser {
+  id?: number;
   name: string;
   initials: string;
   context: string;
@@ -18,6 +21,8 @@ interface ProfileContentProps {
 }
 
 export function ProfileContent({ user }: ProfileContentProps) {
+  const updateUser = useUpdateUser();
+  const login = useAuthStore((state) => state.login);
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
@@ -36,13 +41,24 @@ export function ProfileContent({ user }: ProfileContentProps) {
     setIsEditing(false);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage({ text: "Profile changes saved successfully.", type: "is-success" });
-    setTimeout(() => {
-      setMessage({ text: "Review your information before saving.", type: "" });
-      setIsEditing(false);
-    }, 2000);
+    try {
+      if (user.id != null) {
+        const updatedUser = await updateUser.mutateAsync({
+          userId: user.id,
+          updates: { fullName, email, mobileNumber: mobile },
+        });
+        login(updatedUser);
+      }
+      setMessage({ text: "Profile changes saved successfully.", type: "is-success" });
+      setTimeout(() => {
+        setMessage({ text: "Review your information before saving.", type: "" });
+        setIsEditing(false);
+      }, 2000);
+    } catch {
+      setMessage({ text: "Profile changes could not be saved.", type: "is-error" });
+    }
   };
 
   const inputCls = "w-full min-h-[44px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white text-[#111827] font-bold focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all text-[0.9rem]";
@@ -166,7 +182,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
                   <input id="mobileNumber" className={inputCls} type="tel" value={mobile} onChange={e => setMobile(e.target.value)} />
                 </div>
               </div>
-              <div className={`flex items-center px-4 py-3 rounded-lg text-[0.85rem] font-semibold mb-5 ${message.type === "is-success" ? "bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0]" : "bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]"}`} role="status" aria-live="polite">
+              <div className={`flex items-center px-4 py-3 rounded-lg text-[0.85rem] font-semibold mb-5 ${message.type === "is-success" ? "bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0]" : message.type === "is-error" ? "bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]" : "bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]"}`} role="status" aria-live="polite">
                 {message.text}
               </div>
               <div className="flex items-center justify-end gap-3">

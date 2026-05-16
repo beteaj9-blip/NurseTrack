@@ -1,8 +1,8 @@
 package edu.cit.nursetracker;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -14,14 +14,11 @@ public class SystemInfoController {
     private SystemInfoRepository repository;
 
     @GetMapping("/info")
-    public SystemInfo getSystemInfo() {
+    public ResponseEntity<SystemInfo> getSystemInfo() {
         List<SystemInfo> allInfo = repository.findAll();
         if (allInfo.isEmpty()) {
-            // Auto-create a default initial row so the DB has something to pull
-            SystemInfo defaultInfo = new SystemInfo("1.0", LocalDate.of(2026, 4, 26));
-            return repository.save(defaultInfo);
+            return ResponseEntity.notFound().build();
         }
-        // Assuming they manually edit row ID 1
-        return allInfo.get(0);
+        return ResponseEntity.ok(allInfo.get(0));
     }
 }

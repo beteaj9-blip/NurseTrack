@@ -94,6 +94,7 @@ export default function DashboardLayout({
   if (pathname.includes("/student-progress/detail")) displayTitle = "Student Progress Detail";
   if (pathname.includes("/clinical-cases/selection")) displayTitle = "Select Clinical Case";
   if (pathname.includes("/clinical-cases/validation")) displayTitle = "Case Validation";
+  if (pathname.includes("/clinical-cases/detail")) displayTitle = "Case Detail";
   if (pathname.includes("/clearance/detail")) displayTitle = "Clearance Review";
   if (pathname.includes("/overtime-details/detail")) displayTitle = "Rendered Overtime";
   if (pathname.includes("/ci-recommendations/detail")) displayTitle = "CI Recommendations";
