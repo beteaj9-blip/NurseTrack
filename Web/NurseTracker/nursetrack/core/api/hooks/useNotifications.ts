@@ -26,6 +26,19 @@ export const useMarkNotificationRead = (userId?: string) => {
   });
 };
 
+export const useMarkNotificationUnread = (userId?: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (notificationId: number) => {
+      const { data } = await apiClient.put(`/notifications/${notificationId}/unread`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+    },
+  });
+};
+
 export const useMarkAllNotificationsRead = (userId?: string) => {
   const queryClient = useQueryClient();
   return useMutation({

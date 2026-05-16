@@ -11,6 +11,8 @@ import edu.cit.nursetracker.schedule.ScheduleRepository;
 import edu.cit.nursetracker.user.User;
 import edu.cit.nursetracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -102,5 +104,28 @@ public class StudentReportController {
         if (includeAppeals) report.put("appealCount", appealCount);
         report.put("message", "General report successfully generated for " + student.getFullName() + ".");
         return ResponseEntity.ok(report);
+    }
+
+    @GetMapping("/student/{studentId}/export")
+    public ResponseEntity<byte[]> exportStudentReport(
+            @PathVariable Long studentId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProfile,
+            @RequestParam(required = false, defaultValue = "true") boolean includeSchedules,
+            @RequestParam(required = false, defaultValue = "true") boolean includeCases,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProgress,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAppeals) {
+
+        Map<String, Object> report = getStudentReport(studentId, startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals).getBody();
+        StringBuilder content = new StringBuilder("NurseTrack Student Report\n\n");
+        if (report != null) {
+            report.forEach((key, value) -> content.append(key).append(": ").append(value).append("\n"));
+        }
+        byte[] bytes = content.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=student-report-" + studentId + ".txt")
+                .contentType(MediaType.TEXT_PLAIN)
+                .body(bytes);
     }
 }

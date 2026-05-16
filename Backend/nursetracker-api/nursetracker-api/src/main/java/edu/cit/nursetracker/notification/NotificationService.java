@@ -34,6 +34,13 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    public Notification markAsUnread(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found."));
+        notification.setRead(false);
+        return notificationRepository.save(notification);
+    }
+
     public void markAllAsRead(Long userId) {
         List<Notification> unread = notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
         unread.forEach(n -> n.setRead(true));

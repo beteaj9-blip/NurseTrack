@@ -42,6 +42,11 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.markAsRead(id));
     }
 
+    @PutMapping("/{id}/unread")
+    public ResponseEntity<Notification> markAsUnread(@PathVariable Long id) {
+        return ResponseEntity.ok(notificationService.markAsUnread(id));
+    }
+
     @PutMapping("/user/{userId}/read-all")
     public ResponseEntity<Void> markAllAsRead(@PathVariable Long userId) {
         notificationService.markAllAsRead(userId);

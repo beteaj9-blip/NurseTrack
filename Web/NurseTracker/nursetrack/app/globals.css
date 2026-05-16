@@ -31,6 +31,17 @@
     font: inherit;
   }
 
+  button:not(:disabled),
+  select:not(:disabled),
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+
   a {
     color: inherit;
   }
@@ -73,6 +84,24 @@
 @keyframes accentSweep {
   from { transform: translateX(-8%); }
   to   { transform: translateX(4%); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.98); }
+}
+
+.toast-card-enter {
+  animation: toastIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.toast-card-exit {
+  animation: toastOut 240ms ease-in forwards;
 }
 
 @keyframes logoFloat {

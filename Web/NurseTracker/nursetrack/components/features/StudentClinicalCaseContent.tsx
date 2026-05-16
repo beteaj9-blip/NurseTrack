@@ -1,8 +1,10 @@
 import React from "react";
 import Link from "next/link";
 import { useStudentCases } from "@/core/api/hooks/useClinicalCases";
+import { useStudentClearance, useSubmitClearance } from "@/core/api/hooks/useClearance";
 import { useSystemInfo } from "@/core/api/hooks/useSystemInfo";
 import { useAuthStore } from "@/core/store/authStore";
+import { useToast } from "@/components/ui/ToastProvider";
 
 function getInitials(name?: string) {
   if (!name) return "?";
@@ -81,12 +83,32 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
 }
 
 export default function StudentClinicalCaseContent() {
+  const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
-  const { data: cases, isLoading } = useStudentCases(user?.id != null ? String(user.id) : undefined);
+  const userId = user?.id != null ? String(user.id) : undefined;
+  const { data: cases, isLoading } = useStudentCases(userId);
   const { data: systemInfo } = useSystemInfo();
+  const { data: clearance } = useStudentClearance(userId);
+  const submitClearance = useSubmitClearance(userId);
   const pendingCount = cases?.filter((c: any) => c.status === "PENDING")?.length ?? 0;
+  const clearanceStatus = clearance?.status ?? "LOCKED";
+  const clearanceLabel = clearanceStatus === "IN_REVIEW" ? "In review" : clearanceStatus === "CLEARED" ? "Cleared" : "Clearance locked";
+  const canSubmitClearance = clearanceStatus === "LOCKED" && pendingCount === 0 && (cases?.length ?? 0) > 0;
   const deliveryRoomCases = (cases ?? []).filter((clinicalCase: any) => clinicalCase.caseType === "DELIVERY_ROOM" || clinicalCase.dutyArea === "Delivery Room");
   const operatingRoomCases = (cases ?? []).filter((clinicalCase: any) => clinicalCase.caseType === "OPERATING_ROOM" || clinicalCase.dutyArea === "Operating Room");
+
+  const handleSubmitClearance = async () => {
+    if (!canSubmitClearance) {
+      showToast({ variant: "error", title: "Clearance unavailable", message: "Complete all pending cases before submitting for clearance." });
+      return;
+    }
+    try {
+      await submitClearance.mutateAsync();
+      showToast({ variant: "success", title: "Clearance submitted", message: "Your cases were submitted for clearance review." });
+    } catch {
+      showToast({ variant: "error", title: "Submission failed", message: "Clearance could not be submitted." });
+    }
+  };
 
   return (
     <div className="p-10">
@@ -103,7 +125,7 @@ export default function StudentClinicalCaseContent() {
               Add clinical case
             </Link>
             <span className="inline-flex items-center h-[30px] px-4 rounded-full bg-[#fff4c2] !text-[#7a4f00] !text-[0.78rem] !font-[900] whitespace-nowrap">
-              Clearance locked
+              {clearanceLabel}
             </span>
             {pendingCount > 0 && (
               <span className="inline-flex items-center h-[36px] px-4 rounded-full bg-[#fef2f2] !text-[#991b1b] !text-[0.85rem] !font-[800] whitespace-nowrap">
@@ -116,16 +138,20 @@ export default function StudentClinicalCaseContent() {
         {/* Student Profile Info */}
         <div className="flex items-center justify-between gap-4 p-4 mb-6 bg-white border border-[#e2e8f0] rounded-lg">
           <div className="flex items-center gap-4">
-            <div className="w-[48px] h-[48px] rounded-full bg-[#FFCF01] flex items-center justify-center text-[#332800] font-[900] text-[1.1rem]">
-              {getInitials(user?.fullName)}
-            </div>
+            {user?.profileImageUrl ? (
+              <img src={user.profileImageUrl} alt="Profile" className="w-[48px] h-[48px] rounded-full object-cover border border-[#e2e8f0]" />
+            ) : (
+              <div className="w-[48px] h-[48px] rounded-full bg-[#FFCF01] flex items-center justify-center text-[#332800] font-[900] text-[1.1rem]">
+                {getInitials(user?.fullName)}
+              </div>
+            )}
             <div>
               <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 mb-1">{user?.fullName ?? 'Loading...'}</h3>
               <p className="text-[#64748b] text-[0.9rem] font-semibold m-0">{user?.sectionInfo ?? ''} — Student ID {user?.schoolId ?? ''}</p>
             </div>
           </div>
           <span className="inline-flex items-center h-[30px] px-4 rounded-full bg-[#fff4c2] !text-[#7a4f00] !text-[0.78rem] !font-[900] whitespace-nowrap">
-            In review
+            {clearanceLabel}
           </span>
         </div>
 
@@ -142,8 +168,8 @@ export default function StudentClinicalCaseContent() {
               <option value={systemInfo?.semester ?? ""}>{systemInfo?.semester ?? ""}</option>
             </select>
           </label>
-          <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900]" type="button">Submit for Clearance</button>
-          <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900]" type="button">Print Clearance</button>
+          <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
+          <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer" type="button" onClick={() => window.print()}>Print Clearance</button>
         </div>
 
         <CaseTable title="Delivery Room Cases" cases={deliveryRoomCases} isLoading={isLoading} />
@@ -151,7 +177,7 @@ export default function StudentClinicalCaseContent() {
 
         {/* Footer info */}
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-4">
-          <p className="text-[#64748b] text-[0.85rem] font-[600] m-0">Clearance submissions are not open yet. Wait for the Chair to enable the clearance button.</p>
+          <p className="text-[#64748b] text-[0.85rem] font-[600] m-0">Clearance status: {clearanceLabel}.</p>
         </div>
 
       </div>

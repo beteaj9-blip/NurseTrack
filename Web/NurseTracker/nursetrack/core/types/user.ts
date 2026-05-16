@@ -20,9 +20,11 @@ export interface User {
   mobileNumber?: string;
   role: UserRole;
   sectionInfo?: string;
+  profileImageUrl?: string;
   status: UserStatus;
   createdAt?: string;
   updatedAt?: string;
+  profileCompletionPercentage?: number;
 }
 
 // Maps a backend UserRole to its frontend URL basepath

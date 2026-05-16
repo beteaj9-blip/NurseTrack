@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import { apiClient } from "@/core/api/axios";
 import { useUpdateUser } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
+import { useToast } from "@/components/ui/ToastProvider";
 
 interface ProfileUser {
   id?: number;
@@ -13,6 +15,8 @@ interface ProfileUser {
   email: string;
   mobile: string;
   schoolId: string;
+  profileImageUrl?: string;
+  profileCompletionPercentage?: number;
   lastLogin: string;
 }
 
@@ -21,19 +25,54 @@ interface ProfileContentProps {
 }
 
 export function ProfileContent({ user }: ProfileContentProps) {
+  const { showToast } = useToast();
   const updateUser = useUpdateUser();
   const login = useAuthStore((state) => state.login);
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [mobile, setMobile] = useState(user.mobile);
+  const [profileImageUrl, setProfileImageUrl] = useState(user.profileImageUrl ?? "");
   const [message, setMessage] = useState({ text: "Review your information before saving.", type: "" });
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const isSaving = updateUser.isPending;
+  const profileCompletion = user.profileCompletionPercentage ?? 0;
 
   const handleReset = () => {
     setFullName(user.name);
     setEmail(user.email);
     setMobile(user.mobile);
+    setProfileImageUrl(user.profileImageUrl ?? "");
     setMessage({ text: "Review your information before saving.", type: "" });
+  };
+
+  const handleProfilePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || user.id == null) return;
+    const hasTextChanges = fullName !== user.name || email !== user.email || mobile !== user.mobile;
+
+    try {
+      setIsUploadingPhoto(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data: uploaded } = await apiClient.post("/uploads/cloudinary", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const nextUrl = uploaded.secure_url ?? uploaded.url ?? "";
+      const updatedUser = await updateUser.mutateAsync({ userId: user.id, updates: { profileImageUrl: nextUrl } });
+      setProfileImageUrl(nextUrl);
+      login(updatedUser);
+      if (!hasTextChanges) {
+        setIsEditing(false);
+        setMessage({ text: "Review your information before saving.", type: "" });
+      } else {
+        setMessage({ text: "Profile photo saved. Review your remaining changes before saving.", type: "is-success" });
+      }
+      showToast({ variant: "success", title: "Profile photo updated", message: "Your profile picture was saved." });
+    } catch {
+      showToast({ variant: "error", title: "Upload failed", message: "Profile picture could not be uploaded." });
+    } finally {
+      setIsUploadingPhoto(false);
+      event.target.value = "";
+    }
   };
 
   const handleCancel = () => {
@@ -41,23 +80,38 @@ export function ProfileContent({ user }: ProfileContentProps) {
     setIsEditing(false);
   };
 
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(user.schoolId);
+      showToast({ variant: "success", title: "School ID copied", message: `${user.schoolId} copied to clipboard.` });
+    } catch {
+      showToast({ variant: "error", title: "Copy failed", message: "School ID could not be copied." });
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const hasChanges = fullName !== user.name || email !== user.email || mobile !== user.mobile || profileImageUrl !== (user.profileImageUrl ?? "");
+    if (!hasChanges) {
+      setMessage({ text: "No profile changes to save.", type: "is-error" });
+      showToast({ variant: "info", title: "No changes", message: "There are no profile changes to save." });
+      return;
+    }
+
     try {
       if (user.id != null) {
         const updatedUser = await updateUser.mutateAsync({
           userId: user.id,
-          updates: { fullName, email, mobileNumber: mobile },
+          updates: { fullName, email, mobileNumber: mobile, profileImageUrl },
         });
         login(updatedUser);
       }
-      setMessage({ text: "Profile changes saved successfully.", type: "is-success" });
-      setTimeout(() => {
-        setMessage({ text: "Review your information before saving.", type: "" });
-        setIsEditing(false);
-      }, 2000);
+      setMessage({ text: "Review your information before saving.", type: "" });
+      showToast({ variant: "success", title: "Profile saved", message: "Your profile changes were saved." });
+      setIsEditing(false);
     } catch {
       setMessage({ text: "Profile changes could not be saved.", type: "is-error" });
+      showToast({ variant: "error", title: "Profile save failed", message: "Profile changes could not be saved." });
     }
   };
 
@@ -73,16 +127,21 @@ export function ProfileContent({ user }: ProfileContentProps) {
 
           {/* Avatar */}
           <div className="relative w-[72px] h-[72px] shrink-0">
-            <div className="w-[72px] h-[72px] rounded-full bg-[#ffc107] text-[#111827] flex items-center justify-center text-[1.4rem] font-[900]">
-              {user.initials}
-            </div>
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt="Profile" className="w-[72px] h-[72px] rounded-full object-cover border border-[#e2e8f0]" />
+            ) : (
+              <div className="w-[72px] h-[72px] rounded-full bg-[#ffc107] text-[#111827] flex items-center justify-center text-[1.4rem] font-[900]">
+                {user.initials}
+              </div>
+            )}
             {isEditing && (
-              <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#8A252C] border-2 border-white flex items-center justify-center">
+              <label className={`absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#8A252C] border-2 border-white flex items-center justify-center ${isUploadingPhoto ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`} title="Upload profile picture">
                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
                 </svg>
-              </span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleProfilePhotoChange} disabled={isUploadingPhoto || isSaving} />
+              </label>
             )}
           </div>
 
@@ -102,7 +161,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#e9f8ef] text-[#03703c] text-[0.75rem] font-[800]">Active account</span>
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#fff8e1] text-[#6c4c00] text-[0.75rem] font-[800]">
-                {isEditing ? "92% complete" : "Profile 92%"}
+                {isEditing ? `${profileCompletion}% complete` : `Profile ${profileCompletion}%`}
               </span>
             </div>
           </div>
@@ -114,31 +173,37 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.84rem] font-[800] hover:bg-[#f8fafc] hover:border-[#cbd5e1] transition-all"
+                  disabled={isSaving || isUploadingPhoto}
+                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.84rem] font-[800] hover:bg-[#f8fafc] hover:border-[#cbd5e1] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   form="edit-profile-form"
-                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg bg-[#8A252C] border border-[#8A252C] text-white text-[0.84rem] font-[800] hover:bg-[#681920] transition-colors"
+                  disabled={isSaving || isUploadingPhoto}
+                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg bg-[#8A252C] border border-[#8A252C] text-white text-[0.84rem] font-[800] hover:bg-[#681920] transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {isSaving ? "Saving..." : isUploadingPhoto ? "Uploading..." : "Save Changes"}
                 </button>
               </>
             ) : (
               <>
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.84rem] font-[800] hover:bg-[#f8fafc] hover:border-[#cbd5e1] transition-all"
-                  onClick={() => navigator.clipboard?.writeText(user.schoolId)}
+                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.84rem] font-[800] hover:bg-[#f8fafc] hover:border-[#cbd5e1] transition-all cursor-pointer"
+                  onClick={handleCopyId}
                 >
                   Copy ID
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg bg-[#8A252C] border border-[#8A252C] text-white text-[0.84rem] font-[800] hover:bg-[#681920] transition-colors"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setMessage({ text: "Review your information before saving.", type: "" });
+                    setIsEditing(true);
+                  }}
+                  className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg bg-[#8A252C] border border-[#8A252C] text-white text-[0.84rem] font-[800] hover:bg-[#681920] transition-colors cursor-pointer"
                 >
                   Edit Profile
                 </button>
@@ -186,11 +251,11 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 {message.text}
               </div>
               <div className="flex items-center justify-end gap-3">
-                <button type="button" onClick={handleReset} className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.84rem] font-[800] hover:bg-[#f8fafc] transition-all">
+                <button type="button" onClick={handleReset} disabled={isSaving || isUploadingPhoto} className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.84rem] font-[800] hover:bg-[#f8fafc] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                   Reset Changes
                 </button>
-                <button type="submit" className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg bg-[#8A252C] border border-[#8A252C] text-white text-[0.84rem] font-[800] hover:bg-[#681920] transition-colors">
-                  Save Changes
+                <button type="submit" disabled={isSaving || isUploadingPhoto} className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg bg-[#8A252C] border border-[#8A252C] text-white text-[0.84rem] font-[800] hover:bg-[#681920] transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+                  {isSaving ? "Saving..." : isUploadingPhoto ? "Uploading..." : "Save Changes"}
                 </button>
               </div>
             </form>
@@ -225,9 +290,13 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#e9f8ef] text-[#03703c] text-[0.75rem] font-[800]">Live</span>
               </div>
               <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-[64px] h-[64px] rounded-full bg-[#ffc107] text-[#111827] flex items-center justify-center text-[1.2rem] font-[900]">
-                  {user.initials}
-                </div>
+                {profileImageUrl ? (
+                  <img src={profileImageUrl} alt="Profile preview" className="w-[64px] h-[64px] rounded-full object-cover border border-[#e2e8f0]" />
+                ) : (
+                  <div className="w-[64px] h-[64px] rounded-full bg-[#ffc107] text-[#111827] flex items-center justify-center text-[1.2rem] font-[900]">
+                    {user.initials}
+                  </div>
+                )}
                 <div>
                   <p className="text-[#111827] text-[1rem] font-[800] m-0 mb-0.5">{fullName || user.name}</p>
                   <p className="text-[#64748b] text-[0.85rem] font-bold m-0 mb-0.5">{user.context}</p>
@@ -236,10 +305,10 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 <div className="w-full mt-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[#64748b] text-[0.8rem] font-bold">Profile completion</span>
-                    <span className="text-[#111827] text-[0.8rem] font-[800]">92%</span>
+                    <span className="text-[#111827] text-[0.8rem] font-[800]">{profileCompletion}%</span>
                   </div>
                   <div className="w-full h-[8px] rounded-full bg-[#e2e8f0] overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[#8A252C] to-[#ffc107]" style={{ width: "92%" }} />
+                    <div className="h-full rounded-full bg-gradient-to-r from-[#8A252C] to-[#ffc107]" style={{ width: `${profileCompletion}%` }} />
                   </div>
                 </div>
               </div>

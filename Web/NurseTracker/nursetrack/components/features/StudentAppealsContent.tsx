@@ -8,6 +8,7 @@ import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAppealTypes, useCreateStudentAppeal, useStudentAppeals, useUpdateStudentAppeal, useUploadAppealFile } from "@/core/api/hooks/useStudentAppeals";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
+import { useToast } from "@/components/ui/ToastProvider";
 
 function getInitials(name?: string) {
   if (!name) return "?";
@@ -47,6 +48,7 @@ const emptyForm = {
 };
 
 export function StudentAppealsContent() {
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const editingAppealId = searchParams.get("edit");
   const user = useAuthStore((state) => state.user);
@@ -55,6 +57,8 @@ export function StudentAppealsContent() {
   const createAppeal = useCreateStudentAppeal(userId);
   const updateAppeal = useUpdateStudentAppeal(userId);
   const uploadAppealFile = useUploadAppealFile();
+  const isSubmitting = createAppeal.isPending || updateAppeal.isPending;
+  const isUploading = uploadAppealFile.isPending;
   const { data: hospitals = [] } = useHospitals();
   const { data: instructors = [] } = useInstructors();
   const { data: schedules = [] } = useSchedules(userId);
@@ -109,8 +113,10 @@ export function StudentAppealsContent() {
       const uploaded = await uploadAppealFile.mutateAsync(file);
       updateForm("supportingFiles", uploaded.secure_url ?? uploaded.url ?? file.name);
       setMessage("Supporting file uploaded.");
+      showToast({ variant: "success", title: "File uploaded", message: "Supporting file was attached to the appeal." });
     } catch {
       setMessage("Supporting file could not be uploaded. Check Cloudinary configuration.");
+      showToast({ variant: "error", title: "Upload failed", message: "Check Cloudinary configuration and try again." });
     }
   };
 
@@ -118,6 +124,7 @@ export function StudentAppealsContent() {
     event.preventDefault();
     if (!user || !form.appealType || !form.relatedDutyDate || !form.clinicalSite || !form.dutyArea || !form.instructorId || !form.title || !form.studentReason) {
       setMessage("Complete the appeal details to submit it for CI recommendation.");
+      showToast({ variant: "error", title: "Missing appeal details", message: "Complete the appeal details before submitting." });
       return;
     }
 
@@ -141,8 +148,10 @@ export function StudentAppealsContent() {
       }
       clearForm();
       setMessage(editingAppealId ? "Appeal changes submitted for CI recommendation." : "Appeal submitted for CI recommendation.");
+      showToast({ variant: "success", title: editingAppealId ? "Appeal updated" : "Appeal submitted", message: editingAppealId ? "Your appeal changes were saved." : "Your appeal was submitted for CI recommendation." });
     } catch {
       setMessage("Appeal could not be submitted.");
+      showToast({ variant: "error", title: "Appeal failed", message: "Appeal could not be submitted." });
     }
   };
 
@@ -260,9 +269,9 @@ export function StudentAppealsContent() {
           <div className="flex flex-col">
             <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Supporting Files</label>
             <div className="flex items-center gap-4 w-full p-3 border border-[#dbe3ee] rounded-lg bg-white shadow-sm">
-              <label className="h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center cursor-pointer">
-                Choose file
-                <input type="file" className="hidden" onChange={handleFileChange} />
+                <label className={`h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center ${isUploading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}>
+                {isUploading ? "Uploading..." : "Choose file"}
+                <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading || isSubmitting} />
               </label>
               <span className="text-[#64748b] text-[0.85rem] font-semibold truncate">{form.supportingFiles || "No file selected"}</span>
             </div>
@@ -276,11 +285,11 @@ export function StudentAppealsContent() {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 mt-4">
-            <button type="button" onClick={clearForm} className="h-[42px] px-6 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.9rem] font-bold shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all">
+            <button type="button" onClick={clearForm} disabled={isSubmitting || isUploading} className="h-[42px] px-6 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.9rem] font-bold shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
               Clear
             </button>
-            <button type="submit" className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.9rem] font-bold shadow-sm hover:bg-[#681920] transition-colors">
-              {editingAppealId ? "Submit Changes" : "Submit Appeal"}
+            <button type="submit" disabled={isSubmitting || isUploading} className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.9rem] font-bold shadow-sm hover:bg-[#681920] transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+              {isSubmitting ? "Submitting..." : editingAppealId ? "Submit Changes" : "Submit Appeal"}
             </button>
           </div>
         </form>
@@ -308,9 +317,13 @@ export function StudentAppealsContent() {
                   {group.records.map((appeal: any) => (
                     <Link key={appeal.id} href={`/nursing-student/appeals/detail?id=${appeal.id}`} className="block relative border border-[#e2e8f0] rounded-xl p-5 hover:border-[#cbd5e1] hover:shadow-md transition-all cursor-pointer no-underline bg-white">
                       <div className="flex items-start gap-4">
-                        <div className="w-[42px] h-[42px] shrink-0 bg-[#ffc107] text-[#111827] rounded-full flex items-center justify-center font-[800] text-[0.95rem] mt-1">
-                          {getInitials(user?.fullName)}
-                        </div>
+                        {user?.profileImageUrl ? (
+                          <img src={user.profileImageUrl} alt="Profile" className="w-[42px] h-[42px] shrink-0 rounded-full object-cover border border-[#e2e8f0] mt-1" />
+                        ) : (
+                          <div className="w-[42px] h-[42px] shrink-0 bg-[#ffc107] text-[#111827] rounded-full flex items-center justify-center font-[800] text-[0.95rem] mt-1">
+                            {getInitials(user?.fullName)}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-1">
                             <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 leading-[1.3] truncate">{appeal.title}</h3>

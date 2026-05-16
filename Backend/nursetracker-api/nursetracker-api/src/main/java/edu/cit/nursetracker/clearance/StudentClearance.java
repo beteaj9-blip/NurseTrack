@@ -1,45 +1,46 @@
-package edu.cit.nursetracker.notification;
+package edu.cit.nursetracker.clearance;
 
 import edu.cit.nursetracker.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "student_clearances")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Notification {
+public class StudentClearance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
 
     @Column(nullable = false)
-    private String title;
+    private String schoolYear;
 
     @Column(nullable = false)
-    private String message;
+    private String semester;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private NotificationType type;
-
-    @Column(nullable = false)
     @Builder.Default
-    private boolean isRead = false;
+    private ClearanceStatus status = ClearanceStatus.LOCKED;
 
-    private String actionUrl;
+    private LocalDateTime submittedAt;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

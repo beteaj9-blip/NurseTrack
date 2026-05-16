@@ -15,6 +15,7 @@ interface SidebarProps {
   userName: string;
   userContext: string;
   avatarInitials: string;
+  avatarImageUrl?: string;
   navItems: NavItem[];
   isOpen?: boolean;
   onClose?: () => void;
@@ -29,7 +30,7 @@ const LogoutIcon = (
   </>
 );
 
-export function Sidebar({ role, userName, userContext, avatarInitials, navItems, isOpen = false, onClose, onLogout }: SidebarProps) {
+export function Sidebar({ role, userName, userContext, avatarInitials, avatarImageUrl, navItems, isOpen = false, onClose, onLogout }: SidebarProps) {
   const roleSlug = navItems[0]?.href?.split('/')[1] || '';
 
   return (
@@ -90,7 +91,11 @@ export function Sidebar({ role, userName, userContext, avatarInitials, navItems,
           href={`/${roleSlug}/profile`}
           className="flex items-center gap-[10px] border border-white/[0.18] rounded-lg bg-white/[0.1] p-3 no-underline text-white hover:bg-white/[0.18] transition-colors"
         >
-          <div className="grid place-items-center w-[42px] h-[42px] rounded-full bg-[#FFCF01] text-[#332800] text-[0.82rem] font-[800] shrink-0">{avatarInitials}</div>
+          {avatarImageUrl ? (
+            <img src={avatarImageUrl} alt="Profile" className="w-[42px] h-[42px] rounded-full object-cover border border-white/30 shrink-0" />
+          ) : (
+            <div className="grid place-items-center w-[42px] h-[42px] rounded-full bg-[#FFCF01] text-[#332800] text-[0.82rem] font-[800] shrink-0">{avatarInitials}</div>
+          )}
           <div className="min-w-0">
             <strong className="block text-[1rem] leading-tight font-bold truncate">{userName}</strong>
             <span className="block text-white/[0.72] text-[0.78rem] font-bold mt-[3px] truncate">{userContext}</span>

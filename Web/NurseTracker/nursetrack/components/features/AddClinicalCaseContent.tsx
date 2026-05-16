@@ -8,6 +8,7 @@ import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type CaseCategoryOption = {
   value: string;
@@ -22,6 +23,7 @@ function getCaseType(category: string, dutyArea: string) {
 }
 
 export default function AddClinicalCaseContent() {
+  const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const userId = user?.id != null ? String(user.id) : undefined;
   const { data: schedules = [] } = useSchedules(userId);
@@ -35,6 +37,7 @@ export default function AddClinicalCaseContent() {
     },
   });
   const submitCase = useSubmitCase();
+  const isSubmitting = submitCase.isPending;
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
   const [patientInitials, setPatientInitials] = useState("");
   const [category, setCategory] = useState("");
@@ -60,6 +63,7 @@ export default function AddClinicalCaseContent() {
     event.preventDefault();
     if (!user || !selectedSchedule || !category || !patientInitials || !procedureDetails || !hospital || !instructorId || !dutyArea) {
       setMessage("Complete the required case information before submitting.");
+      showToast({ variant: "error", title: "Missing case details", message: "Complete the required case information before submitting." });
       return;
     }
 
@@ -79,12 +83,14 @@ export default function AddClinicalCaseContent() {
         studentReflection,
       });
       setMessage("Clinical case submitted for CI validation.");
+      showToast({ variant: "success", title: "Clinical case submitted", message: "Your case was sent for CI validation." });
       setPatientInitials("");
       setCategory("");
       setProcedureDetails("");
       setStudentReflection("");
     } catch {
       setMessage("Clinical case could not be submitted.");
+      showToast({ variant: "error", title: "Submission failed", message: "Clinical case could not be submitted." });
     }
   };
 
@@ -209,9 +215,10 @@ export default function AddClinicalCaseContent() {
           <div className="flex justify-end">
             <button 
               type="submit"
-              className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.92rem] font-bold shadow-sm hover:bg-[#681920] transition-colors"
+              disabled={isSubmitting}
+              className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.92rem] font-bold shadow-sm hover:bg-[#681920] transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Submit For CI Validation
+              {isSubmitting ? "Submitting..." : "Submit For CI Validation"}
             </button>
           </div>
         </form>

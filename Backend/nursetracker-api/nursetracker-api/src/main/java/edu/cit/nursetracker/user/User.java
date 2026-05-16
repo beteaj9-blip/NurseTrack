@@ -45,6 +45,8 @@ public class User {
     // E.g., BSN 3A, Ward B, Nursing Office
     private String sectionInfo;
 
+    private String profileImageUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -55,4 +57,17 @@ public class User {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @Transient
+    public int getProfileCompletionPercentage() {
+        int total = 6;
+        int completed = 0;
+        if (fullName != null && !fullName.isBlank()) completed++;
+        if (email != null && !email.isBlank()) completed++;
+        if (mobileNumber != null && !mobileNumber.isBlank()) completed++;
+        if (schoolId != null && !schoolId.isBlank()) completed++;
+        if (sectionInfo != null && !sectionInfo.isBlank()) completed++;
+        if (profileImageUrl != null && !profileImageUrl.isBlank()) completed++;
+        return Math.round((completed * 100f) / total);
+    }
 }

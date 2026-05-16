@@ -126,6 +126,7 @@ export default function DashboardLayout({
         userName={userName}
         userContext={userContext}
         avatarInitials={avatarInitials}
+        avatarImageUrl={user.profileImageUrl}
         navItems={navItems}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

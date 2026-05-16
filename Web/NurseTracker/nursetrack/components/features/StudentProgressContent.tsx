@@ -84,6 +84,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
   const student = {
     name: user?.fullName ?? "Nursing Student",
     initials: getInitials(user?.fullName),
+    profileImageUrl: user?.profileImageUrl ?? "",
     id: user?.schoolId ?? "",
     section: user?.sectionInfo ?? "Nursing Student",
     status: "In progress",
@@ -102,9 +103,13 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="flex items-center justify-between gap-[28px] p-[clamp(24px,4vw,34px)] border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] mb-[18px]">
         <div className="flex items-center gap-[16px] min-w-0">
-          <div className="w-[68px] h-[68px] shrink-0 bg-[#ffc107] !text-[#111827] rounded-full flex items-center justify-center !font-[800] text-[1.05rem]">
-            {student.initials}
-          </div>
+          {student.profileImageUrl ? (
+            <img src={student.profileImageUrl} alt="Profile" className="w-[68px] h-[68px] shrink-0 rounded-full object-cover border border-[#e2e8f0]" />
+          ) : (
+            <div className="w-[68px] h-[68px] shrink-0 bg-[#ffc107] !text-[#111827] rounded-full flex items-center justify-center !font-[800] text-[1.05rem]">
+              {student.initials}
+            </div>
+          )}
           <div>
             <h2 className="m-0 mb-[8px] !text-[#111827] !text-[clamp(1.55rem,3vw,2.15rem)] !font-bold">{student.name}</h2>
             <p className="m-0 !text-[#64748b] !font-[600] leading-[1.55]">{student.section} - Student ID {student.id}</p>

@@ -257,6 +257,12 @@ AND NOT EXISTS (
     WHERE n.user_id = s.id AND n.title = 'Schedule Published'
 );
 
+UPDATE notifications n
+JOIN users u ON n.user_id = u.id
+SET n.action_url = '/nursing-student/schedules'
+WHERE u.school_id = '23-0509-324'
+AND n.title = 'Schedule Published';
+
 INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
 SELECT s.id, 'Duty Entry Verified', 'Your duty record was verified and added to your progress.', 'APPROVAL', false, NOW()
 FROM users s
@@ -265,6 +271,12 @@ AND NOT EXISTS (
     SELECT 1 FROM notifications n
     WHERE n.user_id = s.id AND n.title = 'Duty Entry Verified'
 );
+
+UPDATE notifications n
+JOIN users u ON n.user_id = u.id
+SET n.action_url = '/nursing-student/progress'
+WHERE u.school_id = '23-0509-324'
+AND n.title = 'Duty Entry Verified';
 
 INSERT INTO student_appeals (student_id, instructor_id, appeal_type, related_duty_date, clinical_site, duty_area, title, student_reason, evidence_notes, supporting_files, status, created_at, updated_at)
 SELECT s.id, i.id, 'Attendance', '2026-05-21', 'CCMC', 'Delivery Room', 'Late arrival due to transport delay', 'Public transportation was delayed during the route to the clinical site.', 'Transport advisory and arrival timestamp are available.', '', 'PENDING', NOW(), NOW()

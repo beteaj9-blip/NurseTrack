@@ -6,6 +6,7 @@ import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAppealTypes, useStudentAppeal, useUpdateStudentAppeal, useUploadAppealFile } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
+import { useToast } from "@/components/ui/ToastProvider";
 
 function formatDate(date?: string) {
   if (!date) return "";
@@ -41,6 +42,7 @@ const emptyForm = {
 };
 
 export function StudentAppealDetailContent() {
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const appealId = searchParams.get("id") ?? undefined;
   const user = useAuthStore((state) => state.user);
@@ -53,6 +55,9 @@ export function StudentAppealDetailContent() {
   const [isEditing, setIsEditing] = React.useState(false);
   const [message, setMessage] = React.useState("");
   const [form, setForm] = React.useState(emptyForm);
+  const canEdit = appeal?.status !== "ACCEPTED";
+  const isSaving = updateAppeal.isPending;
+  const isUploading = uploadAppealFile.isPending;
 
   const selectedHospital = hospitals.find((hospital: any) => hospital.name === form.clinicalSite);
   const dutyAreas = selectedHospital?.wards ?? [];
@@ -95,15 +100,23 @@ export function StudentAppealDetailContent() {
       const uploaded = await uploadAppealFile.mutateAsync(file);
       updateForm("supportingFiles", uploaded.secure_url ?? uploaded.url ?? file.name);
       setMessage("Supporting file uploaded.");
+      showToast({ variant: "success", title: "File uploaded", message: "Supporting file was attached to the appeal." });
     } catch {
       setMessage("Supporting file could not be uploaded. Check Cloudinary configuration.");
+      showToast({ variant: "error", title: "Upload failed", message: "Check Cloudinary configuration and try again." });
     }
   };
 
   const saveAppeal = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!canEdit) {
+      setMessage("Accepted appeals can no longer be edited.");
+      showToast({ variant: "error", title: "Appeal locked", message: "Accepted appeals can no longer be edited." });
+      return;
+    }
     if (!appealId || !user || !form.appealType || !form.relatedDutyDate || !form.clinicalSite || !form.dutyArea || !form.instructorId || !form.title || !form.studentReason) {
       setMessage("Complete the appeal details before saving.");
+      showToast({ variant: "error", title: "Missing appeal details", message: "Complete the appeal details before saving." });
       return;
     }
 
@@ -125,8 +138,10 @@ export function StudentAppealDetailContent() {
       });
       setIsEditing(false);
       setMessage("Appeal changes saved.");
+      showToast({ variant: "success", title: "Appeal updated", message: "Your appeal changes were saved." });
     } catch {
       setMessage("Appeal changes could not be saved.");
+      showToast({ variant: "error", title: "Update failed", message: "Appeal changes could not be saved." });
     }
   };
 
@@ -256,9 +271,9 @@ export function StudentAppealDetailContent() {
             <span className="block text-[#8A252C] text-[0.7rem] font-[900] uppercase tracking-wider mb-1.5">Supporting Files</span>
             {isEditing ? (
               <div className="flex items-center gap-4 flex-wrap">
-                <label className="h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center cursor-pointer">
-                  Choose file
-                  <input type="file" className="hidden" onChange={handleFileChange} />
+                <label className={`h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center ${isUploading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}>
+                  {isUploading ? "Uploading..." : "Choose file"}
+                  <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading || isSaving} />
                 </label>
                 <span className="text-[#64748b] text-[0.85rem] font-semibold truncate">{form.supportingFiles || "No file selected"}</span>
               </div>
@@ -279,17 +294,21 @@ export function StudentAppealDetailContent() {
           <div className="flex items-center justify-end gap-3 border-t border-[#e5eaf1] pt-6">
             {isEditing ? (
               <>
-                <button type="button" onClick={cancelEdit} className="h-[42px] px-6 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.9rem] font-bold shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all">
+                <button type="button" onClick={cancelEdit} disabled={isSaving || isUploading} className="h-[42px] px-6 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.9rem] font-bold shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                   Cancel
                 </button>
-                <button type="submit" className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.9rem] font-bold shadow-sm hover:bg-[#681920] transition-colors">
-                  Save Changes
+                <button type="submit" disabled={isSaving || isUploading} className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.9rem] font-bold shadow-sm hover:bg-[#681920] transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed">
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </button>
               </>
-            ) : (
-              <button type="button" onClick={() => setIsEditing(true)} className="h-[42px] px-6 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.9rem] font-bold shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all inline-flex items-center">
+            ) : canEdit ? (
+              <button type="button" onClick={() => setIsEditing(true)} className="h-[42px] px-6 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.9rem] font-bold shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all inline-flex items-center cursor-pointer">
                 Edit Appeal
               </button>
+            ) : (
+              <span className="inline-flex h-[42px] items-center rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-5 text-[0.85rem] font-[900] text-[#166534]">
+                Accepted appeal locked
+              </span>
             )}
           </div>
         </form>

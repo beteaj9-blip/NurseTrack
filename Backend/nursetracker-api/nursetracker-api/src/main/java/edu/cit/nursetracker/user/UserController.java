@@ -60,6 +60,7 @@ public class UserController {
             if (updates.containsKey("mobileNumber")) user.setMobileNumber(updates.get("mobileNumber"));
             if (updates.containsKey("schoolId")) user.setSchoolId(updates.get("schoolId"));
             if (updates.containsKey("sectionInfo")) user.setSectionInfo(updates.get("sectionInfo"));
+            if (updates.containsKey("profileImageUrl")) user.setProfileImageUrl(updates.get("profileImageUrl"));
             return ResponseEntity.ok(userService.saveUser(user));
         }).orElse(ResponseEntity.notFound().build());
     }
