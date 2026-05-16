@@ -24,6 +24,11 @@ public class DutyController {
         return ResponseEntity.ok(dutyService.manualEntry(dutyRecord));
     }
 
+    @PutMapping("/manual/{id}")
+    public ResponseEntity<DutyRecord> updateManualEntry(@PathVariable Long id, @RequestBody DutyRecord dutyRecord) {
+        return ResponseEntity.ok(dutyService.updateManualEntry(id, dutyRecord));
+    }
+
     @PutMapping("/{id}/time-out")
     public ResponseEntity<DutyRecord> timeOut(@PathVariable Long id) {
         return ResponseEntity.ok(dutyService.timeOut(id));

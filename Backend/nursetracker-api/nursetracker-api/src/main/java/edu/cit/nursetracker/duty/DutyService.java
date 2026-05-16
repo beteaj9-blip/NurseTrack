@@ -24,7 +24,24 @@ public class DutyService {
             long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
             record.setTotalHours(minutes / 60.0);
         }
-        record.setStatus(DutyStatus.VERIFIED); // Manual entries by instructor are automatically verified
+        record.setStatus(DutyStatus.PENDING);
+        return dutyRepository.save(record);
+    }
+
+    public DutyRecord updateManualEntry(Long recordId, DutyRecord updatedRecord) {
+        DutyRecord record = dutyRepository.findById(recordId)
+                .orElseThrow(() -> new RuntimeException("Duty log not found."));
+
+        record.setHospital(updatedRecord.getHospital());
+        record.setWard(updatedRecord.getWard());
+        record.setTimeIn(updatedRecord.getTimeIn());
+        record.setTimeOut(updatedRecord.getTimeOut());
+        record.setInstructorFeedback(updatedRecord.getInstructorFeedback());
+        if (record.getTimeIn() != null && record.getTimeOut() != null) {
+            long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
+            record.setTotalHours(minutes / 60.0);
+        }
+        record.setStatus(DutyStatus.PENDING);
         return dutyRepository.save(record);
     }
 

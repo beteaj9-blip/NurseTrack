@@ -28,24 +28,33 @@ public class ClinicalCaseService {
     }
 
     public List<RequirementProgressGroup> getStudentRequirementProgress(Long studentId) {
-        Map<String, List<ClinicalCase>> grouped = new LinkedHashMap<>();
-        for (ClinicalCase clinicalCase : getStudentCases(studentId)) {
-            String label = getRequirementLabel(clinicalCase);
-            grouped.computeIfAbsent(label, key -> new ArrayList<>()).add(clinicalCase);
-        }
+        List<ClinicalCase> records = getStudentCases(studentId);
+        return List.of(
+                new RequirementProgressGroup("DR", "Delivery Room Cases", List.of(
+                        requirementItem(records, "Handled Cases", "Handled Case", 3),
+                        requirementItem(records, "Assisted Cases", "Assisted Case", 3),
+                        requirementItem(records, "Newborn Care", "Newborn Care", 3),
+                        requirementItem(records, "Labor Watch", "Labor Watch", 3)
+                )),
+                new RequirementProgressGroup("OR", "Operating Room Cases", List.of(
+                        requirementItem(records, "Minor Cases", "Minor Case", 3),
+                        requirementItem(records, "Major Cases - Scrub", "Major Case - Scrub", 3),
+                        requirementItem(records, "Major Cases - Circulating", "Major Case - Circulating", 3)
+                ))
+        );
+    }
 
-        return grouped.entrySet().stream()
-                .map(entry -> {
-                    String label = entry.getKey();
-                    List<ClinicalCase> records = entry.getValue();
-                    long completed = records.stream().filter(clinicalCase -> clinicalCase.getStatus() == CaseStatus.APPROVED).count();
-                    return new RequirementProgressGroup(
-                            buildRequirementCode(label),
-                            label,
-                            List.of(new RequirementProgressItem(label, completed, records.size()))
-                    );
-                })
-                .toList();
+    private RequirementProgressItem requirementItem(List<ClinicalCase> records, String label, String alternateLabel, long total) {
+        long completed = records.stream()
+                .filter(clinicalCase -> clinicalCase.getStatus() == CaseStatus.APPROVED)
+                .filter(clinicalCase -> labelMatches(clinicalCase.getCategory(), label, alternateLabel))
+                .count();
+        return new RequirementProgressItem(label, Math.min(completed, total), total);
+    }
+
+    private boolean labelMatches(String value, String label, String alternateLabel) {
+        if (value == null) return false;
+        return value.equalsIgnoreCase(label) || value.equalsIgnoreCase(alternateLabel);
     }
 
     private String getRequirementLabel(ClinicalCase clinicalCase) {

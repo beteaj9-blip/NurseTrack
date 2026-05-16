@@ -1,6 +1,7 @@
 "use client";
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/core/api/axios";
 import { useInstructorAttendance } from "@/core/api/hooks/useAttendance";
 import { useHospitals } from "@/core/api/hooks/useHospitals";
@@ -26,6 +27,7 @@ interface AttendanceRecord {
 
 interface AddedStudent {
   id: string;
+  recordId?: number;
   userId?: number;
   profileImageUrl?: string;
   name: string;
@@ -55,7 +57,18 @@ function formatTime(dateTime?: string) {
   return new Date(dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+function toTimeInput(timeLabel: string) {
+  const match = timeLabel.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return timeLabel.slice(0, 5);
+  const [, hourText, minute, period] = match;
+  let hour = Number(hourText);
+  if (period.toUpperCase() === "PM" && hour !== 12) hour += 12;
+  if (period.toUpperCase() === "AM" && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, "0")}:${minute}`;
+}
+
 export function CiManualAttendanceContent({ basePath, isEditMode = false }: { basePath: string; isEditMode?: boolean }) {
+  const router = useRouter();
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const instructorId = user?.id != null ? String(user.id) : undefined;
@@ -87,6 +100,37 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
   React.useEffect(() => {
     if ((!dutyArea || !dutyAreas.includes(dutyArea)) && dutyAreas.length > 0) setDutyArea(dutyAreas[0]);
   }, [dutyArea, dutyAreas]);
+
+  React.useEffect(() => {
+    if (!isEditMode || addedStudents.length > 0) return;
+    const manualRecords = (attendanceRecords as any[])
+      .filter((record) => record.instructorFeedback)
+      .sort((a, b) => Number(b.id ?? 0) - Number(a.id ?? 0));
+    const primary = manualRecords[0];
+    if (!primary) return;
+    const relatedRecords = manualRecords.filter((record) =>
+      record.dutyDate === primary.dutyDate &&
+      record.hospital === primary.hospital &&
+      (record.area ?? record.ward) === (primary.area ?? primary.ward) &&
+      record.instructorFeedback === primary.instructorFeedback
+    );
+    setDutyDate(primary.dutyDate ?? new Date().toISOString().slice(0, 10));
+    setClinicalSite(primary.hospital ?? "");
+    setDutyArea(primary.area ?? primary.ward ?? "");
+    setInstructorNote(primary.instructorFeedback ?? "");
+    setAddedStudents(relatedRecords.map((record) => ({
+      id: String(record.studentId ?? record.studentSchoolId ?? record.id),
+      recordId: record.id,
+      userId: record.studentId,
+      profileImageUrl: record.studentProfileImageUrl,
+      name: record.studentName || "Nursing Student",
+      section: record.studentSection || "Nursing Student",
+      studentId: record.studentSchoolId || "",
+      status: "Present",
+      checkIn: record.timeInLabel ? toTimeInput(record.timeInLabel) : shiftStart,
+      checkOut: record.timeOutLabel ? toTimeInput(record.timeOutLabel) : shiftEnd,
+    })));
+  }, [isEditMode, attendanceRecords, addedStudents.length, shiftEnd, shiftStart]);
 
   const assignedStudents = Object.values((schedules as any[]).reduce((acc: Record<string, AddedStudent>, schedule: any) => {
     const key = String(schedule.studentId ?? schedule.studentSchoolId ?? schedule.studentName);
@@ -132,7 +176,8 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
 
     try {
       setIsSaving(true);
-      await Promise.all(addedStudents.map((student) => apiClient.post("/duties/manual", {
+      await Promise.all(addedStudents.map((student) => {
+        const payload = {
         student: { id: student.userId },
         instructor: { id: user.id },
         hospital: clinicalSite,
@@ -140,11 +185,16 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
         timeIn: `${dutyDate}T${student.checkIn}:00`,
         timeOut: `${dutyDate}T${student.checkOut}:00`,
         instructorFeedback: instructorNote,
-      })));
+        };
+        return isEditMode && student.recordId
+          ? apiClient.put(`/duties/manual/${student.recordId}`, payload)
+          : apiClient.post("/duties/manual", payload);
+      }));
       await refetch();
       setAddedStudents([]);
       setEditing(false);
-      showToast({ variant: "success", title: "Manual attendance saved", message: "Manual duty records were created for the selected students." });
+      showToast({ variant: "success", title: isEditMode ? "Manual attendance updated" : "Manual attendance saved", message: isEditMode ? "Manual duty records were updated and remain pending review." : "Manual duty records were created for the selected students." });
+      if (isEditMode) router.push(`${basePath}/manual-backup`);
     } catch {
       showToast({ variant: "error", title: "Save failed", message: "Manual attendance could not be saved." });
     } finally {
@@ -228,7 +278,7 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           {editing && (
             <button
               type="button"
-              onClick={() => setEditing(false)}
+              onClick={() => router.push(`${basePath}/manual-backup`)}
               className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-lg border border-[#e2e8f0] bg-white !text-[#334155] !text-[0.88rem] !font-[800] hover:bg-[#f8fafc] transition-colors"
             >
               Cancel Edit
