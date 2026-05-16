@@ -1,32 +1,28 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { apiClient } from "@/core/api/axios";
+import { useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
+import { useToast } from "@/components/ui/ToastProvider";
 
 type Person = {
   name: string;
   role: string;
   id: string;
+  userId?: number;
   section: string;
   site: string;
   group: string;
 };
 
-const chairReportPeople: Person[] = [
-  { name: "Maria Cruz", role: "Student", id: "12-3456-789", section: "BSN 3A", site: "CCMC", group: "BSN 3A - Group 2" },
-  { name: "Josh Anton Nuevas", role: "Student", id: "12-3456-812", section: "BSN 3A", site: "CCMC", group: "BSN 3A - Group 2" },
-  { name: "Treasure Abadinas", role: "Student", id: "12-3456-845", section: "BSN 3A", site: "VSMMC", group: "BSN 3A - Group 1" },
-  { name: "Andrea Gomez", role: "Student", id: "12-3456-902", section: "BSN 3B", site: "CHN Brgy. Dumlog", group: "BSN 3B - Group 1" },
-  { name: "Lichael Ursulo", role: "Student", id: "12-3456-976", section: "BSN 3C", site: "CSMC", group: "BSN 3C - Group 1" },
-  { name: "Angela Neri", role: "Student", id: "12-3456-988", section: "BSN 3C", site: "CSMC", group: "BSN 3C - Group 1" },
-  { name: "Patricia Reyes, RN, MAN", role: "Clinical Instructor", id: "CI-1002", section: "BSN 3A", site: "CCMC", group: "BSN 3A - Group 2" },
-  { name: "Miguel Santos, RN, MAN", role: "Clinical Instructor", id: "CI-1003", section: "BSN 3B", site: "CCMC", group: "BSN 3B - Group 1" },
-  { name: "Elena Dela Cruz, RN, MN, DSCN", role: "Clinical Instructor", id: "CI-1004", section: "BSN 4A", site: "VSMMC", group: "BSN 4A - Group 1" },
-  { name: "Louise Wong", role: "Clinical Instructor", id: "CI-1005", section: "BSN 3A", site: "VSMMC", group: "BSN 3A - Group 1" },
-  { name: "Rivelyn Altamira", role: "Clinical Instructor", id: "CI-1006", section: "BSN 3A", site: "SAMCH", group: "BSN 3A - Group 1" }
-];
-
 export function ReportsContent() {
+  const { showToast } = useToast();
+  const user = useAuthStore((state) => state.user);
+  const { data: cases = [] } = useInstructorCases(user?.id != null ? String(user.id) : undefined);
   const [reportScope, setReportScope] = useState("person");
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const [personSearch, setPersonSearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -36,12 +32,39 @@ export function ReportsContent() {
   const [siteTarget, setSiteTarget] = useState("");
   const [groupTarget, setGroupTarget] = useState("");
   
-  const [startDate, setStartDate] = useState("2026-04-01");
-  const [endDate, setEndDate] = useState("2026-05-01");
+  const [startDate, setStartDate] = useState("2025-06-01");
+  const [endDate, setEndDate] = useState("2026-05-31");
   
   const [message, setMessage] = useState({ text: "Select a person, section, clinical site, or group, then generate a general report.", type: "" });
   
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const reportPeople = Object.values((cases as any[]).reduce((acc: Record<string, Person>, clinicalCase: any) => {
+      const key = String(clinicalCase.studentId ?? clinicalCase.studentSchoolId ?? clinicalCase.studentName);
+      if (!key || acc[key]) return acc;
+      acc[key] = {
+        name: clinicalCase.studentName || "Nursing Student",
+        role: "Student",
+        id: clinicalCase.studentSchoolId || "",
+        userId: clinicalCase.studentId,
+        section: clinicalCase.studentSection || "Nursing Student",
+        site: clinicalCase.hospital || "Assigned Site",
+        group: clinicalCase.studentSection || "Assigned Group",
+      };
+      return acc;
+    }, {}));
+  const sections = Array.from(new Set(reportPeople.map((person) => person.section).filter(Boolean))).sort();
+  const sites = Array.from(new Set(reportPeople.map((person) => person.site).filter(Boolean))).sort();
+  const groups = Array.from(new Set(reportPeople.map((person) => person.group).filter(Boolean))).sort();
+  const reportScopeOptions = [
+    { value: "person", label: "One student" },
+    { value: "section", label: "Section" },
+    { value: "site", label: "Clinical site" },
+    { value: "group", label: "Group" },
+  ];
+  const sectionOptions = sections.map((section) => ({ value: section, label: section }));
+  const siteOptions = sites.map((site) => ({ value: site, label: site }));
+  const groupOptions = groups.map((group) => ({ value: group, label: group }));
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,7 +76,7 @@ export function ReportsContent() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredPeople = chairReportPeople.filter(person => {
+  const filteredPeople = reportPeople.filter(person => {
     const searchable = `${person.name} ${person.role} ${person.id} ${person.section} ${person.site} ${person.group}`.toLowerCase();
     return searchable.includes(personSearch.toLowerCase());
   });
@@ -77,40 +100,69 @@ export function ReportsContent() {
     setSectionTarget("");
     setSiteTarget("");
     setGroupTarget("");
-    setStartDate("2026-04-01");
-    setEndDate("2026-05-01");
+    setStartDate("2025-06-01");
+    setEndDate("2026-05-31");
     setMessage({ text: "Select a person, section, clinical site, or group, then generate a general report.", type: "" });
   };
 
-  const generateReport = (e: React.FormEvent) => {
+  const generateReport = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (reportScope === "person") {
-      if (!selectedPerson && !chairReportPeople.find(p => p.name === personSearch)) {
+      const person = selectedPerson ?? reportPeople.find(p => p.name === personSearch);
+      if (!person) {
         setMessage({ text: "Please choose a valid person from the dropdown list.", type: "is-error" });
         return;
       }
-      setMessage({ text: `General report generated for ${selectedPerson?.name || personSearch}.`, type: "is-success" });
+
+      if (person.role !== "Student" || person.userId == null) {
+        setMessage({ text: "Choose a student record before generating a report.", type: "is-error" });
+        showToast({ variant: "error", title: "Choose a student", message: "Reports are generated for students only." });
+        return;
+      }
+
+      if (person.role === "Student" && person.userId != null) {
+        try {
+          setIsGenerating(true);
+          const { data } = await apiClient.get(`/reports/student/${person.userId}/export`, {
+            params: { startDate, endDate },
+            responseType: "blob",
+          });
+          const url = window.URL.createObjectURL(data);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `student-report-${person.id || person.userId}.pdf`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+          setMessage({ text: `General report generated for ${person.name}.`, type: "is-success" });
+          showToast({ variant: "success", title: "Report downloaded", message: `Report generated for ${person.name}.` });
+        } catch {
+          setMessage({ text: "The report could not be generated. Please check the selected date range and try again.", type: "is-error" });
+          showToast({ variant: "error", title: "Report failed", message: "The report could not be generated." });
+        } finally {
+          setIsGenerating(false);
+        }
+      }
     } else if (reportScope === "section") {
       if (!sectionTarget) {
         setMessage({ text: "Select a section before generating a report.", type: "is-error" });
         return;
       }
-      const count = chairReportPeople.filter((person) => person.section === sectionTarget).length;
+      const count = reportPeople.filter((person) => person.section === sectionTarget).length;
       setMessage({ text: `General report generated for ${sectionTarget} with ${count} matching records.`, type: "is-success" });
     } else if (reportScope === "site") {
       if (!siteTarget) {
         setMessage({ text: "Select a clinical site before generating a report.", type: "is-error" });
         return;
       }
-      const count = chairReportPeople.filter((person) => person.site === siteTarget).length;
+      const count = reportPeople.filter((person) => person.site === siteTarget).length;
       setMessage({ text: `General report generated for ${siteTarget} with ${count} matching records.`, type: "is-success" });
     } else if (reportScope === "group") {
       if (!groupTarget) {
         setMessage({ text: "Select a group before generating a report.", type: "is-error" });
         return;
       }
-      const count = chairReportPeople.filter((person) => person.group === groupTarget).length;
+      const count = reportPeople.filter((person) => person.group === groupTarget).length;
       setMessage({ text: `General report generated for ${groupTarget} with ${count} matching records.`, type: "is-success" });
     }
     
@@ -120,7 +172,6 @@ export function ReportsContent() {
   };
 
   const inputClass = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
-  const selectClass = `${inputClass} cursor-pointer`;
   const labelClass = "flex flex-col gap-[6px] m-0 !text-[0.875rem] !font-[800] !text-[#344054]";
   const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[12px] py-[8px] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   const primaryBtn = "inline-flex items-center justify-center min-h-[38px] px-[12px] py-[8px] rounded-[8px] bg-[#8A252C] border border-[#8A252C] !text-white !text-[0.84rem] !font-[800] hover:bg-[#6b1d22] hover:border-[#6b1d22] hover:shadow-[0_10px_24px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
@@ -139,25 +190,20 @@ export function ReportsContent() {
           <div className="grid grid-cols-[minmax(0,1fr)] gap-[1rem] mb-[1.25rem]">
             <label className={labelClass} htmlFor="report-scope">
               Report about
-              <select className={selectClass} id="report-scope" name="reportScope" value={reportScope} onChange={(e) => setReportScope(e.target.value)} required>
-                <option value="person">One student or clinical instructor</option>
-                <option value="section">Section</option>
-                <option value="site">Clinical site</option>
-                <option value="group">Group</option>
-              </select>
+              <InlineSelect value={reportScope} options={reportScopeOptions} placeholder="Select report scope" onChange={setReportScope} />
             </label>
           </div>
 
           <div className="grid grid-cols-[minmax(0,1fr)] gap-[1.25rem]">
             {reportScope === "person" && (
               <div className={`relative ${labelClass}`} id="person-field" ref={dropdownRef}>
-                <label htmlFor="person-search">Search student or clinical instructor</label>
+                <label htmlFor="person-search">Search student</label>
                 <input 
                   className={`${inputClass} [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:h-[14px] [&::-webkit-search-cancel-button]:w-[14px] [&::-webkit-search-cancel-button]:bg-[url('data:image/svg+xml;utf8,<svg_xmlns=\"http://www.w3.org/2000/svg\"_viewBox=\"0_0_24_24\"_fill=\"%23800000\"><path_d=\"M19_6.41L17.59_5_12_10.59_6.41_5_5_6.41_10.59_12_5_17.59_6.41_19_12_13.41_17.59_19_19_17.59_13.41_12z\"/></svg>')] [&::-webkit-search-cancel-button]:bg-contain [&::-webkit-search-cancel-button]:bg-no-repeat [&::-webkit-search-cancel-button]:cursor-pointer [&::-webkit-search-cancel-button]:opacity-70 hover:[&::-webkit-search-cancel-button]:opacity-100 transition-opacity`}
                   id="person-search" 
                   name="personSearch" 
                   type="search" 
-                  placeholder="Search by name, ID, role, section, or clinical site" 
+                  placeholder="Search by name, ID, section, or clinical site" 
                   autoComplete="off"
                   value={personSearch}
                   onChange={handlePersonInputChange}
@@ -183,41 +229,21 @@ export function ReportsContent() {
             {reportScope === "section" && (
               <label className={labelClass} htmlFor="section-target" id="section-field">
                 Select section
-                <select className={selectClass} id="section-target" name="sectionTarget" value={sectionTarget} onChange={(e) => setSectionTarget(e.target.value)}>
-                  <option value="">Choose section</option>
-                  <option value="BSN 3A">BSN 3A</option>
-                  <option value="BSN 3B">BSN 3B</option>
-                  <option value="BSN 3C">BSN 3C</option>
-                  <option value="BSN 4A">BSN 4A</option>
-                </select>
+                <InlineSelect value={sectionTarget} options={sectionOptions} placeholder="Choose section" onChange={setSectionTarget} />
               </label>
             )}
 
             {reportScope === "site" && (
               <label className={labelClass} htmlFor="site-target" id="site-field">
                 Select clinical site
-                <select className={selectClass} id="site-target" name="siteTarget" value={siteTarget} onChange={(e) => setSiteTarget(e.target.value)}>
-                  <option value="">Choose clinical site</option>
-                  <option value="CCMC">CCMC</option>
-                  <option value="VSMMC">VSMMC</option>
-                  <option value="SAMCH">SAMCH</option>
-                  <option value="CSMC">CSMC</option>
-                  <option value="CHN Brgy. Dumlog">CHN Brgy. Dumlog</option>
-                </select>
+                <InlineSelect value={siteTarget} options={siteOptions} placeholder="Choose clinical site" onChange={setSiteTarget} />
               </label>
             )}
 
             {reportScope === "group" && (
               <label className={labelClass} htmlFor="group-target" id="group-field">
                 Select group
-                <select className={selectClass} id="group-target" name="groupTarget" value={groupTarget} onChange={(e) => setGroupTarget(e.target.value)}>
-                  <option value="">Choose group</option>
-                  <option value="BSN 3A - Group 1">BSN 3A - Group 1</option>
-                  <option value="BSN 3A - Group 2">BSN 3A - Group 2</option>
-                  <option value="BSN 3B - Group 1">BSN 3B - Group 1</option>
-                  <option value="BSN 3C - Group 1">BSN 3C - Group 1</option>
-                  <option value="BSN 4A - Group 1">BSN 4A - Group 1</option>
-                </select>
+                <InlineSelect value={groupTarget} options={groupOptions} placeholder="Choose group" onChange={setGroupTarget} />
               </label>
             )}
 
@@ -271,7 +297,7 @@ export function ReportsContent() {
 
           <div className="flex items-center justify-end gap-[1rem] mt-[1.5rem] pt-[1.5rem] border-t border-[#e2e8f0]">
             <button className={`${ghostBtn} w-auto min-w-[120px]`} type="button" onClick={resetForm}>Reset</button>
-            <button className={`${primaryBtn} w-auto min-w-[180px]`} type="submit">Generate report</button>
+            <button className={`${primaryBtn} w-auto min-w-[180px]`} type="submit" disabled={isGenerating}>{isGenerating ? "Generating..." : "Generate report"}</button>
           </div>
         </form>
       </section>

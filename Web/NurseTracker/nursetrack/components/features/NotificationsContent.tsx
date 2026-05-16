@@ -26,7 +26,6 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
   const notifications = apiNotifications;
 
   const markOneRead = (notificationId: number) => {
-    if (!studentOnly) return;
     markRead.mutate(notificationId, {
       onSuccess: () => showToast({ variant: "success", title: "Notification updated", message: "Notification marked as read." }),
       onError: () => showToast({ variant: "error", title: "Update failed", message: "Notification could not be marked as read." }),
@@ -34,7 +33,6 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
   };
 
   const markOneUnread = (notificationId: number) => {
-    if (!studentOnly) return;
     markUnread.mutate(notificationId, {
       onSuccess: () => showToast({ variant: "success", title: "Notification updated", message: "Notification marked as unread." }),
       onError: () => showToast({ variant: "error", title: "Update failed", message: "Notification could not be marked as unread." }),
@@ -42,7 +40,6 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
   };
 
   const markAll = () => {
-    if (!studentOnly) return;
     markAllRead.mutate(undefined, {
       onSuccess: () => showToast({ variant: "success", title: "Notifications updated", message: "All notifications were marked as read." }),
       onError: () => showToast({ variant: "error", title: "Update failed", message: "Notifications could not be marked as read." }),
@@ -50,7 +47,7 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
   };
 
   const refreshNotifications = async () => {
-    if (!studentOnly || isRefreshing) return;
+    if (isRefreshing) return;
 
     try {
       setIsRefreshing(true);
@@ -109,7 +106,7 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
                           Mark unread
                         </button>
                       )}
-                      <a href={studentOnly ? (notification.actionUrl ?? "/nursing-student/progress") : "#"} className="text-[#8A252C] text-[0.92rem] font-[800] hover:text-[#681920] underline-offset-2 hover:underline">
+                       <a href={notification.actionUrl ?? "#"} className="text-[#8A252C] text-[0.92rem] font-[800] hover:text-[#681920] underline-offset-2 hover:underline">
                         View details
                       </a>
                     </div>

@@ -8,12 +8,9 @@ import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAppealTypes, useCreateStudentAppeal, useStudentAppeals, useUpdateStudentAppeal, useUploadAppealFile } from "@/core/api/hooks/useStudentAppeals";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useToast } from "@/components/ui/ToastProvider";
-
-function getInitials(name?: string) {
-  if (!name) return "?";
-  return name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
-}
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function formatDate(date?: string) {
   if (!date) return "";
@@ -23,6 +20,15 @@ function formatDate(date?: string) {
 function formatSubmitted(date?: string) {
   if (!date) return "Submitted";
   return `Submitted ${new Date(date).toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`;
+}
+
+function getFileName(fileUrl?: string) {
+  if (!fileUrl) return "";
+  try {
+    return decodeURIComponent(new URL(fileUrl).pathname.split("/").pop() || "Supporting file");
+  } catch {
+    return fileUrl.split("/").pop() || "Supporting file";
+  }
 }
 
 function statusLabel(status: string) {
@@ -84,7 +90,12 @@ export function StudentAppealsContent() {
   }, [editingAppeal]);
 
   const selectedHospital = hospitals.find((hospital: any) => hospital.name === form.clinicalSite);
-  const dutyAreas = selectedHospital?.wards ?? [];
+  const allDutyAreas = useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
+  const dutyAreas = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
+  const appealTypeOptions = useMemo(() => appealTypes.map((appealType: any) => ({ value: appealType.value, label: appealType.label })), [appealTypes]);
+  const hospitalOptions = useMemo(() => (hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), [hospitals]);
+  const dutyAreaOptions = useMemo(() => dutyAreas.map((area: string) => ({ value: area, label: area })), [dutyAreas]);
+  const instructorOptions = useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), [instructors]);
 
   const groupedAppeals = useMemo(() => {
     return ["PENDING", "ACCEPTED", "RETURNED"]
@@ -105,6 +116,11 @@ export function StudentAppealsContent() {
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (form.supportingFiles) {
+      showToast({ variant: "error", title: "Remove current file", message: "Only one supporting file can be attached. Remove the current file first." });
+      event.target.value = "";
+      return;
+    }
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -117,7 +133,15 @@ export function StudentAppealsContent() {
     } catch {
       setMessage("Supporting file could not be uploaded. Check Cloudinary configuration.");
       showToast({ variant: "error", title: "Upload failed", message: "Check Cloudinary configuration and try again." });
+    } finally {
+      event.target.value = "";
     }
+  };
+
+  const removeFile = () => {
+    updateForm("supportingFiles", "");
+    setMessage("Supporting file removed.");
+    showToast({ variant: "success", title: "File removed", message: "The supporting file was removed from this appeal." });
   };
 
   const submitAppeal = async (event: React.FormEvent) => {
@@ -172,12 +196,7 @@ export function StudentAppealsContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Appeal Type</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={form.appealType} onChange={(event) => updateForm("appealType", event.target.value)}>
-                <option value="" disabled hidden>Select appeal type</option>
-                {appealTypes.map((appealType: any) => (
-                  <option key={appealType.id ?? appealType.value} value={appealType.value}>{appealType.label}</option>
-                ))}
-              </select>
+              <InlineSelect value={form.appealType} options={appealTypeOptions} placeholder="Select appeal type" onChange={(value) => updateForm("appealType", value)} />
             </div>
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Related Duty Date</label>
@@ -200,33 +219,18 @@ export function StudentAppealsContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Clinical Site</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={form.clinicalSite} onChange={(event) => setForm((current) => ({ ...current, clinicalSite: event.target.value, dutyArea: "" }))}>
-                <option value="" disabled hidden>Select clinical site</option>
-                {hospitals.map((hospital: any) => (
-                  <option key={hospital.id} value={hospital.name}>{hospital.name}</option>
-                ))}
-              </select>
+              <InlineSelect value={form.clinicalSite} options={hospitalOptions} placeholder="Select clinical site" onChange={(value) => setForm((current) => ({ ...current, clinicalSite: value, dutyArea: "" }))} />
             </div>
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Duty Area</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={form.dutyArea} onChange={(event) => updateForm("dutyArea", event.target.value)}>
-                <option value="" disabled hidden>Select duty area</option>
-                {dutyAreas.map((area: string) => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
-              </select>
+              <InlineSelect value={form.dutyArea} options={dutyAreaOptions} placeholder="Select duty area" onChange={(value) => updateForm("dutyArea", value)} />
             </div>
           </div>
 
           {/* Row 3 */}
           <div className="flex flex-col">
             <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Assigned Clinical Instructor</label>
-            <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={form.instructorId} onChange={(event) => updateForm("instructorId", event.target.value)}>
-              <option value="" disabled hidden>Select assigned CI</option>
-              {instructors.map((instructor: any) => (
-                <option key={instructor.id} value={instructor.id}>{instructor.fullName}</option>
-              ))}
-            </select>
+            <InlineSelect value={form.instructorId} options={instructorOptions} placeholder="Select assigned CI" onChange={(value) => updateForm("instructorId", value)} />
           </div>
 
           {/* Row 4 */}
@@ -267,15 +271,22 @@ export function StudentAppealsContent() {
 
           {/* File Upload */}
           <div className="flex flex-col">
-            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Supporting Files</label>
+            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Supporting File</label>
             <div className="flex items-center gap-4 w-full p-3 border border-[#dbe3ee] rounded-lg bg-white shadow-sm">
-                <label className={`h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center ${isUploading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}>
-                {isUploading ? "Uploading..." : "Choose file"}
-                <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading || isSubmitting} />
+                <label className={`h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center ${isUploading || !!form.supportingFiles ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}>
+                {isUploading ? "Uploading..." : form.supportingFiles ? "File attached" : "Choose file"}
+                <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading || isSubmitting || !!form.supportingFiles} />
               </label>
-              <span className="text-[#64748b] text-[0.85rem] font-semibold truncate">{form.supportingFiles || "No file selected"}</span>
+              {form.supportingFiles ? (
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <a href={form.supportingFiles} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate text-[#344054] text-[0.85rem] font-bold underline-offset-2 hover:underline">{getFileName(form.supportingFiles)}</a>
+                  <button type="button" onClick={removeFile} disabled={isUploading || isSubmitting} className="h-[32px] px-3 rounded-md border border-[#fecaca] bg-[#fef2f2] text-[#991b1b] text-[0.78rem] font-bold hover:bg-[#fee2e2] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Remove</button>
+                </div>
+              ) : (
+                <span className="text-[#64748b] text-[0.85rem] font-semibold truncate">No file selected</span>
+              )}
             </div>
-            <p className="mt-2 text-[#64748b] text-[0.8rem] font-semibold">Attach screenshots, PDFs, or documents that support the appeal.</p>
+            <p className="mt-2 text-[#64748b] text-[0.8rem] font-semibold">Attach one screenshot, PDF, or document that supports the appeal.</p>
           </div>
 
           {/* Notice Block */}
@@ -317,13 +328,9 @@ export function StudentAppealsContent() {
                   {group.records.map((appeal: any) => (
                     <Link key={appeal.id} href={`/nursing-student/appeals/detail?id=${appeal.id}`} className="block relative border border-[#e2e8f0] rounded-xl p-5 hover:border-[#cbd5e1] hover:shadow-md transition-all cursor-pointer no-underline bg-white">
                       <div className="flex items-start gap-4">
-                        {user?.profileImageUrl ? (
-                          <img src={user.profileImageUrl} alt="Profile" className="w-[42px] h-[42px] shrink-0 rounded-full object-cover border border-[#e2e8f0] mt-1" />
-                        ) : (
-                          <div className="w-[42px] h-[42px] shrink-0 bg-[#ffc107] text-[#111827] rounded-full flex items-center justify-center font-[800] text-[0.95rem] mt-1">
-                            {getInitials(user?.fullName)}
-                          </div>
-                        )}
+                        <div className="mt-1">
+                          <ProfileAvatar name={user?.fullName || "Nursing Student"} imageUrl={user?.profileImageUrl} size={42} />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-1">
                             <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 leading-[1.3] truncate">{appeal.title}</h3>

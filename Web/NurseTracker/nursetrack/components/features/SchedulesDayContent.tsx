@@ -3,12 +3,19 @@
 import React from "react";
 import { useSearchParams } from "next/navigation";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
+import { useInstructorCases, useStudentCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
+import { UserRole } from "@/core/types/user";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
-function getInitials(name?: string) {
-  if (!name) return "?";
-  return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
-}
+const routeRoleMap: Record<string, UserRole> = {
+  "/nursing-student": "STUDENT",
+  "/clinical-instructor": "INSTRUCTOR",
+  "/admin": "ADMIN",
+  "/chair": "CHAIR",
+  "/coordinator": "COORDINATOR",
+  "/assistant": "ASSISTANT",
+};
 
 function formatDisplayDate(date?: string) {
   if (!date) return "Schedule date";
@@ -25,14 +32,36 @@ function getScheduleStatus(date?: string) {
   return "Completed";
 }
 
+function getScheduleStatusClass(status: string) {
+  if (status === "Completed") return "bg-[#dcfce7] !text-[#166534]";
+  if (status === "Upcoming" || status === "Today") return "bg-[#fff8e1] !text-[#6c4c00]";
+  return "bg-[#f1f5f9] !text-[#475569]";
+}
+
+function getClinicalValidationClass(label: string) {
+  if (label === "Approved") return "bg-[#e9f8ef] !text-[#03703c]";
+  if (label === "Pending") return "bg-[#fff8e1] !text-[#6c4c00]";
+  return "bg-[#f1f5f9] !text-[#475569]";
+}
+
 export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const searchParams = useSearchParams();
   const selectedScheduleId = searchParams.get("schedule");
   const user = useAuthStore((state) => state.user);
-  const { data: schedules = [], isLoading } = useSchedules(user?.id != null ? String(user.id) : undefined, user?.role);
-  const selectedSchedule = schedules.find((schedule: any) => String(schedule.id) === selectedScheduleId) ?? schedules[0];
+  const routeRole = routeRoleMap[basePath] ?? user?.role;
+  const userId = user?.id != null ? String(user.id) : undefined;
+  const { data: schedules = [], isLoading } = useSchedules(userId, routeRole);
+  const { data: instructorCases = [] } = useInstructorCases(routeRole === "INSTRUCTOR" ? userId : undefined);
+  const { data: studentCases = [] } = useStudentCases(routeRole === "STUDENT" ? userId : undefined);
+  const visibleSchedules = React.useMemo(() => {
+    if (routeRole === "INSTRUCTOR") return (schedules as any[]).filter((schedule: any) => String(schedule.instructorId) === String(user?.id));
+    if (routeRole === "STUDENT") return (schedules as any[]).filter((schedule: any) => String(schedule.studentId) === String(user?.id));
+    return schedules as any[];
+  }, [routeRole, schedules, user?.id]);
+  const clinicalCases = routeRole === "INSTRUCTOR" ? instructorCases : studentCases;
+  const selectedSchedule = visibleSchedules.find((schedule: any) => String(schedule.id) === selectedScheduleId) ?? visibleSchedules[0];
   const assignedStudents = selectedSchedule
-    ? schedules.filter((schedule: any) =>
+    ? visibleSchedules.filter((schedule: any) =>
         schedule.date === selectedSchedule.date &&
         schedule.hospital === selectedSchedule.hospital &&
         schedule.area === selectedSchedule.area
@@ -40,6 +69,24 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
     : [];
   const instructorName = selectedSchedule?.instructorName || "Clinical Instructor";
   const isStudentView = basePath === "/nursing-student";
+
+  function getClinicalValidation(schedule: any) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const scheduleDate = new Date(`${schedule.date}T00:00:00`);
+    if (scheduleDate.getTime() > today.getTime()) return "No validation yet";
+
+    const matchingCases = (clinicalCases as any[]).filter((clinicalCase: any) =>
+      String(clinicalCase.studentId) === String(schedule.studentId) &&
+      clinicalCase.procedureDate === schedule.date &&
+      clinicalCase.hospital === schedule.hospital &&
+      (clinicalCase.dutyArea === schedule.area || clinicalCase.area === schedule.area)
+    );
+
+    if (matchingCases.some((clinicalCase: any) => clinicalCase.status === "APPROVED")) return "Approved";
+    if (matchingCases.length > 0) return "Pending";
+    return "No validation yet";
+  }
 
   if (isLoading) {
     return <main className="p-[clamp(24px,4vw,42px)]"><div className="p-6 rounded-xl border border-[#e2e8f0] bg-white font-bold text-[#64748b]">Loading schedule...</div></main>;
@@ -67,7 +114,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
                 <span className="inline-flex items-center justify-center px-4 py-1.5 bg-white border border-[#e2e8f0] rounded-full !text-[#334155] !font-extrabold !text-[0.8rem]">
                   {formatDisplayDate(selectedSchedule.date)}
                 </span>
-                <span className="inline-flex items-center justify-center px-4 py-1.5 bg-[#dcfce7] rounded-full !text-[#166534] !font-extrabold !text-[0.8rem]">
+                <span className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full !font-extrabold !text-[0.8rem] ${getScheduleStatusClass(getScheduleStatus(selectedSchedule.date))}`}>
                   {getScheduleStatus(selectedSchedule.date)}
                 </span>
               </div>
@@ -105,9 +152,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
             </div>
 
             <div className="flex items-center gap-4 p-4 mb-5 bg-[#fffaf0] border border-[#fde68a] rounded-xl shadow-[0_2px_4px_rgba(251,191,36,0.05)]">
-              <div className="w-[46px] h-[46px] shrink-0 rounded-full flex items-center justify-center !text-[0.95rem] !font-extrabold bg-[#ffcf01] !text-[#332800]">
-                {getInitials(instructorName)}
-              </div>
+              <ProfileAvatar name={instructorName} imageUrl={selectedSchedule.instructorProfileImageUrl || (String(selectedSchedule.instructorId) === String(user?.id) ? user?.profileImageUrl : "")} size={46} />
               <div>
                 <strong className="block !text-[#111827] !text-[1rem] !font-[800]">{instructorName}</strong>
                 <span className="block !text-[#64748b] !text-[0.85rem] !font-semibold">Clinical Instructor handling this schedule</span>
@@ -121,34 +166,25 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
                     <th className="p-[1.25rem_1rem] w-[80px]">No.</th>
                     <th className="p-[1.25rem_1rem]">Student</th>
                     <th className="p-[1.25rem_1rem]">Section</th>
-                    <th className="p-[1.25rem_1rem]">Duty</th>
                     <th className="p-[1.25rem_1rem]">Validation</th>
                   </tr>
                 </thead>
                 <tbody>
                   {assignedStudents.map((schedule: any, idx: number) => {
                     const studentName = schedule.studentName || user?.fullName || "Assigned Student";
+                    const validationLabel = getClinicalValidation(schedule);
                     return (
                     <tr key={idx} className="border-b border-[#e2e8f0] last:border-0 hover:bg-slate-50 transition-colors">
                       <td className="p-[1.1rem_1rem] !text-[#111827] !font-bold">{idx + 1}.</td>
                       <td className="p-[1.1rem_1rem] flex items-center gap-[0.85rem] !font-[800] !text-[#111827]">
-                        <div className="w-[38px] h-[38px] shrink-0 rounded-full flex items-center justify-center !text-[0.75rem] !font-black bg-[#ffcf01] !text-[#332800]">{getInitials(studentName)}</div>
+                        <ProfileAvatar name={studentName} imageUrl={schedule.studentProfileImageUrl || (String(schedule.studentId) === String(user?.id) ? user?.profileImageUrl : "")} size={38} />
                         {studentName}
                       </td>
                       <td className="p-[1.1rem_1rem] !text-[#64748b] !font-bold">{schedule.studentSection || user?.sectionInfo || "Nursing Student"}</td>
                       <td className="p-[1.1rem_1rem]">
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full !text-[0.75rem] !font-bold bg-[#f1f5f9] !text-[#475569]">
-                          Completion
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.75rem] !font-bold ${getClinicalValidationClass(validationLabel)}`}>
+                          {validationLabel}
                         </span>
-                      </td>
-                      <td className="p-[1.1rem_1rem]">
-                        {isStudentView ? (
-                          <span className="!text-[#64748b] !text-[0.8rem] !font-bold">Student view</span>
-                        ) : (
-                          <span className="inline-flex items-center px-3 py-1.5 rounded-full !text-[0.75rem] !font-bold bg-[#fef3c7] !text-[#92400e]">
-                            Pending
-                          </span>
-                        )}
                       </td>
                     </tr>
                     );

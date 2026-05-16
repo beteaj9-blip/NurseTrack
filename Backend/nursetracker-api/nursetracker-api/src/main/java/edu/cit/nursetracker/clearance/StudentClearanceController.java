@@ -20,6 +20,11 @@ public class StudentClearanceController {
     private final UserRepository userRepository;
     private final SystemInfoRepository systemInfoRepository;
 
+    @GetMapping
+    public ResponseEntity<List<StudentClearance>> getAllClearances() {
+        return ResponseEntity.ok(clearanceRepository.findAll());
+    }
+
     @GetMapping("/student/{studentId}")
     public ResponseEntity<StudentClearance> getStudentClearance(@PathVariable Long studentId) {
         return clearanceRepository.findFirstByStudentIdOrderByCreatedAtDesc(studentId)

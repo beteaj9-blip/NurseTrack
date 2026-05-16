@@ -5,18 +5,13 @@ import { apiClient } from "@/core/api/axios";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 
-function toInputDate(date: Date) {
-  return date.toISOString().split("T")[0];
-}
-
 export function StudentReportsContent() {
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const defaultDates = useMemo(() => {
-    const today = new Date();
     return {
-      start: toInputDate(new Date(today.getFullYear(), today.getMonth(), 1)),
-      end: toInputDate(today),
+      start: "2025-06-01",
+      end: "2026-05-31",
     };
   }, []);
   const [startDate, setStartDate] = useState(defaultDates.start);
@@ -50,28 +45,6 @@ export function StudentReportsContent() {
 
     try {
       setIsGenerating(true);
-      const { data } = await apiClient.get(`/reports/student/${user.id}`, {
-        params: { startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals },
-      });
-      setReport(data);
-      setMessage({ text: data.message ?? `General report successfully generated for ${reportName}.`, type: "is-success" });
-      showToast({ variant: "success", title: "Report generated", message: data.message ?? `General report successfully generated for ${reportName}.` });
-
-      setTimeout(() => {
-        setMessage({ text: "", type: "" });
-      }, 5000);
-    } catch {
-      setMessage({ text: "General report could not be generated.", type: "is-error" });
-      showToast({ variant: "error", title: "Report failed", message: "General report could not be generated." });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const downloadReport = async () => {
-    if (!user) return;
-    try {
-      setIsGenerating(true);
       const { data } = await apiClient.get(`/reports/student/${user.id}/export`, {
         params: { startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals },
         responseType: "blob",
@@ -79,12 +52,18 @@ export function StudentReportsContent() {
       const url = window.URL.createObjectURL(data);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `student-report-${user.id}.txt`;
+      link.download = `student-report-${user.id}.pdf`;
       link.click();
       window.URL.revokeObjectURL(url);
-      showToast({ variant: "success", title: "Report downloaded", message: "The report file was downloaded." });
+      setMessage({ text: `General report downloaded for ${reportName}.`, type: "is-success" });
+      showToast({ variant: "success", title: "Report downloaded", message: `Report downloaded for ${reportName}.` });
+
+      setTimeout(() => {
+        setMessage({ text: "", type: "" });
+      }, 5000);
     } catch {
-      showToast({ variant: "error", title: "Download failed", message: "Report file could not be downloaded." });
+      setMessage({ text: "General report could not be downloaded.", type: "is-error" });
+      showToast({ variant: "error", title: "Report failed", message: "General report could not be downloaded." });
     } finally {
       setIsGenerating(false);
     }
@@ -188,7 +167,6 @@ export function StudentReportsContent() {
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-[#e2e8f0]">
           <button className={`${ghostBtn} min-w-[120px] disabled:opacity-60 disabled:cursor-not-allowed`} type="button" onClick={resetForm} disabled={isGenerating}>Reset</button>
-          <button className={`${ghostBtn} min-w-[170px] disabled:opacity-60 disabled:cursor-not-allowed`} type="button" onClick={downloadReport} disabled={isGenerating}>{isGenerating ? "Preparing..." : "Download Report"}</button>
           <button className={`${primaryBtn} min-w-[180px] disabled:opacity-70 disabled:cursor-not-allowed`} type="submit" disabled={isGenerating}>{isGenerating ? "Generating..." : "Generate Report"}</button>
         </div>
       </form>

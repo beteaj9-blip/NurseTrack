@@ -1,33 +1,38 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-const students = [
-    { id: "22-1845-103", name: "Treasure Abadinas", initials: "TA", section: "BSN 3A", pending: 2 },
-    { id: "12-3456-789", name: "Maria Cruz", initials: "MC", section: "BSN 3A", pending: 1 },
-    { id: "23-1023-441", name: "Nicole Dela Pena", initials: "ND", section: "BSN 3A", pending: 3 },
-    { id: "23-1188-902", name: "Carlo Fernandez", initials: "CF", section: "BSN 3A", pending: 1 },
-    { id: "23-3320-115", name: "Jasmine Lim", initials: "JL", section: "BSN 3A", pending: 2 },
-    { id: "21-7740-118", name: "Zander Aligato", initials: "ZA", section: "BSN 3B", pending: 1 },
-    { id: "22-2451-667", name: "Hannah Bautista", initials: "HB", section: "BSN 3B", pending: 2 },
-    { id: "22-8820-431", name: "Rafael Castillo", initials: "RC", section: "BSN 3B", pending: 1 },
-    { id: "23-5531-208", name: "Bea Montes", initials: "BM", section: "BSN 3B", pending: 3 },
-    { id: "23-7712-604", name: "Kyle Santos", initials: "KS", section: "BSN 3B", pending: 1 },
-    { id: "22-6102-719", name: "Janine Aquino", initials: "JA", section: "BSN 3C", pending: 2 },
-    { id: "23-4190-778", name: "Miguel Reyes", initials: "MR", section: "BSN 3C", pending: 1 },
-    { id: "22-7304-122", name: "Patricia Uy", initials: "PU", section: "BSN 3C", pending: 3 },
-    { id: "23-9055-310", name: "Sean Villamor", initials: "SV", section: "BSN 3C", pending: 1 },
-    { id: "23-6718-235", name: "Leah Tan", initials: "LT", section: "BSN 3C", pending: 2 },
-    { id: "20-4408-332", name: "Andrea Gomez", initials: "AG", section: "BSN 4A", pending: 1 },
-    { id: "21-5409-882", name: "Mark Hernandez", initials: "MH", section: "BSN 4A", pending: 2 },
-    { id: "21-3091-450", name: "Camille Navarro", initials: "CN", section: "BSN 4A", pending: 3 },
-    { id: "21-7782-944", name: "Daniel Ong", initials: "DO", section: "BSN 4A", pending: 1 },
-    { id: "21-6607-301", name: "Sophia Ramos", initials: "SR", section: "BSN 4A", pending: 2 },
-];
+import { useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+
 export function ClinicalCasesContent({ basePath }: { basePath: string }) {
+    const user = useAuthStore((state) => state.user);
+    const instructorId = user?.id != null ? String(user.id) : undefined;
+    const { data: cases = [], isLoading } = useInstructorCases(instructorId);
     const [search, setSearch] = useState("");
     const [sectionFilter, setSectionFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const PER_PAGE = 10;
+
+    const students = Object.values((cases as any[]).reduce((acc: Record<string, any>, clinicalCase: any) => {
+        const key = String(clinicalCase.studentId ?? clinicalCase.studentSchoolId ?? clinicalCase.studentName);
+        if (!key) return acc;
+        const current = acc[key] ?? {
+            studentId: clinicalCase.studentId,
+            id: clinicalCase.studentSchoolId,
+            name: clinicalCase.studentName || "Nursing Student",
+            profileImageUrl: clinicalCase.studentProfileImageUrl,
+            section: clinicalCase.studentSection || "Nursing Student",
+            pending: 0,
+        };
+        current.pending += clinicalCase.status === "PENDING" ? 1 : 0;
+        acc[key] = current;
+        return acc;
+    }, {}));
+
+    const sections = Array.from(new Set(students.map((student: any) => student.section).filter(Boolean))).sort() as string[];
+    const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section) => ({ value: section, label: section }))];
     const filtered = students.filter(s => {
         const q = search.toLowerCase();
         return (!search || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.section.toLowerCase().includes(q))
@@ -47,13 +52,13 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
                 </div>
                 <div className="grid gap-[1rem] mb-[1rem] grid-cols-2 max-[680px]:grid-cols-1">
                     <label className={labelCls} htmlFor="cc-search">Search student<input className={inputCls} id="cc-search" type="search" placeholder="Search name, student ID, or section" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
-                    <label className={labelCls} htmlFor="cc-section">Section<select className={`${inputCls} cursor-pointer`} id="cc-section" value={sectionFilter} onChange={e => { setSectionFilter(e.target.value); setCurrentPage(1); }}><option value="all">All sections</option><option value="BSN 3A">BSN 3A</option><option value="BSN 3B">BSN 3B</option><option value="BSN 3C">BSN 3C</option><option value="BSN 4A">BSN 4A</option></select></label>
+                    <label className={labelCls} htmlFor="cc-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
                 </div>
                 <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
                     {paged.map((s, i) => (
-                        <Link key={s.id} href={`${basePath}/clinical-cases/selection?student=${s.name.toLowerCase().replace(/ /g, '-')}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0" tabIndex={0}>
+                        <Link key={s.studentId ?? s.id} href={`${basePath}/clinical-cases/selection?studentId=${s.studentId}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0" tabIndex={0}>
                             <div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
-                            <span className="shrink-0 bg-[#ffc107] !text-[#111827] w-[34px] h-[34px] rounded-full flex items-center justify-center !font-[700] !text-[0.85rem]">{s.initials}</span>
+                            <ProfileAvatar name={s.name} imageUrl={s.profileImageUrl} size={34} />
                             <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{s.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{s.section} - Student ID {s.id}</small></span>
                             <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{s.pending} pending</span>
                         </Link>
@@ -66,7 +71,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
                         <button className={ghostBtn} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
                     </div>
                 )}
-                {filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No students match the selected filters.</div>}
+                {filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">{isLoading ? "Loading assigned students..." : "No students match the selected filters."}</div>}
             </section>
         </main>
     );

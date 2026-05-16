@@ -2,9 +2,15 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 
 export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
+  const dutyTypeOptions = [{ value: "Regular", label: "Regular" }, { value: "Extension", label: "Extension" }, { value: "Completion", label: "Completion" }];
+  const firstHospitalOptions = [{ value: "CCMC - Emergency Room", label: "CCMC - Emergency Room" }];
+  const secondHospitalOptions = [{ value: "CCMC - Emergency Room", label: "CCMC - Emergency Room" }, { value: "LCH - 3rd Floor", label: "LCH - 3rd Floor" }, { value: "VSMMC - Main Station 205", label: "VSMMC - Main Station 205" }];
+  const firstCiOptions = [{ value: "Arlene G. Vecino", label: "Arlene G. Vecino" }];
+  const secondCiOptions = [{ value: "Arlene G. Vecino", label: "Arlene G. Vecino" }, { value: "Annalyn A. Hole", label: "Annalyn A. Hole" }, { value: "Maria Carmina Villardar", label: "Maria Carmina Villardar" }];
 
   return (
     <>
@@ -96,17 +102,11 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Hospital / Area
-                  <select className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] cursor-pointer">
-                    <option>CCMC - Emergency Room</option>
-                  </select>
+                  <InlineSelect value="CCMC - Emergency Room" options={firstHospitalOptions} placeholder="Select hospital / area" onChange={() => {}} />
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Duty Type
-                  <select className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] cursor-pointer">
-                    <option>Regular</option>
-                    <option>Extension</option>
-                    <option>Completion</option>
-                  </select>
+                  <InlineSelect value="Regular" options={dutyTypeOptions} placeholder="Select duty type" onChange={() => {}} />
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Case Presentation date
@@ -123,9 +123,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Supervising CI
-                  <select className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] cursor-pointer">
-                    <option>Arlene G. Vecino</option>
-                  </select>
+                  <InlineSelect value="Arlene G. Vecino" options={firstCiOptions} placeholder="Select CI" onChange={() => {}} />
                 </label>
               </div>
             </div>
@@ -170,19 +168,11 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Hospital / Area
-                  <select className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] cursor-pointer">
-                    <option>CCMC - Emergency Room</option>
-                    <option>LCH - 3rd Floor</option>
-                    <option>VSMMC - Main Station 205</option>
-                  </select>
+                  <InlineSelect value="CCMC - Emergency Room" options={secondHospitalOptions} placeholder="Select hospital / area" onChange={() => {}} />
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Duty Type
-                  <select className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] cursor-pointer">
-                    <option>Regular</option>
-                    <option>Extension</option>
-                    <option>Completion</option>
-                  </select>
+                  <InlineSelect value="Regular" options={dutyTypeOptions} placeholder="Select duty type" onChange={() => {}} />
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Case Presentation date
@@ -199,11 +189,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
                 </label>
 
                 <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Supervising CI
-                  <select className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] cursor-pointer">
-                    <option>Arlene G. Vecino</option>
-                    <option>Annalyn A. Hole</option>
-                    <option>Maria Carmina Villardar</option>
-                  </select>
+                  <InlineSelect value="Arlene G. Vecino" options={secondCiOptions} placeholder="Select CI" onChange={() => {}} />
                 </label>
               </div>
             </div>

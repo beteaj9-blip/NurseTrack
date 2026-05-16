@@ -19,7 +19,13 @@ function normalizeDuty(record: any) {
   return {
     ...record,
     studentId: record.studentId ?? record.student?.id,
+    studentName: record.studentName ?? record.student?.fullName ?? '',
+    studentSchoolId: record.studentSchoolId ?? record.student?.schoolId ?? '',
+    studentSection: record.studentSection ?? record.student?.sectionInfo ?? '',
+    studentProfileImageUrl: record.studentProfileImageUrl ?? record.student?.profileImageUrl ?? '',
     instructorId: record.instructorId ?? record.instructor?.id,
+    instructorName: record.instructorName ?? record.instructor?.fullName ?? '',
+    instructorProfileImageUrl: record.instructorProfileImageUrl ?? record.instructor?.profileImageUrl ?? '',
     area: record.area ?? record.ward,
     dutyDate: record.dutyDate ?? formatDate(record.timeIn),
     timeInLabel: record.timeInLabel ?? formatTime(record.timeIn),
@@ -37,6 +43,28 @@ export const useAttendance = (studentId?: string) => {
       return data.map(normalizeDuty);
     },
     enabled: !!studentId,
+  });
+};
+
+export const useInstructorAttendance = (instructorId?: string) => {
+  return useQuery({
+    queryKey: ['attendance', 'instructor', instructorId],
+    queryFn: async () => {
+      if (!instructorId) return [];
+      const { data } = await apiClient.get(`/duties/instructor/${instructorId}`);
+      return data.map(normalizeDuty);
+    },
+    enabled: !!instructorId,
+  });
+};
+
+export const useAllAttendance = () => {
+  return useQuery({
+    queryKey: ['attendance', 'all'],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/duties');
+      return data.map(normalizeDuty);
+    },
   });
 };
 

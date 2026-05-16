@@ -1,5 +1,8 @@
 package edu.cit.nursetracker.appeal;
 
+import edu.cit.nursetracker.notification.Notification;
+import edu.cit.nursetracker.notification.NotificationService;
+import edu.cit.nursetracker.notification.NotificationType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +13,7 @@ import java.util.List;
 public class StudentAppealService {
 
     private final StudentAppealRepository appealRepository;
+    private final NotificationService notificationService;
 
     public StudentAppeal createAppeal(StudentAppeal appeal) {
         appeal.setStatus(AppealStatus.PENDING);
@@ -18,6 +22,10 @@ public class StudentAppealService {
 
     public List<StudentAppeal> getStudentAppeals(Long studentId) {
         return appealRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
+    }
+
+    public List<StudentAppeal> getInstructorAppeals(Long instructorId) {
+        return appealRepository.findByInstructorIdOrderByCreatedAtDesc(instructorId);
     }
 
     public StudentAppeal getAppeal(Long id) {
@@ -46,6 +54,14 @@ public class StudentAppealService {
         if (instructorRemarks != null) {
             appeal.setInstructorRemarks(instructorRemarks);
         }
-        return appealRepository.save(appeal);
+        StudentAppeal saved = appealRepository.save(appeal);
+        notificationService.createNotification(Notification.builder()
+                .user(saved.getStudent())
+                .title(status == AppealStatus.ACCEPTED ? "Appeal accepted" : "Appeal rejected")
+                .message("Your appeal \"" + saved.getTitle() + "\" was " + status.name().toLowerCase() + ".")
+                .type(status == AppealStatus.ACCEPTED ? NotificationType.APPROVAL : NotificationType.RETURNED)
+                .actionUrl("/nursing-student/appeals")
+                .build());
+        return saved;
     }
 }

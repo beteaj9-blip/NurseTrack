@@ -5,11 +5,8 @@ import { useStudentClearance, useSubmitClearance } from "@/core/api/hooks/useCle
 import { useSystemInfo } from "@/core/api/hooks/useSystemInfo";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
-
-function getInitials(name?: string) {
-  if (!name) return "?";
-  return name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
-}
+import { InlineSelect } from "@/components/ui/InlineSelect";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function formatDate(date?: string) {
   if (!date) return "";
@@ -28,10 +25,19 @@ function statusClass(status?: string) {
 }
 
 function caseCategoryLabel(category?: string) {
-  if (category === "Major Cases - Scrub") return "Major Case - Assist";
+  if (category === "Major Cases - Assist") return "Major Case - Assist";
+  if (category === "Major Cases - Scrub") return "Major Case - Scrub";
   if (category === "Major Cases - Circulating") return "Major Case - Circulate";
   if (category === "Handled Cases") return "Handled Case";
   return category ?? "Clinical Case";
+}
+
+function isDeliveryRoomCase(clinicalCase: any) {
+  return clinicalCase.caseType === "DELIVERY_ROOM" || clinicalCase.dutyArea === "Delivery Room" || clinicalCase.area === "Delivery Room";
+}
+
+function isOperatingRoomCase(clinicalCase: any) {
+  return clinicalCase.caseType === "OPERATING_ROOM" || clinicalCase.dutyArea === "Operating Room" || clinicalCase.area === "Operating Room";
 }
 
 function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; isLoading: boolean }) {
@@ -94,8 +100,8 @@ export default function StudentClinicalCaseContent() {
   const clearanceStatus = clearance?.status ?? "LOCKED";
   const clearanceLabel = clearanceStatus === "IN_REVIEW" ? "In review" : clearanceStatus === "CLEARED" ? "Cleared" : "Clearance locked";
   const canSubmitClearance = clearanceStatus === "LOCKED" && pendingCount === 0 && (cases?.length ?? 0) > 0;
-  const deliveryRoomCases = (cases ?? []).filter((clinicalCase: any) => clinicalCase.caseType === "DELIVERY_ROOM" || clinicalCase.dutyArea === "Delivery Room");
-  const operatingRoomCases = (cases ?? []).filter((clinicalCase: any) => clinicalCase.caseType === "OPERATING_ROOM" || clinicalCase.dutyArea === "Operating Room");
+  const deliveryRoomCases = (cases ?? []).filter(isDeliveryRoomCase);
+  const operatingRoomCases = (cases ?? []).filter(isOperatingRoomCase);
 
   const handleSubmitClearance = async () => {
     if (!canSubmitClearance) {
@@ -138,13 +144,7 @@ export default function StudentClinicalCaseContent() {
         {/* Student Profile Info */}
         <div className="flex items-center justify-between gap-4 p-4 mb-6 bg-white border border-[#e2e8f0] rounded-lg">
           <div className="flex items-center gap-4">
-            {user?.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt="Profile" className="w-[48px] h-[48px] rounded-full object-cover border border-[#e2e8f0]" />
-            ) : (
-              <div className="w-[48px] h-[48px] rounded-full bg-[#FFCF01] flex items-center justify-center text-[#332800] font-[900] text-[1.1rem]">
-                {getInitials(user?.fullName)}
-              </div>
-            )}
+            <ProfileAvatar name={user?.fullName || "Nursing Student"} imageUrl={user?.profileImageUrl} size={48} />
             <div>
               <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 mb-1">{user?.fullName ?? 'Loading...'}</h3>
               <p className="text-[#64748b] text-[0.9rem] font-semibold m-0">{user?.sectionInfo ?? ''} — Student ID {user?.schoolId ?? ''}</p>
@@ -158,22 +158,18 @@ export default function StudentClinicalCaseContent() {
         <div className="grid grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_auto_auto] gap-4 items-end p-4 mb-6 rounded-lg border border-[#e2e8f0] bg-[linear-gradient(135deg,#fff9db,#ffffff_56%)] max-[980px]:grid-cols-1">
           <label className="grid gap-2 text-[#344054] text-[0.85rem] font-[800]">
             School Year
-            <select className="h-[50px] rounded-lg border border-[#dbe3ee] bg-white px-4 text-[#111827] font-[800] cursor-pointer" value={systemInfo?.schoolYear ?? ""} onChange={() => {}}>
-              <option value={systemInfo?.schoolYear ?? ""}>{systemInfo?.schoolYear ?? ""}</option>
-            </select>
+            <InlineSelect value={systemInfo?.schoolYear ?? ""} options={systemInfo?.schoolYear ? [{ value: systemInfo.schoolYear, label: systemInfo.schoolYear }] : []} placeholder="School year" onChange={() => {}} />
           </label>
           <label className="grid gap-2 text-[#344054] text-[0.85rem] font-[800]">
             Semester
-            <select className="h-[50px] rounded-lg border border-[#dbe3ee] bg-white px-4 text-[#111827] font-[800] cursor-pointer" value={systemInfo?.semester ?? ""} onChange={() => {}}>
-              <option value={systemInfo?.semester ?? ""}>{systemInfo?.semester ?? ""}</option>
-            </select>
+            <InlineSelect value={systemInfo?.semester ?? ""} options={systemInfo?.semester ? [{ value: systemInfo.semester, label: systemInfo.semester }] : []} placeholder="Semester" onChange={() => {}} />
           </label>
           <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
           <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer" type="button" onClick={() => window.print()}>Print Clearance</button>
         </div>
 
-        <CaseTable title="Delivery Room Cases" cases={deliveryRoomCases} isLoading={isLoading} />
-        <CaseTable title="Operating Room Cases" cases={operatingRoomCases} isLoading={isLoading} />
+          <CaseTable title="Delivery Room Cases" cases={deliveryRoomCases} isLoading={isLoading} />
+          <CaseTable title="Operating Room Cases" cases={operatingRoomCases} isLoading={isLoading} />
 
         {/* Footer info */}
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-4">

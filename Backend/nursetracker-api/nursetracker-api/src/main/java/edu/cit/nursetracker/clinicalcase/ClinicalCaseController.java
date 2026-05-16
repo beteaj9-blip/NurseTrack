@@ -14,6 +14,7 @@ import java.util.Map;
 public class ClinicalCaseController {
 
     private final ClinicalCaseService caseService;
+    private final ClinicalCaseCategoryOptionRepository categoryRepository;
 
     @PostMapping
     public ResponseEntity<ClinicalCase> submitCase(@RequestBody ClinicalCase clinicalCase) {
@@ -25,26 +26,27 @@ public class ClinicalCaseController {
         return ResponseEntity.ok(caseService.getStudentCases(studentId));
     }
 
+    @GetMapping("/student/{studentId}/requirements")
+    public ResponseEntity<List<RequirementProgressGroup>> getStudentRequirementProgress(@PathVariable Long studentId) {
+        return ResponseEntity.ok(caseService.getStudentRequirementProgress(studentId));
+    }
+
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<List<ClinicalCase>> getInstructorCases(@PathVariable Long instructorId) {
         return ResponseEntity.ok(caseService.getInstructorCases(instructorId));
     }
 
     @GetMapping("/categories")
-    public ResponseEntity<List<Map<String, String>>> getCaseCategories() {
-        return ResponseEntity.ok(List.of(
-                Map.of("value", "Major Cases - Scrub", "label", "Major Case - Assist"),
-                Map.of("value", "Major Cases - Circulating", "label", "Major Case - Circulate"),
-                Map.of("value", "Handled Cases", "label", "Handled Case")
-        ));
+    public ResponseEntity<List<ClinicalCaseCategoryOption>> getCaseCategories() {
+        return ResponseEntity.ok(categoryRepository.findAllByOrderByIdAsc());
     }
 
     @PutMapping("/{id}/validate")
-    public ResponseEntity<ClinicalCase> validateCase(
+    public ResponseEntity<Map<String, Object>> validateCase(
             @PathVariable Long id,
             @RequestParam CaseStatus status,
             @RequestParam(required = false) String feedback) {
-        return ResponseEntity.ok(caseService.validateCase(id, status, feedback));
+        return ResponseEntity.ok(toResponse(caseService.validateCase(id, status, feedback)));
     }
 
     @GetMapping("/{id}")
@@ -57,5 +59,33 @@ public class ClinicalCaseController {
     public ResponseEntity<ClinicalCase> updateCase(@PathVariable Long id, @RequestBody ClinicalCase clinicalCase) {
         ClinicalCase updatedCase = caseService.updateCase(id, clinicalCase);
         return updatedCase != null ? ResponseEntity.ok(updatedCase) : ResponseEntity.notFound().build();
+    }
+
+    private Map<String, Object> toResponse(ClinicalCase clinicalCase) {
+        return Map.ofEntries(
+                Map.entry("id", clinicalCase.getId()),
+                Map.entry("studentId", clinicalCase.getStudent().getId()),
+                Map.entry("studentName", clinicalCase.getStudent().getFullName()),
+                Map.entry("studentSchoolId", clinicalCase.getStudent().getSchoolId()),
+                Map.entry("studentSection", clinicalCase.getStudent().getSectionInfo() == null ? "" : clinicalCase.getStudent().getSectionInfo()),
+                Map.entry("studentProfileImageUrl", clinicalCase.getStudent().getProfileImageUrl() == null ? "" : clinicalCase.getStudent().getProfileImageUrl()),
+                Map.entry("instructorId", clinicalCase.getInstructor().getId()),
+                Map.entry("instructorName", clinicalCase.getInstructor().getFullName()),
+                Map.entry("instructorProfileImageUrl", clinicalCase.getInstructor().getProfileImageUrl() == null ? "" : clinicalCase.getInstructor().getProfileImageUrl()),
+                Map.entry("caseType", clinicalCase.getCaseType()),
+                Map.entry("patientInitials", clinicalCase.getPatientInitials()),
+                Map.entry("category", clinicalCase.getCategory() == null ? "" : clinicalCase.getCategory()),
+                Map.entry("hospital", clinicalCase.getHospital() == null ? "" : clinicalCase.getHospital()),
+                Map.entry("dutyArea", clinicalCase.getDutyArea() == null ? "" : clinicalCase.getDutyArea()),
+                Map.entry("shiftTime", clinicalCase.getShiftTime() == null ? "" : clinicalCase.getShiftTime()),
+                Map.entry("caseDate", clinicalCase.getCaseDate()),
+                Map.entry("diagnosis", clinicalCase.getDiagnosis()),
+                Map.entry("procedureDetails", clinicalCase.getProcedureDetails()),
+                Map.entry("studentReflection", clinicalCase.getStudentReflection() == null ? "" : clinicalCase.getStudentReflection()),
+                Map.entry("status", clinicalCase.getStatus()),
+                Map.entry("instructorFeedback", clinicalCase.getInstructorFeedback() == null ? "" : clinicalCase.getInstructorFeedback()),
+                Map.entry("createdAt", clinicalCase.getCreatedAt()),
+                Map.entry("updatedAt", clinicalCase.getUpdatedAt())
+        );
     }
 }

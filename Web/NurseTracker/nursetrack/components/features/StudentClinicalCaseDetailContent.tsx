@@ -4,11 +4,7 @@ import React from "react";
 import { useSearchParams } from "next/navigation";
 import { useClinicalCase } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
-
-function getInitials(name?: string) {
-  if (!name) return "?";
-  return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
-}
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function formatDate(date?: string) {
   if (!date) return "";
@@ -40,6 +36,7 @@ export function StudentClinicalCaseDetailContent() {
   const user = useAuthStore((state) => state.user);
   const { data: clinicalCase, isLoading } = useClinicalCase(caseId);
   const studentName = clinicalCase?.studentName || user?.fullName || "Nursing Student";
+  const studentProfileImageUrl = clinicalCase?.studentProfileImageUrl || user?.profileImageUrl || "";
   const studentSection = clinicalCase?.studentSection || user?.sectionInfo || "Nursing Student";
   const studentSchoolId = clinicalCase?.studentSchoolId || user?.schoolId || "";
 
@@ -56,7 +53,7 @@ export function StudentClinicalCaseDetailContent() {
       <section className="bg-white rounded-xl border border-[#e2e8f0] shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-6">
         <h2 className="m-0 mb-5 !text-[#111827] !text-[1.25rem] !font-[900]">Case Information</h2>
         <div className="flex items-center gap-4 p-4 mb-4 border border-[#e2e8f0] rounded-lg bg-[#f8fafc]">
-          <div className="w-[46px] h-[46px] rounded-full bg-[#FFCF01] flex items-center justify-center text-[#332800] font-[900]">{getInitials(studentName)}</div>
+          <ProfileAvatar name={studentName} imageUrl={studentProfileImageUrl} size={46} />
           <div>
             <strong className="block !text-[#111827] !text-[1rem] !font-[900]">{studentName}</strong>
             <span className="block !text-[#64748b] !text-[0.86rem] !font-[800]">{studentSection} - Student ID {studentSchoolId}</span>

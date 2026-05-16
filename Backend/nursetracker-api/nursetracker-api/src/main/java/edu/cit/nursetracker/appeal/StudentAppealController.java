@@ -29,6 +29,11 @@ public class StudentAppealController {
         return ResponseEntity.ok(appealService.getStudentAppeals(studentId));
     }
 
+    @GetMapping("/instructor/{instructorId}")
+    public ResponseEntity<List<StudentAppeal>> getInstructorAppeals(@PathVariable Long instructorId) {
+        return ResponseEntity.ok(appealService.getInstructorAppeals(instructorId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<StudentAppeal> getAppeal(@PathVariable Long id) {
         return ResponseEntity.ok(appealService.getAppeal(id));

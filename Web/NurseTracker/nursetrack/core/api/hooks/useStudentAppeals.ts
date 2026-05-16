@@ -8,6 +8,8 @@ function normalizeAppeal(appeal: any) {
     instructorId: appeal.instructorId ?? appeal.instructor?.id,
     instructorName: appeal.instructor?.fullName ?? '',
     studentName: appeal.student?.fullName ?? '',
+    studentProfileImageUrl: appeal.student?.profileImageUrl ?? '',
+    instructorProfileImageUrl: appeal.instructor?.profileImageUrl ?? '',
     schoolId: appeal.student?.schoolId ?? '',
     sectionInfo: appeal.student?.sectionInfo ?? '',
   };
@@ -22,6 +24,18 @@ export const useStudentAppeals = (studentId?: string) => {
       return data.map(normalizeAppeal);
     },
     enabled: !!studentId,
+  });
+};
+
+export const useInstructorAppeals = (instructorId?: string) => {
+  return useQuery({
+    queryKey: ['instructor-appeals', instructorId],
+    queryFn: async () => {
+      if (!instructorId) return [];
+      const { data } = await apiClient.get(`/appeals/instructor/${instructorId}`);
+      return data.map(normalizeAppeal);
+    },
+    enabled: !!instructorId,
   });
 };
 
@@ -70,6 +84,23 @@ export const useUpdateStudentAppeal = (studentId?: string) => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['student-appeals', studentId] });
       queryClient.invalidateQueries({ queryKey: ['student-appeal', variables.appealId] });
+    },
+  });
+};
+
+export const useUpdateAppealStatus = (instructorId?: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appealId, status, instructorRemarks }: { appealId: string; status: string; instructorRemarks?: string }) => {
+      const params = new URLSearchParams({ status });
+      if (instructorRemarks) params.set('instructorRemarks', instructorRemarks);
+      const { data } = await apiClient.put(`/appeals/${appealId}/status?${params.toString()}`);
+      return normalizeAppeal(data);
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['instructor-appeals', instructorId] });
+      queryClient.invalidateQueries({ queryKey: ['student-appeal', variables.appealId] });
+      queryClient.invalidateQueries({ queryKey: ['student-appeals', data.studentId != null ? String(data.studentId) : undefined] });
     },
   });
 };

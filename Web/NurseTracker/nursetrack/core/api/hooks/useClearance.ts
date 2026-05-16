@@ -1,13 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 
+function normalizeClearance(record: any) {
+  return {
+    ...record,
+    studentId: record.studentId ?? record.student?.id,
+    studentName: record.studentName ?? record.student?.fullName ?? '',
+    studentSchoolId: record.studentSchoolId ?? record.student?.schoolId ?? '',
+    studentSection: record.studentSection ?? record.student?.sectionInfo ?? '',
+    studentProfileImageUrl: record.studentProfileImageUrl ?? record.student?.profileImageUrl ?? '',
+  };
+}
+
+export const useClearances = () => useQuery({
+  queryKey: ['clearances'],
+  queryFn: async () => {
+    const { data } = await apiClient.get('/clearances');
+    return data.map(normalizeClearance);
+  },
+});
+
 export const useStudentClearance = (studentId?: string) => {
   return useQuery({
     queryKey: ['student-clearance', studentId],
     queryFn: async () => {
       if (!studentId) return null;
       const { data } = await apiClient.get(`/clearances/student/${studentId}`);
-      return data;
+      return normalizeClearance(data);
     },
     enabled: !!studentId,
   });

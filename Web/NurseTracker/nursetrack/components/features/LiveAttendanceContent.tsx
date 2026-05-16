@@ -1,30 +1,45 @@
 "use client";
 import React, { useState } from "react";
+import { useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useSchedules } from "@/core/api/hooks/useSchedules";
+import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+
 export function LiveAttendanceContent() {
+  const user = useAuthStore((state) => state.user);
+  const { data: attendance = [], isLoading } = useInstructorAttendance(user?.id != null ? String(user.id) : undefined);
+  const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(user?.id != null ? String(user.id) : undefined, "INSTRUCTOR");
   const [siteFilter, setSiteFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const data = [
-    { id: 1, initials: 'MC', name: 'Maria Cruz', section: 'BSN 3A', site: 'CCMC', area: 'Emergency Room', ci: 'Patricia Reyes', time: '6:54 AM', liveMin: '1 min', status: 'Present' },
-    { id: 2, initials: 'JA', name: 'Josh Anton Nuevas', section: 'BSN 3A', site: 'CCMC', area: 'Emergency Room', ci: 'Patricia Reyes', time: '7:18 AM', liveMin: '4 min', status: 'Present' },
-    { id: 3, initials: 'ND', name: 'Nicole Dela Pena', section: 'BSN 3A', site: 'Vicente Mendiola Center for Health Infirmary', area: 'Medical Ward', ci: 'Patricia Reyes', time: '6:59 AM', liveMin: '2 min', status: 'Present' },
-    { id: 4, initials: 'TA', name: 'Treasure Abadinas', section: 'BSN 3A', site: 'SAMCH', area: 'Delivery Room', ci: 'Miguel Santos', time: '6:48 AM', liveMin: '2 min', status: 'Present' },
-    { id: 5, initials: 'ZA', name: 'Zander Aligato', section: 'BSN 3B', site: 'CCMC', area: 'Emergency Room', ci: 'Miguel Santos', time: '6:52 AM', liveMin: '3 min', status: 'Present' },
-    { id: 6, initials: 'HB', name: 'Hannah Bautista', section: 'BSN 3B', site: 'CCMC', area: 'Pedia Pulmo Ward', ci: 'Miguel Santos', time: '7:21 AM', liveMin: '5 min', status: 'Present' },
-    { id: 7, initials: 'AG', name: 'Andrea Gomez', section: 'BSN 3B', site: 'CHN Brgy. Dumlog', area: 'Community Health Nursing Area', ci: 'Elena Dela Cruz', time: '7:02 AM', liveMin: '1 min', status: 'Present' },
-    { id: 8, initials: 'MR', name: 'Miguel Reyes', section: 'BSN 3C', site: 'CHN Brgy. Dumlog', area: 'Community Health Nursing Area', ci: 'Elena Dela Cruz', time: '6:57 AM', liveMin: '2 min', status: 'Present' },
-    { id: 9, initials: 'PU', name: 'Patricia Uy', section: 'BSN 3C', site: 'CHN Brgy. Dumlog', area: 'Community Assessment', ci: 'Elena Dela Cruz', time: '7:25 AM', liveMin: '6 min', status: 'Present' },
-    { id: 10, initials: 'LU', name: 'Lichael Ursulo', section: 'BSN 3C', site: 'ECS', area: 'Outpatient Department', ci: 'Patricia Reyes', time: '6:55 AM', liveMin: '3 min', status: 'Present' },
-    { id: 11, initials: 'SV', name: 'Sean Villamor', section: 'BSN 3C', site: 'Healing Hands Dialysis Center', area: 'Dialysis Center', ci: 'Patricia Reyes', time: '6:51 AM', liveMin: '2 min', status: 'Present' },
-    { id: 12, initials: 'AG2', name: 'Andrea Gomez', section: 'BSN 4A', site: 'Vicente Mendiola Center for Health Infirmary', area: 'Emergency Room', ci: 'Patricia Reyes', time: '7:16 AM', liveMin: '4 min', status: 'Present' },
-  ];
-  const filtered = data.filter(item => {
+  const today = new Date().toISOString().slice(0, 10);
+  const todaySchedules = (schedules as any[]).filter((schedule: any) => schedule.date === today && String(schedule.instructorId) === String(user?.id));
+  const todayAttendance = (attendance as any[]).filter((record: any) => record.dutyDate === today && String(record.instructorId) === String(user?.id));
+  const data = todaySchedules.map((schedule: any) => {
+    const record = todayAttendance.find((duty: any) => String(duty.studentId) === String(schedule.studentId) && duty.hospital === schedule.hospital && duty.area === schedule.area);
+    return {
+    id: schedule.id,
+    profileImageUrl: schedule.studentProfileImageUrl,
+    name: schedule.studentName || "Nursing Student",
+    section: schedule.studentSection || "Nursing Student",
+    site: schedule.hospital || "Assigned Site",
+    area: schedule.area || "Assigned Area",
+    ci: record.instructorName || user?.fullName || "Clinical Instructor",
+    time: record?.timeInLabel || "Not timed in",
+    liveMin: record?.timeOutLabel ? "Completed" : record?.timeInLabel ? "Active" : "Waiting",
+    status: record?.status || "Not connected",
+  };
+  });
+  const filtered = data.filter((item: any) => {
     const matchSite = siteFilter === "all" || item.site.includes(siteFilter);
     const matchArea = areaFilter === "all" || item.area === areaFilter;
     const q = search.toLowerCase();
     const matchSearch = !search || item.name.toLowerCase().includes(q) || item.section.toLowerCase().includes(q) || item.site.toLowerCase().includes(q) || item.area.toLowerCase().includes(q);
     return matchSite && matchArea && matchSearch;
   });
+  const siteOptions = [{ value: "all", label: "All Hospitals" }, ...Array.from(new Set(data.map((item: any) => item.site).filter(Boolean))).sort().map((site: any) => ({ value: site, label: site }))];
+  const areaOptions = [{ value: "all", label: "All duty areas" }, ...Array.from(new Set(data.map((item: any) => item.area).filter(Boolean))).sort().map((area: any) => ({ value: area, label: area }))];
   const inputCls = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
   const labelCls = "flex flex-col gap-1.5 m-0 p-[0.1rem] !text-sm !font-bold !text-[#344054]";
   return (
@@ -36,49 +51,39 @@ export function LiveAttendanceContent() {
           </div>
           <div className="grid gap-[18px] mb-[24px] grid-cols-3 max-[720px]:grid-cols-1">
             <label className={labelCls} htmlFor="la-site">Hospital
-              <select className={`${inputCls} cursor-pointer`} id="la-site" value={siteFilter} onChange={e => setSiteFilter(e.target.value)}>
-                <option value="all">All Hospitals</option>
-                <option value="CCMC">CCMC</option>
-                <option value="VSMMC">VSMMC</option>
-                <option value="CHN Brgy. Dumlog">CHN Brgy. Dumlog</option>
-                <option value="CSMC">CSMC</option>
-              </select>
+              <InlineSelect value={siteFilter} options={siteOptions} placeholder="All Hospitals" onChange={setSiteFilter} />
             </label>
             <label className={labelCls} htmlFor="la-area">Duty area
-              <select className={`${inputCls} cursor-pointer`} id="la-area" value={areaFilter} onChange={e => setAreaFilter(e.target.value)}>
-                <option value="all">All duty areas</option>
-                <option value="Emergency Room">Emergency Room</option>
-                <option value="Delivery Room">Delivery Room</option>
-                <option value="Medical Ward">Medical Ward</option>
-                <option value="Pedia Pulmo Ward">Pedia Pulmo Ward</option>
-                <option value="Community Health Nursing Area">Community Health Nursing Area</option>
-                <option value="Outpatient Department">Outpatient Department</option>
-                <option value="Dialysis Center">Dialysis Center</option>
-              </select>
+              <InlineSelect value={areaFilter} options={areaOptions} placeholder="All duty areas" onChange={setAreaFilter} />
             </label>
             <label className={labelCls} htmlFor="la-search">Search
               <input className={inputCls} id="la-search" type="search" placeholder="Search student, section, area, or site" value={search} onChange={e => setSearch(e.target.value)} />
             </label>
           </div>
-          <div className="flex flex-col w-full border border-[#e2e8f0] rounded-lg overflow-x-auto bg-white" role="table">
-            <div className="min-w-[900px] grid grid-cols-[44px_1.25fr_1.4fr_0.65fr_0.8fr_0.65fr] items-center p-[18px] gap-[18px] bg-[#f8fafc] !text-[#344054] !text-[0.78rem] !font-[800] uppercase border-b border-[#e2e8f0]" role="row">
-              {['No.','Student','Duty Location','Check-In','Time Connected','Status'].map(h => <span key={h} role="columnheader">{h}</span>)}
-            </div>
-            {filtered.map((item, i) => (
-              <div className="min-w-[900px] grid grid-cols-[44px_1.25fr_1.4fr_0.65fr_0.8fr_0.65fr] items-center p-[18px] gap-[18px] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] last:border-b-0" role="row" key={item.id}>
-                <span role="cell" className="w-[32px] h-[32px] rounded-full border border-[#8a252c]/16 bg-[#f8fafc] grid place-items-center !text-[#8A252C] !text-[0.82rem] !font-[900]">{i+1}.</span>
-                <span role="cell" className="flex items-center gap-[10px]">
-                  <div className="w-[42px] h-[42px] shrink-0 rounded-full flex items-center justify-center !text-[0.82rem] !font-extrabold bg-[#ffcf01] !text-[#332800]">{item.initials}</div>
-                  <div><strong className="block !text-[#111827] !text-[0.88rem]">{item.name}</strong><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">{item.section}</small></div>
-                </span>
-                <span role="cell"><strong className="block !text-[#111827] !text-[0.88rem]">{item.site}</strong><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">{item.area}</small><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">CI: {item.ci}</small></span>
-                <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800]">{item.time}</span>
-                <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800]">{item.liveMin}</span>
-                <span role="cell"><span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#e9f8ef] !text-[#03703c]">{item.status}</span></span>
+          {isSchedulesLoading || isLoading ? (
+            <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">Loading today&apos;s live attendance...</div>
+          ) : todaySchedules.length === 0 ? (
+            <div className="p-8 text-center rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.9rem] !font-bold">No schedule for today.</div>
+          ) : (
+            <>
+              <div className="flex flex-col w-full border border-[#e2e8f0] rounded-lg overflow-x-auto bg-white" role="table">
+                <div className="min-w-[900px] grid grid-cols-[44px_1.25fr_1.4fr_0.65fr_0.8fr_0.65fr] items-center p-[18px] gap-[18px] bg-[#f8fafc] !text-[#344054] !text-[0.78rem] !font-[800] uppercase border-b border-[#e2e8f0]" role="row">
+                  {['No.','Student','Duty Location','Time-In','Connection','Status'].map(h => <span key={h} role="columnheader">{h}</span>)}
+                </div>
+                {filtered.map((item: any, i: number) => (
+                  <div className="min-w-[900px] grid grid-cols-[44px_1.25fr_1.4fr_0.65fr_0.8fr_0.65fr] items-center p-[18px] gap-[18px] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] last:border-b-0" role="row" key={item.id}>
+                    <span role="cell" className="w-[32px] h-[32px] rounded-full border border-[#8a252c]/16 bg-[#f8fafc] grid place-items-center !text-[#8A252C] !text-[0.82rem] !font-[900]">{i+1}.</span>
+                    <span role="cell" className="flex items-center gap-[10px]"><ProfileAvatar name={item.name} imageUrl={item.profileImageUrl} size={42} /><div><strong className="block !text-[#111827] !text-[0.88rem]">{item.name}</strong><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">{item.section}</small></div></span>
+                    <span role="cell"><strong className="block !text-[#111827] !text-[0.88rem]">{item.site}</strong><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">{item.area}</small><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">CI: {item.ci}</small></span>
+                    <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800]">{item.time}</span>
+                    <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800]">{item.liveMin}</span>
+                    <span role="cell"><span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${item.status === "Not connected" ? "bg-[#f1f5f9] !text-[#475569]" : "bg-[#e9f8ef] !text-[#03703c]"}`}>{item.status}</span></span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          {filtered.length === 0 && <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">No attendance records match the selected filters.</div>}
+              {filtered.length === 0 && <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">No scheduled students match the selected filters.</div>}
+            </>
+          )}
         </article>
       </section>
     </main>

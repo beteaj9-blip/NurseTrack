@@ -8,6 +8,7 @@ import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useToast } from "@/components/ui/ToastProvider";
 
 type CaseCategoryOption = {
@@ -50,13 +51,32 @@ export default function AddClinicalCaseContent() {
 
   const selectedSchedule = schedules.find((schedule: any) => String(schedule.id) === selectedScheduleId);
   const selectedHospital = hospitals.find((item: any) => item.name === hospital);
-  const wards = useMemo(() => selectedHospital?.wards ?? [], [selectedHospital]);
+  const allDutyAreas = useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((item: any) => item.wards ?? []).filter(Boolean))).sort(), [hospitals]);
+  const wards = useMemo(() => {
+    if (selectedHospital?.wards?.length) return selectedHospital.wards;
+    return allDutyAreas;
+  }, [selectedHospital, allDutyAreas]);
+  const hospitalOptions = useMemo(() => (hospitals as any[]).map((item: any) => ({ value: item.name, label: `${item.name}${item.fullName ? ` - ${item.fullName}` : ""}` })), [hospitals]);
+  const wardOptions = useMemo(() => wards.map((ward: string) => ({ value: ward, label: ward })), [wards]);
+  const categoryOptions = useMemo(() => categories.map((item) => ({ value: item.value, label: item.label })), [categories]);
+  const instructorOptions = useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), [instructors]);
+  const eligibleSchedules = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (schedules as any[]).filter((schedule: any) => {
+      if (!schedule.date) return false;
+      const scheduleDate = new Date(`${schedule.date}T00:00:00`);
+      return scheduleDate.getTime() <= today.getTime();
+    });
+  }, [schedules]);
+  const scheduleOptions = useMemo(() => eligibleSchedules.map((schedule: any) => ({ value: String(schedule.id), label: `${schedule.date} - ${schedule.area}` })), [eligibleSchedules]);
 
   const handleScheduleChange = (value: string) => {
     const schedule = schedules.find((item: any) => String(item.id) === value);
     setSelectedScheduleId(value);
     setHospital(schedule?.hospital ?? "");
     setDutyArea(schedule?.area ?? "");
+    setInstructorId(schedule?.instructorId != null ? String(schedule.instructorId) : "");
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -112,12 +132,8 @@ export default function AddClinicalCaseContent() {
             
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Case Date</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={selectedScheduleId} onChange={(event) => handleScheduleChange(event.target.value)}>
-                <option value="" disabled hidden>Select case date</option>
-                {schedules.map((schedule: any) => (
-                  <option key={schedule.id} value={schedule.id}>{schedule.date} - {schedule.area}</option>
-                ))}
-              </select>
+              <InlineSelect value={selectedScheduleId} options={scheduleOptions} placeholder="Select case date" onChange={handleScheduleChange} />
+              {eligibleSchedules.length === 0 && <span className="mt-2 text-[0.78rem] font-bold text-[#92400e]">No completed or current schedules are available for case submission.</span>}
             </div>
 
             <div className="flex flex-col">
@@ -144,12 +160,7 @@ export default function AddClinicalCaseContent() {
 
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Category</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={category} onChange={(event) => setCategory(event.target.value)}>
-                <option value="" disabled hidden>Select category</option>
-                {categories.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
+              <InlineSelect value={category} options={categoryOptions} placeholder="Select category" onChange={setCategory} />
             </div>
 
             <div className="flex flex-col md:col-span-2">
@@ -165,32 +176,17 @@ export default function AddClinicalCaseContent() {
 
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Name of Hospital</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={hospital} onChange={(event) => { setHospital(event.target.value); setDutyArea(""); }}>
-                <option value="" disabled hidden>Select hospital</option>
-                {hospitals.map((item: any) => (
-                  <option key={item.id} value={item.name}>{item.name}</option>
-                ))}
-              </select>
+              <InlineSelect value={hospital} options={hospitalOptions} placeholder="Select hospital" onChange={(value) => { setHospital(value); setDutyArea(""); }} />
             </div>
 
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Supervising Clinical Instructor</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={instructorId} onChange={(event) => setInstructorId(event.target.value)}>
-                <option value="" disabled hidden>Select supervising CI</option>
-                {instructors.map((instructor: any) => (
-                  <option key={instructor.id} value={instructor.id}>{instructor.fullName}</option>
-                ))}
-              </select>
+              <InlineSelect value={instructorId} options={instructorOptions} placeholder="Select supervising CI" onChange={setInstructorId} />
             </div>
 
             <div className="flex flex-col md:col-span-2">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Duty Area</label>
-              <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] cursor-pointer shadow-sm text-[0.9rem]" value={dutyArea} onChange={(event) => setDutyArea(event.target.value)}>
-                <option value="" disabled hidden>Select duty area</option>
-                {wards.map((ward: string) => (
-                  <option key={ward} value={ward}>{ward}</option>
-                ))}
-              </select>
+              <InlineSelect value={dutyArea} options={wardOptions} placeholder="Select duty area" onChange={setDutyArea} />
             </div>
 
             <div className="flex flex-col md:col-span-2">

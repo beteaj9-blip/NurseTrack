@@ -6,11 +6,21 @@ import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAppealTypes, useStudentAppeal, useUpdateStudentAppeal, useUploadAppealFile } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useToast } from "@/components/ui/ToastProvider";
 
 function formatDate(date?: string) {
   if (!date) return "";
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+function getFileName(fileUrl?: string) {
+  if (!fileUrl) return "";
+  try {
+    return decodeURIComponent(new URL(fileUrl).pathname.split("/").pop() || "Supporting file");
+  } catch {
+    return fileUrl.split("/").pop() || "Supporting file";
+  }
 }
 
 function formatSubmitted(date?: string) {
@@ -60,7 +70,12 @@ export function StudentAppealDetailContent() {
   const isUploading = uploadAppealFile.isPending;
 
   const selectedHospital = hospitals.find((hospital: any) => hospital.name === form.clinicalSite);
-  const dutyAreas = selectedHospital?.wards ?? [];
+  const allDutyAreas = React.useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
+  const dutyAreas = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
+  const appealTypeOptions = React.useMemo(() => appealTypes.map((appealType: any) => ({ value: appealType.value, label: appealType.label })), [appealTypes]);
+  const hospitalOptions = React.useMemo(() => (hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), [hospitals]);
+  const dutyAreaOptions = React.useMemo(() => dutyAreas.map((area: string) => ({ value: area, label: area })), [dutyAreas]);
+  const instructorOptions = React.useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), [instructors]);
 
   const resetForm = React.useCallback(() => {
     if (!appeal) return;
@@ -92,6 +107,11 @@ export function StudentAppealDetailContent() {
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (form.supportingFiles) {
+      showToast({ variant: "error", title: "Remove current file", message: "Only one supporting file can be attached. Remove the current file first." });
+      event.target.value = "";
+      return;
+    }
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -104,7 +124,15 @@ export function StudentAppealDetailContent() {
     } catch {
       setMessage("Supporting file could not be uploaded. Check Cloudinary configuration.");
       showToast({ variant: "error", title: "Upload failed", message: "Check Cloudinary configuration and try again." });
+    } finally {
+      event.target.value = "";
     }
+  };
+
+  const removeFile = () => {
+    updateForm("supportingFiles", "");
+    setMessage("Supporting file removed. Save changes to update the appeal.");
+    showToast({ variant: "success", title: "File removed", message: "Save changes to remove it from this appeal." });
   };
 
   const saveAppeal = async (event: React.FormEvent) => {
@@ -184,12 +212,7 @@ export function StudentAppealDetailContent() {
           <div className="p-4 px-5">
             <span className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Appeal Type</span>
             {isEditing ? (
-              <select className="w-full h-[38px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white cursor-pointer" value={form.appealType} onChange={(event) => updateForm("appealType", event.target.value)}>
-                <option value="" disabled hidden>Select appeal type</option>
-                {appealTypes.map((appealType: any) => (
-                  <option key={appealType.id ?? appealType.value} value={appealType.value}>{appealType.label}</option>
-                ))}
-              </select>
+              <InlineSelect value={form.appealType} options={appealTypeOptions} placeholder="Select appeal type" onChange={(value) => updateForm("appealType", value)} />
             ) : (
               <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.appealType ?? ""}</strong>
             )}
@@ -205,12 +228,7 @@ export function StudentAppealDetailContent() {
           <div className="p-4 px-5">
             <span className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Clinical Site</span>
             {isEditing ? (
-              <select className="w-full h-[38px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white cursor-pointer" value={form.clinicalSite} onChange={(event) => setForm((current) => ({ ...current, clinicalSite: event.target.value, dutyArea: "" }))}>
-                <option value="" disabled hidden>Select clinical site</option>
-                {hospitals.map((hospital: any) => (
-                  <option key={hospital.id} value={hospital.name}>{hospital.name}</option>
-                ))}
-              </select>
+              <InlineSelect value={form.clinicalSite} options={hospitalOptions} placeholder="Select clinical site" onChange={(value) => setForm((current) => ({ ...current, clinicalSite: value, dutyArea: "" }))} />
             ) : (
               <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.clinicalSite ?? ""}</strong>
             )}
@@ -218,12 +236,7 @@ export function StudentAppealDetailContent() {
           <div className="p-4 px-5 sm:border-l border-[#e2e8f0] lg:border-none">
             <span className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Duty Area</span>
             {isEditing ? (
-              <select className="w-full h-[38px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white cursor-pointer" value={form.dutyArea} onChange={(event) => updateForm("dutyArea", event.target.value)}>
-                <option value="" disabled hidden>Select duty area</option>
-                {dutyAreas.map((area: string) => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
-              </select>
+              <InlineSelect value={form.dutyArea} options={dutyAreaOptions} placeholder="Select duty area" onChange={(value) => updateForm("dutyArea", value)} />
             ) : (
               <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.dutyArea ?? ""}</strong>
             )}
@@ -233,12 +246,7 @@ export function StudentAppealDetailContent() {
         {isEditing && (
           <div className="mb-6">
             <label className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Assigned Clinical Instructor</label>
-            <select className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white cursor-pointer" value={form.instructorId} onChange={(event) => updateForm("instructorId", event.target.value)}>
-              <option value="" disabled hidden>Select assigned CI</option>
-              {instructors.map((instructor: any) => (
-                <option key={instructor.id} value={instructor.id}>{instructor.fullName}</option>
-              ))}
-            </select>
+            <InlineSelect value={form.instructorId} options={instructorOptions} placeholder="Select assigned CI" onChange={(value) => updateForm("instructorId", value)} />
           </div>
         )}
 
@@ -268,19 +276,36 @@ export function StudentAppealDetailContent() {
           </div>
 
           <div className="border border-[#e2e8f0] border-l-[4px] border-l-[#ffc107] rounded-lg bg-[#f8fafc] p-4 pl-5">
-            <span className="block text-[#8A252C] text-[0.7rem] font-[900] uppercase tracking-wider mb-1.5">Supporting Files</span>
+            <span className="block text-[#8A252C] text-[0.7rem] font-[900] uppercase tracking-wider mb-1.5">Supporting File</span>
             {isEditing ? (
               <div className="flex items-center gap-4 flex-wrap">
-                <label className={`h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center ${isUploading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}>
-                  {isUploading ? "Uploading..." : "Choose file"}
-                  <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading || isSaving} />
+                <label className={`h-[36px] px-4 rounded-md border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-bold shadow-sm hover:bg-[#f8fafc] transition-colors inline-flex items-center ${isUploading || !!form.supportingFiles ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}>
+                  {isUploading ? "Uploading..." : form.supportingFiles ? "File attached" : "Choose file"}
+                  <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading || isSaving || !!form.supportingFiles} />
                 </label>
-                <span className="text-[#64748b] text-[0.85rem] font-semibold truncate">{form.supportingFiles || "No file selected"}</span>
+                {form.supportingFiles ? (
+                  <div className="inline-flex max-w-full items-center gap-2">
+                    <a href={form.supportingFiles} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-2 rounded-md border border-[#e2e8f0] bg-white px-3 py-2 text-[#344054] text-[0.85rem] font-bold no-underline hover:border-[#cbd5e1] hover:bg-[#f8fafc] transition-colors">
+                      <span aria-hidden="true">File</span>
+                      <span className="truncate">{getFileName(form.supportingFiles)}</span>
+                      <span className="text-[#8A252C]">Open</span>
+                    </a>
+                    <button type="button" onClick={removeFile} disabled={isUploading || isSaving} className="h-[36px] px-3 rounded-md border border-[#fecaca] bg-[#fef2f2] text-[#991b1b] text-[0.78rem] font-bold hover:bg-[#fee2e2] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Remove</button>
+                  </div>
+                ) : (
+                  <span className="text-[#64748b] text-[0.85rem] font-semibold truncate">No file selected</span>
+                )}
               </div>
             ) : (
-              <p className="m-0 text-[#111827] text-[0.9rem] font-semibold leading-[1.5]">
-                {appeal?.supportingFiles || "No supporting files attached."}
-              </p>
+              appeal?.supportingFiles ? (
+                <a href={appeal.supportingFiles} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 max-w-full rounded-md border border-[#e2e8f0] bg-white px-3 py-2 text-[#344054] text-[0.85rem] font-bold no-underline hover:border-[#cbd5e1] hover:bg-[#f8fafc] transition-colors">
+                  <span aria-hidden="true">File</span>
+                  <span className="truncate">{getFileName(appeal.supportingFiles)}</span>
+                  <span className="text-[#8A252C]">Open</span>
+                </a>
+              ) : (
+                <p className="m-0 text-[#111827] text-[0.9rem] font-semibold leading-[1.5]">No supporting files attached.</p>
+              )
             )}
           </div>
 

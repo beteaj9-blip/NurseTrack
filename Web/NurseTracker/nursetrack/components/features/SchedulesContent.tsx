@@ -5,9 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
+import { UserRole } from "@/core/types/user";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const routeRoleMap: Record<string, UserRole> = {
+  "/nursing-student": "STUDENT",
+  "/clinical-instructor": "INSTRUCTOR",
+  "/admin": "ADMIN",
+  "/chair": "CHAIR",
+  "/coordinator": "COORDINATOR",
+  "/assistant": "ASSISTANT",
+};
 
 function buildCalendar(year: number, month: number) {
   const firstDay = new Date(year, month, 1).getDay();
@@ -33,19 +43,26 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
   const [calMonth, setCalMonth] = React.useState(today.getMonth());
 
   const user = useAuthStore((state) => state.user);
+  const routeRole = routeRoleMap[basePath] ?? user?.role;
   const { data: schedules, isLoading } = useSchedules(
     user?.id != null ? String(user.id) : undefined,
-    user?.role
+    routeRole
   );
+  const visibleSchedules = React.useMemo(() => {
+    const records = schedules ?? [];
+    if (routeRole === "INSTRUCTOR") return records.filter((schedule: any) => String(schedule.instructorId) === String(user?.id));
+    if (routeRole === "STUDENT") return records.filter((schedule: any) => String(schedule.studentId) === String(user?.id));
+    return records;
+  }, [routeRole, schedules, user?.id]);
 
   // Build a set of dates that have schedules: "YYYY-MM-DD" -> schedule
   const scheduleMap = React.useMemo(() => {
     const map: Record<string, any> = {};
-    (schedules ?? []).forEach((s: any) => {
+    visibleSchedules.forEach((s: any) => {
       if (s.date) map[s.date] = s;
     });
     return map;
-  }, [schedules]);
+  }, [visibleSchedules]);
 
   const cells = buildCalendar(calYear, calMonth);
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -143,8 +160,8 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
             <div className="flex flex-col gap-3">
               {isLoading ? (
                 <div className="p-4 text-center text-[#64748b] !font-bold">Loading schedules...</div>
-              ) : schedules && schedules.length > 0 ? (
-                schedules.map((item: any, index: number) => (
+              ) : visibleSchedules.length > 0 ? (
+                visibleSchedules.map((item: any, index: number) => (
                   <div key={index} className="flex items-center justify-between gap-4 p-[1.1rem_1.25rem] border border-[#e2e8f0] rounded-lg bg-white shadow-sm hover:border-[#cbd5e1] transition-colors max-[600px]:flex-col max-[600px]:items-start">
                     <div>
                       <h3 className="m-0 mb-1 !text-[#1e293b] !text-[0.95rem] !font-[800]">{item.area} Rotation</h3>

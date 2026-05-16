@@ -71,7 +71,6 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
   "clinical-instructor": [
     { label: "Dashboard", href: "/clinical-instructor/dashboard", icon: DashboardIcon },
     { label: "Assigned Schedules", href: "/clinical-instructor/schedules", icon: SchedulesIcon },
-    { label: "Live Attendance", href: "/clinical-instructor/live-attendance", icon: LiveAttendanceIcon },
     { label: "Manual Backup", topbarTitle: "Manual Attendance", href: "/clinical-instructor/manual-backup", icon: ManualBackupIcon },
     { label: "Clinical Cases Review", href: "/clinical-instructor/clinical-cases", icon: ClinicalCasesIcon },
     { label: "Student Progress", href: "/clinical-instructor/student-progress", icon: StudentProgressIcon },

@@ -20,6 +20,10 @@ public class Hospital {
     @Column(nullable = false)
     private String name;
 
+    private String fullName;
+
+    private String label;
+
     @Column(nullable = false)
     private String address;
 

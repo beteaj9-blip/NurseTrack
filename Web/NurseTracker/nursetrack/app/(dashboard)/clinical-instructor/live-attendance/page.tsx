@@ -1,5 +1,5 @@
-import { LiveAttendanceContent } from "@/components/features/LiveAttendanceContent";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <LiveAttendanceContent  />;
+  redirect("/clinical-instructor/dashboard");
 }

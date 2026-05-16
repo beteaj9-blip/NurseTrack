@@ -3,8 +3,10 @@
 import Link from "next/link";
 import React from "react";
 import { useAttendance } from "@/core/api/hooks/useAttendance";
-import { useStudentCases } from "@/core/api/hooks/useClinicalCases";
+import { useStudentCases, useStudentRequirementProgress } from "@/core/api/hooks/useClinicalCases";
+import { useStudentExtensionDays } from "@/core/api/hooks/useExtensionDays";
 import { useAuthStore } from "@/core/store/authStore";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 type RequirementItem = {
   label: string;
@@ -12,14 +14,15 @@ type RequirementItem = {
   total: number;
 };
 
+type RequirementGroup = {
+  code: string;
+  label: string;
+  items: RequirementItem[];
+};
+
 function formatHours(hours: number) {
   const cleanHours = Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
   return Number(hours) === 1 ? `${cleanHours} hr` : `${cleanHours} hrs`;
-}
-
-function getInitials(name?: string) {
-  if (!name) return "?";
-  return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
 }
 
 function formatDutyDate(date?: string) {
@@ -32,28 +35,14 @@ function formatDutyDay(date?: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { weekday: "long" });
 }
 
+function getRecordDate(record: any) {
+  return record?.dutyDate ?? record?.caseDate ?? record?.procedureDate ?? "";
+}
+
 function getRequirementBadgeClass(item: RequirementItem) {
   if (item.completed === item.total) return "bg-[#e9f8ef] !text-[#03703c]";
   if (item.completed === 0) return "bg-[#fef2f2] !text-[#991b1b]";
   return "bg-[#fff8e1] !text-[#6c4c00]";
-}
-
-function buildRequirements(cases: any[]) {
-  const grouped = cases.reduce<Record<string, any[]>>((acc, clinicalCase) => {
-    const label = clinicalCase.category ?? clinicalCase.area ?? clinicalCase.caseType ?? "Clinical Cases";
-    acc[label] = [...(acc[label] ?? []), clinicalCase];
-    return acc;
-  }, {});
-
-  return Object.entries(grouped).map(([label, records]) => ({
-    code: label.split(" ").map((part) => part[0]).join("").slice(0, 3).toUpperCase(),
-    label,
-    items: [{
-      label,
-      completed: records.filter((clinicalCase) => clinicalCase.status === "APPROVED").length,
-      total: records.length,
-    }],
-  }));
 }
 
 function buildDutyEntries(records: any[]) {
@@ -79,21 +68,23 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id != null ? String(user.id) : undefined;
   const { data: cases = [] } = useStudentCases(userId);
+  const { data: requirements = [] } = useStudentRequirementProgress(userId) as { data: RequirementGroup[] };
   const { data: dutyRecords = [] } = useAttendance(userId);
+  const { data: extensionDays = [] } = useStudentExtensionDays(userId);
 
   const student = {
     name: user?.fullName ?? "Nursing Student",
-    initials: getInitials(user?.fullName),
     profileImageUrl: user?.profileImageUrl ?? "",
     id: user?.schoolId ?? "",
     section: user?.sectionInfo ?? "Nursing Student",
     status: "In progress",
-    extensionDays: dutyRecords.filter((record: any) => record.status === "REJECTED").length,
+    extensionDays: extensionDays.filter((record: any) => record.status === "ACTIVE").reduce((sum: number, record: any) => sum + Number(record.days ?? 0), 0),
     pending: cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length + dutyRecords.filter((record: any) => record.status === "PENDING").length,
   };
 
-  const requirements = buildRequirements(cases);
-  const dutyEntries = buildDutyEntries(dutyRecords);
+  const approvedCaseDates = new Set(cases.filter((clinicalCase: any) => clinicalCase.status === "APPROVED").map(getRecordDate).filter(Boolean));
+  const approvedDutyRecords = dutyRecords.filter((record: any) => approvedCaseDates.has(getRecordDate(record)));
+  const dutyEntries = buildDutyEntries(approvedDutyRecords);
   const totalHours = dutyEntries.reduce((sum, entry) => sum + entry.hours, 0);
   const totalOvertime = dutyEntries.reduce((sum, entry) => sum + entry.overtime, 0);
   const completedCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.completed, 0), 0);
@@ -103,13 +94,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="flex items-center justify-between gap-[28px] p-[clamp(24px,4vw,34px)] border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] mb-[18px]">
         <div className="flex items-center gap-[16px] min-w-0">
-          {student.profileImageUrl ? (
-            <img src={student.profileImageUrl} alt="Profile" className="w-[68px] h-[68px] shrink-0 rounded-full object-cover border border-[#e2e8f0]" />
-          ) : (
-            <div className="w-[68px] h-[68px] shrink-0 bg-[#ffc107] !text-[#111827] rounded-full flex items-center justify-center !font-[800] text-[1.05rem]">
-              {student.initials}
-            </div>
-          )}
+          <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={68} />
           <div>
             <h2 className="m-0 mb-[8px] !text-[#111827] !text-[clamp(1.55rem,3vw,2.15rem)] !font-bold">{student.name}</h2>
             <p className="m-0 !text-[#64748b] !font-[600] leading-[1.55]">{student.section} - Student ID {student.id}</p>

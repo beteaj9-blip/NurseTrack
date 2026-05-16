@@ -1,6 +1,14 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { apiClient } from "@/core/api/axios";
+import { useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useHospitals } from "@/core/api/hooks/useHospitals";
+import { useSchedules } from "@/core/api/hooks/useSchedules";
+import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
+import { useToast } from "@/components/ui/ToastProvider";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 type ValidationStatus = "Pending Review" | "Approved" | "Returned";
 
@@ -12,11 +20,14 @@ interface AttendanceRecord {
   shift: string;
   note: string;
   status: ValidationStatus;
+  instructorName: string;
+  instructorProfileImageUrl?: string;
 }
 
 interface AddedStudent {
   id: string;
-  initials: string;
+  userId?: number;
+  profileImageUrl?: string;
   name: string;
   section: string;
   studentId: string;
@@ -24,13 +35,6 @@ interface AddedStudent {
   checkIn: string;
   checkOut: string;
 }
-
-const RECORDS: AttendanceRecord[] = [
-  { id: 1, dateLabel: "May 8, 2026 Attendance", site: "CCMC", area: "Emergency Room", shift: "7:00 AM - 3:00 PM", note: "Awaiting Chair or Admin review.", status: "Pending Review" },
-  { id: 2, dateLabel: "May 6, 2026 Attendance", site: "CCMC", area: "Delivery Room", shift: "7:00 AM - 3:00 PM", note: "Awaiting Chair or Admin review.", status: "Pending Review" },
-  { id: 3, dateLabel: "April 29, 2026 Attendance", site: "CCMC", area: "Emergency Room", shift: "7:00 AM - 3:00 PM", note: "Approved by Reyes, Chair on April 30, 2026, 9:10 AM.", status: "Approved" },
-  { id: 4, dateLabel: "April 24, 2026 Attendance", site: "CCMC", area: "Medical Ward", shift: "7:00 AM - 3:00 PM", note: "Returned by Admin Santos on April 25, 2026, 10:22 AM.", status: "Returned" },
-];
 
 const STATUS_STYLE: Record<ValidationStatus, string> = {
   "Pending Review": "bg-[#fef3c7] !text-[#92400e]",
@@ -41,15 +45,124 @@ const STATUS_STYLE: Record<ValidationStatus, string> = {
 const inputCls = "w-full min-h-[44px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !text-[0.9rem] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
 const labelCls = "flex flex-col gap-1.5 m-0 !text-[0.85rem] !font-bold !text-[#334155]";
 
+function formatDateLabel(dateTime?: string) {
+  if (!dateTime) return "Manual attendance";
+  return new Date(dateTime).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) + " Attendance";
+}
+
+function formatTime(dateTime?: string) {
+  if (!dateTime) return "";
+  return new Date(dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
 export function CiManualAttendanceContent({ basePath, isEditMode = false }: { basePath: string; isEditMode?: boolean }) {
+  const { showToast } = useToast();
+  const user = useAuthStore((state) => state.user);
+  const instructorId = user?.id != null ? String(user.id) : undefined;
+  const { data: schedules = [] } = useSchedules(instructorId, user?.role);
+  const { data: attendanceRecords = [], refetch } = useInstructorAttendance(instructorId);
+  const { data: hospitals = [] } = useHospitals();
   const [editing, setEditing] = useState(isEditMode);
   const [searchStudent, setSearchStudent] = useState("");
-  const [addedStudents, setAddedStudents] = useState<AddedStudent[]>([
-    { id: "1", initials: "MC", name: "Maria Cruz", section: "BSN 3A", studentId: "12-3456-789", status: "Present", checkIn: "06:54 AM", checkOut: "03:05 PM" },
-    { id: "2", initials: "JA", name: "Josh Anton Nuevas", section: "BSN 3A", studentId: "21-5589-201", status: "Present", checkIn: "07:02 AM", checkOut: "03:00 PM" },
-  ]);
+  const [addedStudents, setAddedStudents] = useState<AddedStudent[]>([]);
+  const [dutyDate, setDutyDate] = useState(new Date().toISOString().slice(0, 10));
+  const [dutyArea, setDutyArea] = useState("");
+  const [shiftStart, setShiftStart] = useState("07:00");
+  const [shiftEnd, setShiftEnd] = useState("15:00");
+  const [clinicalSite, setClinicalSite] = useState("");
+  const [instructorNote, setInstructorNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const selectedHospital = (hospitals as any[]).find((hospital: any) => hospital.name === clinicalSite);
+  const allDutyAreas = useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
+  const dutyAreas = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
+  const hospitalOptions = useMemo(() => (hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), [hospitals]);
+  const dutyAreaOptions = useMemo(() => dutyAreas.map((area: string) => ({ value: area, label: area })), [dutyAreas]);
+  const statusOptions = useMemo(() => ["Present", "Absent", "Late", "Excused"].map((status) => ({ value: status, label: status })), []);
+
+  React.useEffect(() => {
+    if (!clinicalSite && (hospitals as any[]).length > 0) setClinicalSite((hospitals as any[])[0].name ?? "");
+  }, [clinicalSite, hospitals]);
+
+  React.useEffect(() => {
+    if ((!dutyArea || !dutyAreas.includes(dutyArea)) && dutyAreas.length > 0) setDutyArea(dutyAreas[0]);
+  }, [dutyArea, dutyAreas]);
+
+  const assignedStudents = Object.values((schedules as any[]).reduce((acc: Record<string, AddedStudent>, schedule: any) => {
+    const key = String(schedule.studentId ?? schedule.studentSchoolId ?? schedule.studentName);
+    if (!key || acc[key]) return acc;
+    acc[key] = {
+      id: key,
+      userId: schedule.studentId,
+      profileImageUrl: schedule.studentProfileImageUrl,
+      name: schedule.studentName || "Nursing Student",
+      section: schedule.studentSection || "Nursing Student",
+      studentId: schedule.studentSchoolId || "",
+      status: "Present",
+      checkIn: shiftStart,
+      checkOut: shiftEnd,
+    };
+    return acc;
+  }, {}));
+
+  const studentResults = assignedStudents.filter((student: AddedStudent) => {
+    const q = searchStudent.toLowerCase();
+    return searchStudent && !addedStudents.some((added) => added.id === student.id) && (`${student.name} ${student.studentId} ${student.section}`).toLowerCase().includes(q);
+  });
 
   const removeStudent = (id: string) => setAddedStudents(s => s.filter(st => st.id !== id));
+  const addStudent = (student: AddedStudent) => {
+    setAddedStudents((current) => [...current, { ...student, checkIn: shiftStart, checkOut: shiftEnd }]);
+    setSearchStudent("");
+  };
+
+  const updateStudent = (id: string, updates: Partial<AddedStudent>) => {
+    setAddedStudents((current) => current.map((student) => student.id === id ? { ...student, ...updates } : student));
+  };
+
+  const submitManualAttendance = async () => {
+    if (!user || addedStudents.length === 0) {
+      showToast({ variant: "error", title: "No students selected", message: "Add at least one student before sending manual attendance." });
+      return;
+    }
+    if (!clinicalSite || !dutyArea) {
+      showToast({ variant: "error", title: "Missing clinical assignment", message: "Choose a clinical site and duty area before saving." });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await Promise.all(addedStudents.map((student) => apiClient.post("/duties/manual", {
+        student: { id: student.userId },
+        instructor: { id: user.id },
+        hospital: clinicalSite,
+        ward: dutyArea,
+        timeIn: `${dutyDate}T${student.checkIn}:00`,
+        timeOut: `${dutyDate}T${student.checkOut}:00`,
+        instructorFeedback: instructorNote,
+      })));
+      await refetch();
+      setAddedStudents([]);
+      setEditing(false);
+      showToast({ variant: "success", title: "Manual attendance saved", message: "Manual duty records were created for the selected students." });
+    } catch {
+      showToast({ variant: "error", title: "Save failed", message: "Manual attendance could not be saved." });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const records = (attendanceRecords as any[]).filter((record: any) => record.instructorFeedback).map((record: any) => ({
+    id: record.id,
+    dateLabel: formatDateLabel(record.timeIn),
+    site: record.hospital || "Assigned Site",
+    area: record.area || record.ward || "Assigned Area",
+    shift: `${formatTime(record.timeIn)} - ${formatTime(record.timeOut)}`,
+    note: record.instructorFeedback,
+    status: record.status === "VERIFIED" ? "Approved" as ValidationStatus : record.status === "REJECTED" ? "Returned" as ValidationStatus : "Pending Review" as ValidationStatus,
+    instructorName: record.instructorName || user?.fullName || "Clinical Instructor",
+    instructorProfileImageUrl: record.instructorProfileImageUrl || user?.profileImageUrl,
+  }));
 
   return (
     <main className="p-[clamp(24px,4vw,42px)] grid gap-6 w-full">
@@ -62,42 +175,32 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           {/* Duty date */}
           <label className={labelCls} htmlFor="duty-date">
             Duty date
-            <input id="duty-date" type="date" className={inputCls} defaultValue="2026-05-08" />
+            <input id="duty-date" type="date" className={inputCls} value={dutyDate} onChange={(event) => setDutyDate(event.target.value)} />
           </label>
 
           {/* Duty area */}
           <label className={labelCls} htmlFor="duty-area">
             Duty area
-            <select id="duty-area" className={inputCls + " cursor-pointer"}>
-              <option>Emergency Room</option>
-              <option>Delivery Room</option>
-              <option>Medical Ward</option>
-              <option>Pedia Pulmo Ward</option>
-              <option>Operating Room</option>
-            </select>
+            <InlineSelect value={dutyArea} options={dutyAreaOptions} placeholder="Select duty area" onChange={setDutyArea} />
           </label>
 
           {/* Shift start */}
           <label className={labelCls} htmlFor="shift-start">
             Shift start
-            <input id="shift-start" type="time" className={inputCls} defaultValue="07:00" />
+            <input id="shift-start" type="time" className={inputCls} value={shiftStart} onChange={(event) => setShiftStart(event.target.value)} />
           </label>
 
           {/* Shift end */}
           <label className={labelCls} htmlFor="shift-end">
             Shift end
-            <input id="shift-end" type="time" className={inputCls} defaultValue="15:00" />
+            <input id="shift-end" type="time" className={inputCls} value={shiftEnd} onChange={(event) => setShiftEnd(event.target.value)} />
           </label>
         </div>
 
         {/* Clinical site */}
         <label className={labelCls + " mt-4"} htmlFor="clinical-site">
           Clinical site
-          <select id="clinical-site" className={inputCls + " cursor-pointer"}>
-            <option>CCMC</option>
-            <option>VSMMC</option>
-            <option>CHD</option>
-          </select>
+          <InlineSelect value={clinicalSite} options={hospitalOptions} placeholder="Select clinical site" onChange={setClinicalSite} />
         </label>
 
         {/* Instructor note */}
@@ -108,7 +211,8 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
             rows={4}
             placeholder="Add why this attendance was encoded manually"
             className={inputCls + " resize-y min-h-[100px]"}
-            defaultValue={editing ? "Manual attendance encoded because the CI phone was unavailable during the duty shift." : ""}
+            value={instructorNote}
+            onChange={(event) => setInstructorNote(event.target.value)}
           />
         </label>
 
@@ -132,10 +236,11 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           )}
           <button
             type="button"
-            onClick={() => setEditing(true)}
-            className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-lg bg-[#8A252C] !text-white !text-[0.88rem] !font-[800] hover:bg-[#681920] transition-colors shadow-sm"
+            onClick={submitManualAttendance}
+            disabled={isSaving}
+            className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-lg bg-[#8A252C] !text-white !text-[0.88rem] !font-[800] hover:bg-[#681920] transition-colors shadow-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {editing ? "Update Pending Record" : "Send Record for Review"}
+            {isSaving ? "Saving..." : editing ? "Update Pending Record" : "Save Manual Attendance"}
           </button>
         </div>
       </section>
@@ -162,10 +267,15 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           />
         </label>
 
-        {/* Search Results (Mock) */}
+        {/* Search Results */}
         {searchStudent.length > 0 && (
-          <div className="mt-4 flex items-center justify-center min-h-[48px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.85rem] !font-[600]">
-            No students match the search.
+          <div className="mt-4 grid gap-2">
+            {studentResults.length > 0 ? studentResults.map((student: AddedStudent) => (
+              <button key={student.id} type="button" onClick={() => addStudent(student)} className="flex items-center justify-between gap-3 rounded-lg border border-[#e2e8f0] bg-white px-4 py-3 text-left hover:bg-[#f8fafc] transition-colors cursor-pointer">
+                <span><strong className="block !text-[#111827] !text-[0.9rem] !font-[800]">{student.name}</strong><small className="block !text-[#64748b] !text-[0.8rem] !font-[600]">{student.section} - {student.studentId}</small></span>
+                <span className="!text-[#8A252C] !text-[0.82rem] !font-[900]">Add</span>
+              </button>
+            )) : <div className="flex items-center justify-center min-h-[48px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.85rem] !font-[600]">No assigned students match the search.</div>}
           </div>
         )}
 
@@ -193,9 +303,7 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
 
                 {/* Student header */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-[42px] h-[42px] shrink-0 rounded-full flex items-center justify-center !text-[0.85rem] !font-extrabold bg-[#ffcf01] !text-[#332800]">
-                    {st.initials}
-                  </div>
+                  <ProfileAvatar name={st.name} imageUrl={st.profileImageUrl} size={42} />
                   <div>
                     <strong className="block !text-[#111827] !text-[0.92rem] !font-[800]">{st.name}</strong>
                     <span className="block !text-[#64748b] !text-[0.8rem] !font-[600]">{st.section} – {st.studentId}</span>
@@ -206,20 +314,15 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
                 <div className="grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
                   <label className={labelCls} htmlFor={`status-${st.id}`}>
                     Status
-                    <select id={`status-${st.id}`} className={inputCls + " cursor-pointer"} defaultValue={st.status}>
-                      <option>Present</option>
-                      <option>Absent</option>
-                      <option>Late</option>
-                      <option>Excused</option>
-                    </select>
+                    <InlineSelect value={st.status} options={statusOptions} placeholder="Select status" onChange={(value) => updateStudent(st.id, { status: value })} />
                   </label>
                   <label className={labelCls} htmlFor={`checkin-${st.id}`}>
                     Check-in
-                    <input id={`checkin-${st.id}`} type="time" className={inputCls} defaultValue={st.checkIn.replace(" AM","").replace(" PM","")} />
+                    <input id={`checkin-${st.id}`} type="time" className={inputCls} value={st.checkIn} onChange={(event) => updateStudent(st.id, { checkIn: event.target.value })} />
                   </label>
                   <label className={labelCls} htmlFor={`checkout-${st.id}`}>
                     Check-out
-                    <input id={`checkout-${st.id}`} type="time" className={inputCls} defaultValue={st.checkOut.replace(" AM","").replace(" PM","")} />
+                    <input id={`checkout-${st.id}`} type="time" className={inputCls} value={st.checkOut} onChange={(event) => updateStudent(st.id, { checkOut: event.target.value })} />
                   </label>
                 </div>
               </div>
@@ -234,21 +337,18 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
             <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">Manual Attendance Records</h2>
             <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.8rem] !font-extrabold">
-              {RECORDS.length} records
+              {records.length} records
             </span>
           </div>
 
           <div className="flex flex-col border border-[#e2e8f0] rounded-lg overflow-hidden">
-            {RECORDS.map(rec => (
+            {records.map(rec => (
               <Link 
                 href={`${basePath}/manual-backup/review`} 
                 key={rec.id} 
                 className="flex items-center gap-4 p-[1.25rem] border-b border-[#e2e8f0] last:border-b-0 bg-transparent hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit"
               >
-                {/* Avatar */}
-                <div className="w-[42px] h-[42px] shrink-0 rounded-full flex items-center justify-center !text-[0.85rem] !font-extrabold bg-[#ffcf01] !text-[#332800]">
-                  PR
-                </div>
+                <ProfileAvatar name={rec.instructorName} imageUrl={rec.instructorProfileImageUrl} size={42} />
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
