@@ -8,6 +8,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -44,6 +46,12 @@ public class User {
 
     // E.g., BSN 3A, Ward B, Nursing Office
     private String sectionInfo;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_assigned_levels", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "assigned_level", nullable = false)
+    @Builder.Default
+    private Set<Integer> assignedLevels = new HashSet<>();
 
     private String profileImageUrl;
 

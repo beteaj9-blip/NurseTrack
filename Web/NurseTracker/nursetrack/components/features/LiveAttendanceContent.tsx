@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import { useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useAllAttendance, useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -8,14 +9,18 @@ import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function LiveAttendanceContent() {
   const user = useAuthStore((state) => state.user);
-  const { data: attendance = [], isLoading } = useInstructorAttendance(user?.id != null ? String(user.id) : undefined);
-  const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(user?.id != null ? String(user.id) : undefined, "INSTRUCTOR");
+  const isChair = user?.role === "CHAIR";
+  const { data: instructorAttendance = [], isLoading: isInstructorAttendanceLoading } = useInstructorAttendance(!isChair && user?.id != null ? String(user.id) : undefined);
+  const { data: allAttendance = [], isLoading: isAllAttendanceLoading } = useAllAttendance(isChair, isChair && user?.id != null ? String(user.id) : undefined);
+  const attendance = isChair ? allAttendance : instructorAttendance;
+  const { data: hospitals = [], isLoading: isHospitalsLoading } = useHospitals();
+  const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(user?.id != null ? String(user.id) : undefined, isChair ? "CHAIR" : "INSTRUCTOR");
   const [siteFilter, setSiteFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
   const [search, setSearch] = useState("");
   const today = new Date().toISOString().slice(0, 10);
-  const todaySchedules = (schedules as any[]).filter((schedule: any) => schedule.date === today && String(schedule.instructorId) === String(user?.id));
-  const todayAttendance = (attendance as any[]).filter((record: any) => record.dutyDate === today && String(record.instructorId) === String(user?.id));
+  const todaySchedules = (schedules as any[]).filter((schedule: any) => schedule.date === today && (isChair || String(schedule.instructorId) === String(user?.id)));
+  const todayAttendance = (attendance as any[]).filter((record: any) => record.dutyDate === today && (isChair || String(record.instructorId) === String(user?.id)));
   const data = todaySchedules.map((schedule: any) => {
     const record = todayAttendance.find((duty: any) => String(duty.studentId) === String(schedule.studentId) && duty.hospital === schedule.hospital && duty.area === schedule.area);
     return {
@@ -25,7 +30,7 @@ export function LiveAttendanceContent() {
     section: schedule.studentSection || "Nursing Student",
     site: schedule.hospital || "Assigned Site",
     area: schedule.area || "Assigned Area",
-    ci: record.instructorName || user?.fullName || "Clinical Instructor",
+    ci: record?.instructorName || schedule.instructorName || (!isChair ? user?.fullName : undefined) || "Clinical Instructor",
     time: record?.timeInLabel || "Not timed in",
     liveMin: record?.timeOutLabel ? "Completed" : record?.timeInLabel ? "Active" : "Waiting",
     status: record?.status || "Not connected",
@@ -38,8 +43,11 @@ export function LiveAttendanceContent() {
     const matchSearch = !search || item.name.toLowerCase().includes(q) || item.section.toLowerCase().includes(q) || item.site.toLowerCase().includes(q) || item.area.toLowerCase().includes(q);
     return matchSite && matchArea && matchSearch;
   });
-  const siteOptions = [{ value: "all", label: "All Hospitals" }, ...Array.from(new Set(data.map((item: any) => item.site).filter(Boolean))).sort().map((site: any) => ({ value: site, label: site }))];
-  const areaOptions = [{ value: "all", label: "All duty areas" }, ...Array.from(new Set(data.map((item: any) => item.area).filter(Boolean))).sort().map((area: any) => ({ value: area, label: area }))];
+  const selectedHospital = (hospitals as any[]).find((hospital: any) => hospital.name === siteFilter);
+  const hospitalOptions = [{ value: "all", label: "All Hospitals" }, ...(hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name }))];
+  const allDutyAreas = Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort() as string[];
+  const dutyAreaSource = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
+  const areaOptions = [{ value: "all", label: "All duty areas" }, ...dutyAreaSource.map((area: string) => ({ value: area, label: area }))];
   const inputCls = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
   const labelCls = "flex flex-col gap-1.5 m-0 p-[0.1rem] !text-sm !font-bold !text-[#344054]";
   return (
@@ -51,7 +59,7 @@ export function LiveAttendanceContent() {
           </div>
           <div className="grid gap-[18px] mb-[24px] grid-cols-3 max-[720px]:grid-cols-1">
             <label className={labelCls} htmlFor="la-site">Hospital
-              <InlineSelect value={siteFilter} options={siteOptions} placeholder="All Hospitals" onChange={setSiteFilter} />
+              <InlineSelect value={siteFilter} options={hospitalOptions} placeholder="All Hospitals" onChange={(value) => { setSiteFilter(value); setAreaFilter("all"); }} disabled={isHospitalsLoading} />
             </label>
             <label className={labelCls} htmlFor="la-area">Duty area
               <InlineSelect value={areaFilter} options={areaOptions} placeholder="All duty areas" onChange={setAreaFilter} />
@@ -60,7 +68,7 @@ export function LiveAttendanceContent() {
               <input className={inputCls} id="la-search" type="search" placeholder="Search student, section, area, or site" value={search} onChange={e => setSearch(e.target.value)} />
             </label>
           </div>
-          {isSchedulesLoading || isLoading ? (
+          {isSchedulesLoading || (isChair ? isAllAttendanceLoading : isInstructorAttendanceLoading) ? (
             <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">Loading today&apos;s live attendance...</div>
           ) : todaySchedules.length === 0 ? (
             <div className="p-8 text-center rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.9rem] !font-bold">No schedule for today.</div>

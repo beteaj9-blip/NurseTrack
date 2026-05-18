@@ -17,16 +17,18 @@ function getFirstName(fullName?: string) {
   return fullName?.split(" ")[0] || "there";
 }
 
+function getLocalDateString(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export default function NursingStudentDashboard() {
   const user = useAuthStore((state) => state.user);
-  const userId = user?.id != null ? String(user.id) : undefined;
-
-  const { data: cases } = useStudentCases(userId);
-  const { data: schedules } = useSchedules(userId);
+  const { data: cases } = useStudentCases();
+  const { data: schedules } = useSchedules(undefined, user?.role);
 
   // Compute stats from live data
   const pendingCases = cases?.filter((c: any) => c.status === "PENDING")?.length ?? 0;
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString(new Date());
   const todaySchedule = schedules?.find((s: any) => s.date === today);
 
   return (

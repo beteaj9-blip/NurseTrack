@@ -2,11 +2,15 @@
 
 import React from "react";
 import { useSearchParams } from "next/navigation";
-import { useSchedules } from "@/core/api/hooks/useSchedules";
-import { useInstructorCases, useStudentCases } from "@/core/api/hooks/useClinicalCases";
+import { useDeleteSchedule, useSchedules, useUpdateSchedule } from "@/core/api/hooks/useSchedules";
+import { useAllClinicalCases, useInstructorCases, useStudentCases } from "@/core/api/hooks/useClinicalCases";
+import { useHospitals } from "@/core/api/hooks/useHospitals";
+import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { UserRole } from "@/core/types/user";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+import { useToast } from "@/components/ui/ToastProvider";
 
 const routeRoleMap: Record<string, UserRole> = {
   "/nursing-student": "STUDENT",
@@ -38,37 +42,145 @@ function getScheduleStatusClass(status: string) {
   return "bg-[#f1f5f9] !text-[#475569]";
 }
 
+function chairScheduleBadge(schedule: any, index: number) {
+  if (getScheduleStatus(schedule.date) === "Completed") return "Published";
+  return index === 0 ? "Published" : "Draft";
+}
+
+function chairScheduleBadgeClass(label: string) {
+  if (label === "Published") return "bg-[#dcfce7] !text-[#166534]";
+  return "bg-[#fef3c7] !text-[#92400e]";
+}
+
+function chairScheduleTitle(schedule: any) {
+  return schedule.area ? `${schedule.area} ${schedule.area.toLowerCase().includes("duty") ? "" : "Duty"}`.trim() : "Clinical Duty";
+}
+
 function getClinicalValidationClass(label: string) {
   if (label === "Approved") return "bg-[#e9f8ef] !text-[#03703c]";
   if (label === "Pending") return "bg-[#fff8e1] !text-[#6c4c00]";
   return "bg-[#f1f5f9] !text-[#475569]";
 }
 
+function getScheduleGroupKey(schedule: any) {
+  return [schedule.date, schedule.hospital, schedule.area, schedule.startTime, schedule.endTime, schedule.instructorId, schedule.studentSection].map((value) => value ?? "").join("|");
+}
+
+function groupSchedulesByDuty(records: any[]) {
+  const groups = new Map<string, any>();
+  records.forEach((schedule: any) => {
+    const key = getScheduleGroupKey(schedule);
+    const current = groups.get(key);
+    if (current) {
+      current.students.push(schedule);
+      return;
+    }
+    groups.set(key, { ...schedule, groupKey: key, students: [schedule] });
+  });
+  return Array.from(groups.values());
+}
+
+function toTimeInput(time?: string) {
+  if (!time) return "";
+  if (/^\d{2}:\d{2}/.test(time)) return time.slice(0, 5);
+  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return "";
+  const [, hourText, minute, period] = match;
+  let hour = Number(hourText);
+  if (period.toUpperCase() === "PM" && hour !== 12) hour += 12;
+  if (period.toUpperCase() === "AM" && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, "0")}:${minute}`;
+}
+
+function schedulePayload(schedule: any, overrides: any = {}) {
+  const next = { ...schedule, ...overrides };
+  return {
+    student: { id: next.studentId },
+    instructor: { id: next.instructorId },
+    hospital: next.hospital,
+    ward: next.area,
+    shiftDate: next.date,
+    startTime: `${toTimeInput(next.rawStartTime ?? next.startTime)}:00`,
+    endTime: `${toTimeInput(next.rawEndTime ?? next.endTime)}:00`,
+  };
+}
+
 export function SchedulesDayContent({ basePath }: { basePath: string }) {
+  const { showToast } = useToast();
   const searchParams = useSearchParams();
   const selectedScheduleId = searchParams.get("schedule");
+  const selectedDateParam = searchParams.get("date");
   const user = useAuthStore((state) => state.user);
   const routeRole = routeRoleMap[basePath] ?? user?.role;
   const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: schedules = [], isLoading } = useSchedules(userId, routeRole);
-  const { data: instructorCases = [] } = useInstructorCases(routeRole === "INSTRUCTOR" ? userId : undefined);
-  const { data: studentCases = [] } = useStudentCases(routeRole === "STUDENT" ? userId : undefined);
+  const { data: schedules = [], isLoading } = useSchedules(routeRole === "CHAIR" || routeRole === "COORDINATOR" ? userId : undefined, routeRole);
+  const updateSchedule = useUpdateSchedule();
+  const deleteSchedule = useDeleteSchedule();
+  const { data: hospitals = [] } = useHospitals();
+  const { data: instructors = [] } = useInstructors(routeRole === "CHAIR" && userId ? userId : undefined);
+  const { data: instructorCases = [] } = useInstructorCases();
+  const { data: studentCases = [] } = useStudentCases();
+  const { data: allCases = [] } = useAllClinicalCases(routeRole !== "STUDENT" && routeRole !== "INSTRUCTOR", userId);
   const visibleSchedules = React.useMemo(() => {
     if (routeRole === "INSTRUCTOR") return (schedules as any[]).filter((schedule: any) => String(schedule.instructorId) === String(user?.id));
     if (routeRole === "STUDENT") return (schedules as any[]).filter((schedule: any) => String(schedule.studentId) === String(user?.id));
     return schedules as any[];
   }, [routeRole, schedules, user?.id]);
-  const clinicalCases = routeRole === "INSTRUCTOR" ? instructorCases : studentCases;
-  const selectedSchedule = visibleSchedules.find((schedule: any) => String(schedule.id) === selectedScheduleId) ?? visibleSchedules[0];
-  const assignedStudents = selectedSchedule
-    ? visibleSchedules.filter((schedule: any) =>
-        schedule.date === selectedSchedule.date &&
-        schedule.hospital === selectedSchedule.hospital &&
-        schedule.area === selectedSchedule.area
-      )
-    : [];
+  const clinicalCases = routeRole === "INSTRUCTOR" ? instructorCases : routeRole === "STUDENT" ? studentCases : allCases;
+  const routeSelectedSchedule = visibleSchedules.find((schedule: any) => String(schedule.id) === selectedScheduleId);
+  const selectedDate = selectedDateParam ?? routeSelectedSchedule?.date ?? visibleSchedules[0]?.date;
+  const dayScheduleRows = visibleSchedules.filter((schedule: any) => schedule.date === selectedDate);
+  const dayScheduleGroups = groupSchedulesByDuty(dayScheduleRows);
+  const initialSelectedGroupKey = routeSelectedSchedule ? getScheduleGroupKey(routeSelectedSchedule) : dayScheduleGroups[0]?.groupKey;
+  const [selectedGroupKey, setSelectedGroupKey] = React.useState<string | undefined>(initialSelectedGroupKey);
+  React.useEffect(() => {
+    setSelectedGroupKey(initialSelectedGroupKey);
+  }, [initialSelectedGroupKey]);
+  const selectedSchedule = dayScheduleGroups.find((schedule: any) => schedule.groupKey === selectedGroupKey) ?? dayScheduleGroups[0];
+  const assignedStudents = selectedSchedule?.students ?? [];
   const instructorName = selectedSchedule?.instructorName || "Clinical Instructor";
   const isStudentView = basePath === "/nursing-student";
+  const isChairView = basePath === "/admin" || basePath === "/chair";
+  const [reviewNotes, setReviewNotes] = React.useState("");
+  const [studentSearch, setStudentSearch] = React.useState("");
+  const [breakDate, setBreakDate] = React.useState("");
+  const [breakDates, setBreakDates] = React.useState<string[]>([]);
+  const [draftSchedule, setDraftSchedule] = React.useState<any>(null);
+  const [isEditingChairSchedule, setIsEditingChairSchedule] = React.useState(false);
+  React.useEffect(() => {
+    if (!selectedSchedule) return;
+    setDraftSchedule({
+      title: `${selectedSchedule.area || "Clinical"} Rotation`,
+      group: selectedSchedule.studentSection || "Assigned Group",
+      startDate: selectedSchedule.date,
+      endDate: selectedSchedule.date,
+      hospital: selectedSchedule.hospital || "",
+      area: selectedSchedule.area || "",
+      dutyType: "Regular",
+      shiftStart: toTimeInput(selectedSchedule.rawStartTime ?? selectedSchedule.startTime),
+      shiftEnd: toTimeInput(selectedSchedule.rawEndTime ?? selectedSchedule.endTime),
+      casePresentationDate: selectedSchedule.date,
+      casePresentationTime: toTimeInput(selectedSchedule.rawStartTime ?? selectedSchedule.startTime),
+      noCasePresentation: false,
+      instructorId: selectedSchedule.instructorId != null ? String(selectedSchedule.instructorId) : "",
+    });
+    setReviewNotes("");
+    setBreakDates([]);
+    setIsEditingChairSchedule(false);
+  }, [selectedSchedule?.groupKey]);
+  const selectedHospital = (hospitals as any[]).find((hospital: any) => hospital.name === draftSchedule?.hospital);
+  const allDutyAreas = React.useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
+  const dutyAreas = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
+  const hospitalOptions = React.useMemo(() => (hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), [hospitals]);
+  const dutyAreaOptions = React.useMemo(() => dutyAreas.map((area: string) => ({ value: area, label: area })), [dutyAreas]);
+  const instructorOptions = React.useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), [instructors]);
+  const groupOptions = React.useMemo(() => dayScheduleGroups.map((schedule: any) => ({ value: schedule.groupKey, label: schedule.studentSection || "Assigned Group" })), [dayScheduleGroups]);
+  const isSaving = updateSchedule.isPending || deleteSchedule.isPending;
+  const editorDisabled = !isEditingChairSchedule || isSaving;
+  const filteredAssignedStudents = assignedStudents.filter((schedule: any) => {
+    const q = studentSearch.toLowerCase();
+    return !q || `${schedule.studentName} ${schedule.studentSchoolId} ${schedule.studentSection} ${schedule.hospital} ${schedule.area}`.toLowerCase().includes(q);
+  });
 
   function getClinicalValidation(schedule: any) {
     const today = new Date();
@@ -96,10 +208,140 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
     return <main className="p-[clamp(24px,4vw,42px)]"><div className="p-6 rounded-xl border border-[#e2e8f0] bg-white font-bold text-[#64748b]">No schedule selected.</div></main>;
   }
 
+  async function saveSelectedSchedule() {
+    if (!draftSchedule || !selectedSchedule) return;
+    try {
+      await Promise.all(assignedStudents.map((schedule: any) => updateSchedule.mutateAsync({
+        scheduleId: String(schedule.id),
+        schedule: schedulePayload(schedule, {
+          instructorId: Number(draftSchedule.instructorId || schedule.instructorId),
+          hospital: draftSchedule.hospital,
+          area: draftSchedule.area,
+          date: draftSchedule.startDate,
+          rawStartTime: draftSchedule.shiftStart,
+          rawEndTime: draftSchedule.shiftEnd,
+        }),
+      })));
+      showToast({ variant: "success", title: "Schedule saved", message: "The selected duty schedule was updated." });
+    } catch {
+      showToast({ variant: "error", title: "Save failed", message: "Selected schedule could not be saved." });
+    }
+  }
+
+  async function removeStudentSchedule(schedule: any) {
+    try {
+      await deleteSchedule.mutateAsync(String(schedule.id));
+      showToast({ variant: "success", title: "Student removed", message: "The student was removed from this schedule." });
+    } catch {
+      showToast({ variant: "error", title: "Remove failed", message: "Student could not be removed from this schedule." });
+    }
+  }
+
+  async function moveStudentSchedule(schedule: any, targetGroupKey: string) {
+    const target = dayScheduleGroups.find((group: any) => group.groupKey === targetGroupKey);
+    if (!target) return;
+    try {
+      await updateSchedule.mutateAsync({
+        scheduleId: String(schedule.id),
+        schedule: schedulePayload(schedule, {
+          instructorId: target.instructorId,
+          hospital: target.hospital,
+          area: target.area,
+          date: target.date,
+          rawStartTime: target.rawStartTime ?? target.startTime,
+          rawEndTime: target.rawEndTime ?? target.endTime,
+        }),
+      });
+      showToast({ variant: "success", title: "Student moved", message: "The student schedule assignment was updated." });
+    } catch {
+      showToast({ variant: "error", title: "Move failed", message: "Student could not be moved." });
+    }
+  }
+
+  async function cancelSelectedSchedule() {
+    try {
+      await Promise.all(assignedStudents.map((schedule: any) => deleteSchedule.mutateAsync(String(schedule.id))));
+      showToast({ variant: "success", title: "Schedule canceled", message: "The selected schedule was canceled." });
+    } catch {
+      showToast({ variant: "error", title: "Cancel failed", message: "Selected schedule could not be canceled." });
+    }
+  }
+
   return (
     <main className="p-[clamp(24px,4vw,42px)] content-start grid gap-6 w-full">
       <section className="grid gap-6">
         
+        {/* Day schedule options */}
+        {dayScheduleGroups.length > 1 && <article className="relative rounded-xl border border-[#e2e8f0] shadow-[0_16px_44px_rgba(32,33,36,0.07)] overflow-hidden p-[1.75rem] bg-[linear-gradient(180deg,#fff8d6_0%,#ffffff_58%,#ffffff_100%)]">
+          <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+            <h2 className="m-0 !text-[#202124] !text-[1.25rem] leading-[1.2] !font-[900] tracking-[-0.03em]">{formatDisplayDate(selectedSchedule.date)}</h2>
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.8rem] !font-[900]">{dayScheduleGroups.length} schedules</span>
+          </div>
+          <div className="grid grid-cols-2 gap-[1rem] max-[900px]:grid-cols-1">
+            {dayScheduleGroups.map((schedule: any, index: number) => {
+              const isSelected = schedule.groupKey === selectedSchedule.groupKey;
+              const badge = chairScheduleBadge(schedule, index);
+              return <button key={schedule.groupKey} type="button" onClick={() => setSelectedGroupKey(schedule.groupKey)} className={`relative text-left min-h-[136px] rounded-xl border bg-white p-[1.45rem_1.55rem] transition-all cursor-pointer overflow-hidden ${isSelected ? "border-[#e7a6aa] shadow-[0_22px_44px_rgba(138,37,44,0.10)] before:absolute before:inset-[0_auto_0_0] before:w-[5px] before:bg-[linear-gradient(180deg,#8A252C,#ffcf01)]" : "border-[#dbe3ee] hover:border-[#e7a6aa] hover:shadow-[0_16px_34px_rgba(32,33,36,0.08)] before:absolute before:inset-[0_auto_0_0] before:w-[5px] before:bg-[linear-gradient(180deg,#8A252C,#ffcf01)] before:opacity-90"}`}>
+                <div className="relative z-10 flex items-start justify-between gap-4"><div><strong className="block !text-[#111827] !text-[1.02rem] !font-[900] mb-[0.85rem]">{chairScheduleTitle(schedule)}</strong><p className="m-0 !text-[#4c5d7d] !text-[0.95rem] !font-[900]">{schedule.studentSection || "Assigned Group"}</p><p className="m-[0.65rem_0_0] !text-[#4c5d7d] !text-[0.86rem] !font-[900]">{schedule.area || schedule.hospital} - {schedule.startTime} to {schedule.endTime}</p></div><span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full !text-[0.75rem] !font-[900] whitespace-nowrap ${chairScheduleBadgeClass(badge)}`}>{badge}</span></div>
+              </button>;
+            })}
+          </div>
+        </article>}
+
+        {isChairView && draftSchedule && <>
+          <article className="relative rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] overflow-hidden p-[1.45rem]">
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_72%,#fff8d6_100%)] pointer-events-none" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+                <h2 className="m-0 !text-[#202124] !text-[1.25rem] !font-[900] tracking-[-0.03em]">{draftSchedule.title}</h2>
+                <div className="flex items-center gap-3"><span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#dcfce7] !text-[#166534] !text-[0.76rem] !font-[900]">Published</span><button type="button" onClick={() => setIsEditingChairSchedule(true)} disabled={isEditingChairSchedule} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.86rem] !font-[900] cursor-pointer hover:border-[#cbd5e1] transition-colors disabled:opacity-60 disabled:cursor-default">Edit Schedule</button></div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-[16px] max-[1180px]:grid-cols-2 max-[720px]:grid-cols-1">
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Schedule Title<input disabled={editorDisabled} className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" value={draftSchedule.title} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, title: event.target.value }))} /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Assigned Group<input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#94a3b8] !font-[800]" value={draftSchedule.group} readOnly /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Start Date<input disabled={editorDisabled} className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="date" value={draftSchedule.startDate} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, startDate: event.target.value, endDate: event.target.value }))} /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">End Date<input disabled={editorDisabled} className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="date" value={draftSchedule.endDate} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, endDate: event.target.value }))} /></label>
+              </div>
+
+              <div className="mt-4 rounded-lg border border-[#dbe3ee] bg-[#f8fafc] p-4">
+                <label className="block !text-[#4b5565] !text-[0.86rem] !font-[900] mb-3">Break Dates</label>
+                <div className="flex gap-3"><input disabled={editorDisabled} className="min-h-[48px] flex-1 rounded-lg border border-[#dbe3ee] bg-white px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="date" value={breakDate} onChange={(event) => setBreakDate(event.target.value)} /><button type="button" disabled={editorDisabled} onClick={() => { if (!breakDate || breakDates.includes(breakDate)) return; setBreakDates((current) => [...current, breakDate]); setBreakDate(""); }} className="min-h-[48px] px-4 rounded-lg bg-white border border-[#dbe3ee] !text-[#344054] !font-[900] cursor-pointer hover:bg-[#f8fafc] disabled:opacity-60 disabled:cursor-not-allowed">Add break</button></div>
+                <p className="m-[14px_0_0] !text-[#64748b] !text-[0.82rem] !font-[800]">{breakDates.length ? breakDates.join(", ") : "No breaks added"}</p>
+              </div>
+
+              <div className="grid grid-cols-[2fr_1fr_1fr] gap-[16px] mt-4 max-[980px]:grid-cols-1">
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Hospital<InlineSelect value={draftSchedule.hospital} options={hospitalOptions} placeholder="Select hospital" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, hospital: value }))} disabled={editorDisabled} /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Duty Area<InlineSelect value={draftSchedule.area} options={dutyAreaOptions} placeholder="Select duty area" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, area: value }))} disabled={editorDisabled} /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Duty Type<InlineSelect value={draftSchedule.dutyType} options={[{ value: "Regular", label: "Regular" }, { value: "Make-up Duty", label: "Make-up Duty" }, { value: "Extension", label: "Extension" }]} placeholder="Duty type" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, dutyType: value }))} disabled={editorDisabled} /></label>
+              </div>
+
+              <div className="grid grid-cols-4 gap-[16px] mt-4 max-[1180px]:grid-cols-2 max-[720px]:grid-cols-1">
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Shift Start<input disabled={editorDisabled} className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="time" value={draftSchedule.shiftStart} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, shiftStart: event.target.value }))} /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Shift End<input disabled={editorDisabled} className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="time" value={draftSchedule.shiftEnd} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, shiftEnd: event.target.value }))} /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Case Presentation Date<input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="date" value={draftSchedule.casePresentationDate} disabled={editorDisabled || draftSchedule.noCasePresentation} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, casePresentationDate: event.target.value }))} /></label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Case Presentation Time<input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="time" value={draftSchedule.casePresentationTime} disabled={editorDisabled || draftSchedule.noCasePresentation} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, casePresentationTime: event.target.value }))} /></label>
+              </div>
+
+              <div className="grid grid-cols-[1fr_1fr] gap-[16px] mt-4 max-[900px]:grid-cols-1">
+                <label className="flex items-center gap-3 pt-7 !text-[#334155] !font-[900]"><input type="checkbox" disabled={editorDisabled} checked={draftSchedule.noCasePresentation} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, noCasePresentation: event.target.checked }))} />No Case Presentation</label>
+                <label className="flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Supervising CI<InlineSelect value={draftSchedule.instructorId} options={instructorOptions.length ? instructorOptions : [{ value: draftSchedule.instructorId, label: instructorName }]} placeholder="Select CI" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, instructorId: value }))} disabled={editorDisabled} /></label>
+              </div>
+
+              <label className="flex flex-col gap-2 mt-4 !text-[#4b5565] !text-[0.86rem] !font-[900]">Review Notes<textarea disabled={editorDisabled} className="min-h-[104px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 py-3 !text-[#111827] !font-[800] resize-y disabled:!text-[#94a3b8]" placeholder="Add correction notes before republishing" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} /></label>
+              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6"><button type="button" disabled={isSaving} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60">Cancel Schedule</button><button type="button" disabled={isSaving} onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
+            </div>
+          </article>
+
+          <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[1.45rem]">
+            <div className="flex items-center justify-between gap-4 mb-5"><h2 className="m-0 !text-[#202124] !text-[1.15rem] !font-[900]">Assigned Students</h2><span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.78rem] !font-[900]">{assignedStudents.length} students</span></div>
+            <label className="block rounded-xl border border-[#dbe3ee] p-4 !text-[#111827] !font-[900] mb-4">Search Student To Add<input className="mt-2 w-full min-h-[52px] rounded-lg border border-[#dbe3ee] bg-white px-4 !text-[#111827] !font-[800]" placeholder="Search by name, ID, section, or site" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} /></label>
+            <div className="rounded-xl border border-[#e2e8f0] overflow-x-auto"><table className="w-full min-w-[880px] border-collapse text-left"><thead><tr className="bg-[#f8fafc] border-b border-[#e2e8f0] !text-[#111827] !text-[0.76rem] !font-[900] uppercase"><th className="p-4 w-[68px]">No.</th><th className="p-4">Student</th><th className="p-4 w-[210px]">Move To</th><th className="p-4 w-[140px]">Action</th></tr></thead><tbody>{filteredAssignedStudents.map((schedule: any, index: number) => <tr key={schedule.id} className="border-b border-[#e2e8f0] last:border-0"><td className="p-4 !font-[800]">{index + 1}.</td><td className="p-4"><div className="flex items-center gap-3"><ProfileAvatar name={schedule.studentName || "Nursing Student"} imageUrl={schedule.studentProfileImageUrl} size={42} /><strong className="!text-[#202124] !font-[900]">{schedule.studentName || "Nursing Student"}</strong></div></td><td className="p-4"><InlineSelect value={selectedSchedule.groupKey} options={groupOptions} placeholder="Move to group" onChange={(value) => moveStudentSchedule(schedule, value)} /></td><td className="p-4"><button type="button" disabled={isSaving} onClick={() => removeStudentSchedule(schedule)} className="min-h-[40px] px-5 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60">Remove</button></td></tr>)}</tbody></table></div>
+            <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-[#e2e8f0]"><button type="button" className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#94a3b8] !font-[900] cursor-pointer">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#c98f96] border border-[#c98f96] !text-white !font-[900] cursor-pointer disabled:opacity-60">Save Assigned Students</button></div>
+          </article>
+        </>}
+
+        {!isChairView && <>
         {/* Top Info Card */}
         <article className="relative rounded-2xl border border-[#e2e8f0] shadow-sm overflow-hidden bg-white">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#fffbf0,#ffffff)] pointer-events-none" />
@@ -194,6 +436,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
             </div>
           </div>
         </article>
+        </>}
       </section>
     </main>
   );

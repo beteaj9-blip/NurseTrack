@@ -7,15 +7,18 @@ import { useInstructorAppeals } from "@/core/api/hooks/useStudentAppeals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
 
+function getLocalDateString(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export default function ClinicalInstructorDashboard() {
   const user = useAuthStore((state) => state.user);
-  const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: cases = [] } = useInstructorCases(userId);
-  const { data: appeals = [] } = useInstructorAppeals(userId);
-  const { data: schedules = [] } = useSchedules(userId, user?.role);
+  const { data: cases = [] } = useInstructorCases();
+  const { data: appeals = [] } = useInstructorAppeals();
+  const { data: schedules = [] } = useSchedules(undefined, user?.role);
   const pendingCases = cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length;
   const pendingAppeals = appeals.filter((appeal: any) => appeal.status === "PENDING").length;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalDateString(new Date());
   const activeSchedules = schedules.filter((schedule: any) => schedule.date === today).length;
   const firstName = user?.fullName?.split(" ")[0] ?? "Instructor";
 

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAllAttendance } from "@/core/api/hooks/useAttendance";
+import { useAuthStore } from "@/core/store/authStore";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function formatDate(value?: string) {
@@ -10,7 +11,9 @@ function formatDate(value?: string) {
 }
 
 export function ManualBackupContent({ basePath }: { basePath: string }) {
-  const { data: attendance = [], isLoading } = useAllAttendance();
+  const user = useAuthStore((state) => state.user);
+  const isChair = basePath === "/chair";
+  const { data: attendance = [], isLoading } = useAllAttendance(true, isChair && user?.id != null ? String(user.id) : undefined);
   const [search, setSearch] = useState("");
   const instructors = Object.values((attendance as any[]).filter((record) => record.instructorFeedback).reduce((acc: Record<string, any>, record: any) => {
     const key = String(record.instructorId || record.instructorName);

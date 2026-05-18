@@ -7,6 +7,7 @@ import java.util.List;
 
 @Repository
 public interface ClinicalCaseRepository extends JpaRepository<ClinicalCase, Long> {
+    List<ClinicalCase> findAllByOrderByCaseDateDesc();
     List<ClinicalCase> findByStudentIdOrderByCaseDateDesc(Long studentId);
     List<ClinicalCase> findByInstructorIdOrderByCaseDateDesc(Long instructorId);
     List<ClinicalCase> findByStatus(CaseStatus status);

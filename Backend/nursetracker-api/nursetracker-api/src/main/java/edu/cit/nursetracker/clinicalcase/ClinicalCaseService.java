@@ -3,13 +3,17 @@ package edu.cit.nursetracker.clinicalcase;
 import edu.cit.nursetracker.notification.Notification;
 import edu.cit.nursetracker.notification.NotificationService;
 import edu.cit.nursetracker.notification.NotificationType;
+import edu.cit.nursetracker.user.User;
+import edu.cit.nursetracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +21,7 @@ public class ClinicalCaseService {
 
     private final ClinicalCaseRepository caseRepository;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     public ClinicalCase submitCase(ClinicalCase clinicalCase) {
         clinicalCase.setStatus(CaseStatus.PENDING);
@@ -25,6 +30,27 @@ public class ClinicalCaseService {
 
     public List<ClinicalCase> getStudentCases(Long studentId) {
         return caseRepository.findByStudentIdOrderByCaseDateDesc(studentId);
+    }
+
+    public List<ClinicalCase> getAllCases() {
+        return caseRepository.findAllByOrderByCaseDateDesc();
+    }
+
+    public List<ClinicalCase> getCasesVisibleTo(Long viewerId) {
+        Set<Integer> visibleLevels = userRepository.findById(viewerId)
+                .map(User::getAssignedLevels)
+                .orElse(Set.of());
+        if (visibleLevels.isEmpty()) return List.of();
+        return getAllCases().stream()
+                .filter(clinicalCase -> intersects(clinicalCase.getStudent().getAssignedLevels(), visibleLevels) || intersects(clinicalCase.getInstructor().getAssignedLevels(), visibleLevels))
+                .toList();
+    }
+
+    private boolean intersects(Set<Integer> recordLevels, Set<Integer> visibleLevels) {
+        if (recordLevels == null || recordLevels.isEmpty()) return false;
+        Set<Integer> overlap = new HashSet<>(recordLevels);
+        overlap.retainAll(visibleLevels);
+        return !overlap.isEmpty();
     }
 
     public List<RequirementProgressGroup> getStudentRequirementProgress(Long studentId) {

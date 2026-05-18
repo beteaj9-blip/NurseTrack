@@ -9,15 +9,9 @@ import { PasswordField } from "@/components/ui/PasswordField";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { apiClient } from "@/core/api/axios";
 
-// Map display name → backend UserRole enum value
-const accountTypeToRole: Record<string, string> = {
-  "Nursing Student": "STUDENT",
-  "Clinical Instructor": "INSTRUCTOR",
-  "Chair": "CHAIR",
-  "Admin": "ADMIN",
-  "Coordinator": "COORDINATOR",
-  "Enrollment Team": "ENROLLMENT",
-  "Assistant": "ASSISTANT",
+const withoutLetters = (value: string) => value.replace(/\p{L}/gu, "");
+const stripLettersFromInput = (event: React.FormEvent<HTMLInputElement>) => {
+  event.currentTarget.value = withoutLetters(event.currentTarget.value);
 };
 
 export default function Register() {
@@ -26,8 +20,6 @@ export default function Register() {
   const [formMessage, setFormMessage] = useState("Complete the form to create your NurseTrack account.");
   const [isError, setIsError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
-  const selectClass = "w-full min-h-[48px] px-[14px] pr-[42px] border border-[#e4e7ec] rounded-[8px] bg-white text-[#202124] outline-none transition-all appearance-none font-[700] bg-no-repeat focus:border-[#8A252C] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.12),0_10px_24px_rgba(32,33,36,0.08)]";
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,22 +31,20 @@ export default function Register() {
     const fullName = formData.get("fullName") as string;
     const schoolId = formData.get("schoolId") as string;
     const email = formData.get("email") as string;
-    const accountType = formData.get("accountType") as string;
-    const sectionInfo = formData.get("section") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
+    const confirmed = formData.get("terms") === "on";
 
-    if (password !== confirmPassword) {
+    if (!confirmed) {
       setIsError(true);
-      setFormMessage("Passwords do not match. Please try again.");
+      setFormMessage("Please confirm that the account details are correct before creating an account.");
       setIsLoading(false);
       return;
     }
 
-    const role = accountTypeToRole[accountType];
-    if (!role) {
+    if (password !== confirmPassword) {
       setIsError(true);
-      setFormMessage("Please select a valid account type.");
+      setFormMessage("Passwords do not match. Please try again.");
       setIsLoading(false);
       return;
     }
@@ -65,8 +55,7 @@ export default function Register() {
         schoolId,
         email,
         password,
-        role,
-        sectionInfo,
+        role: "STUDENT",
       });
 
       setIsSuccess(true);
@@ -75,7 +64,7 @@ export default function Register() {
     } catch (error: any) {
       setIsError(true);
       if (error.response?.status === 409) {
-        setFormMessage("An account with this email or School ID already exists.");
+        setFormMessage(error.response?.data?.message || "An account with this email or School ID already exists.");
       } else {
         setFormMessage("Registration failed. Please check your details or try again later.");
       }
@@ -102,27 +91,10 @@ export default function Register() {
           <form id="register-form" className="grid gap-[14px]" noValidate onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-[14px] max-[680px]:grid-cols-1">
               <InputField label="Full name" id="full-name" name="fullName" type="text" autoComplete="name" placeholder="Juan Dela Cruz" required />
-              <InputField label="School ID number" id="school-id" name="schoolId" type="text" autoComplete="off" placeholder="12-3456-789" required />
+              <InputField label="School ID number" id="school-id" name="schoolId" type="text" inputMode="numeric" autoComplete="off" placeholder="12-3456-789" onInput={stripLettersFromInput} required />
             </div>
 
             <InputField label="School email" id="email" name="email" type="email" autoComplete="email" placeholder="student@cit.edu" required />
-
-            <div className="grid grid-cols-2 gap-[14px] max-[680px]:grid-cols-1">
-              <label className="grid gap-[8px] text-[#344054] text-[0.88rem] font-[800]" htmlFor="account-type">
-                Account type
-                <select id="account-type" name="accountType" required className={selectClass}>
-                  <option value="">Select account type</option>
-                  <option>Nursing Student</option>
-                  <option>Clinical Instructor</option>
-                  <option>Chair</option>
-                  <option>Admin</option>
-                  <option>Coordinator</option>
-                  <option>Enrollment Team</option>
-                  <option>Assistant</option>
-                </select>
-              </label>
-              <InputField label="Section or department" id="section" name="section" type="text" autoComplete="organization" placeholder="BSN 3A / CON" required />
-            </div>
 
             <div className="grid grid-cols-2 gap-[14px] max-[680px]:grid-cols-1">
               <PasswordField label="Password" id="password" name="password" autoComplete="new-password" placeholder="Create password" required minLength={8} />

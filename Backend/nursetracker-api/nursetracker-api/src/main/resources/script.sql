@@ -111,15 +111,49 @@ WHERE s.school_id = '23-0509-324'
 AND sc.shift_date IN ('2026-05-20', '2026-05-21', '2026-05-22')
 AND sc.ward IN ('Emergency Room', 'Delivery Room', 'Operating Room');
 
-INSERT INTO system_info (version, last_updated, school_year, semester)
-SELECT '1.0', '2026-05-16', '2025 - 2026', '2nd Semester'
+INSERT INTO system_info (version, last_updated)
+SELECT '1.0', '2026-05-16'
 WHERE NOT EXISTS (SELECT 1 FROM system_info);
 
 UPDATE system_info
-SET school_year = '2025 - 2026',
-    semester = '2nd Semester',
-    last_updated = '2026-05-16'
+SET last_updated = '2026-05-16'
 WHERE id = (SELECT id FROM (SELECT MIN(id) AS id FROM system_info) active_system_info);
+
+SET @drop_system_school_year = IF(
+    EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+        AND table_name = 'system_info'
+        AND column_name = 'school_year'
+    ),
+    'ALTER TABLE system_info DROP COLUMN school_year',
+    'SELECT 1'
+);
+PREPARE drop_system_school_year_stmt FROM @drop_system_school_year;
+EXECUTE drop_system_school_year_stmt;
+DEALLOCATE PREPARE drop_system_school_year_stmt;
+
+SET @drop_system_semester = IF(
+    EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+        AND table_name = 'system_info'
+        AND column_name = 'semester'
+    ),
+    'ALTER TABLE system_info DROP COLUMN semester',
+    'SELECT 1'
+);
+PREPARE drop_system_semester_stmt FROM @drop_system_semester;
+EXECUTE drop_system_semester_stmt;
+DEALLOCATE PREPARE drop_system_semester_stmt;
+
+INSERT INTO academic_terms (school_year, semester, active, created_at, updated_at)
+SELECT '2025 - 2026', '2nd Semester', TRUE, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM academic_terms WHERE school_year = '2025 - 2026' AND semester = '2nd Semester');
+
+UPDATE academic_terms
+SET active = CASE WHEN school_year = '2025 - 2026' AND semester = '2nd Semester' THEN TRUE ELSE FALSE END,
+    updated_at = NOW();
 
 INSERT INTO appeal_types (value, label)
 SELECT 'Attendance', 'Attendance'
@@ -198,6 +232,14 @@ WHERE school_id = '23-0509-234'
 AND full_name = 'Patricia Reyes'
 AND email = 'patricia.reyes@cit.edu';
 
+INSERT INTO user_assigned_levels (user_id, assigned_level)
+SELECT id, 3
+FROM users
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_assigned_levels ual
+    WHERE ual.user_id = users.id
+);
+
 UPDATE schedules sc
 JOIN users s ON sc.student_id = s.id
 JOIN users i ON i.school_id = '23-0509-234'
@@ -221,6 +263,8 @@ JOIN users s ON sa.student_id = s.id
 JOIN users i ON i.school_id = '23-0509-234'
 SET sa.instructor_id = i.id
 WHERE s.school_id = '23-0509-324';
+
+ALTER TABLE hospitals MODIFY COLUMN active BIT(1) NOT NULL DEFAULT b'1';
 
 INSERT INTO hospitals (name, full_name, label, address)
 SELECT 'VSMMC', 'Vicente Sotto Memorial Medical Center', 'Hospital / Medical Center', 'Vicente Sotto Memorial Medical Center'
@@ -313,40 +357,13 @@ WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'PPBL');
 UPDATE hospitals SET full_name = 'Vicente Sotto Memorial Medical Center', label = 'Hospital / Medical Center', address = 'Vicente Sotto Memorial Medical Center' WHERE name = 'VSMMC';
 UPDATE hospitals SET full_name = 'Cebu City Medical Center', label = 'Hospital / Medical Center', address = 'Cebu City Medical Center' WHERE name = 'CCMC';
 
-DELETE hw FROM hospital_wards hw
-JOIN hospitals h ON hw.hospital_id = h.id
-LEFT JOIN (
-    SELECT 'VSMMC' AS hospital_name, 'Emergency Room' AS ward_name UNION ALL
-    SELECT 'VSMMC', 'Medical Ward' UNION ALL
-    SELECT 'VSMMC', 'Surgical Ward' UNION ALL
-    SELECT 'VSMMC', 'ICU' UNION ALL
-    SELECT 'VSMMC', 'Operating Room' UNION ALL
-    SELECT 'VSMMC', 'Pedia Pulmo Ward' UNION ALL
-    SELECT 'VSMMC', 'SP St 201' UNION ALL
-    SELECT 'LCH', 'OB-Gyne' UNION ALL
-    SELECT 'LCH', 'Pedia' UNION ALL
-    SELECT 'LCH', 'Delivery Room' UNION ALL
-    SELECT 'LCH', 'Emergency Room' UNION ALL
-    SELECT 'LCH', 'Operating Room' UNION ALL
-    SELECT 'PSH', 'Emergency Room' UNION ALL
-    SELECT 'PSH', 'Operating Room' UNION ALL
-    SELECT 'CCMC', 'Emergency Room' UNION ALL
-    SELECT 'CCMC', 'Delivery Room' UNION ALL
-    SELECT 'CCMC', 'Operating Room' UNION ALL
-    SELECT 'CCMC', 'Medical Ward' UNION ALL
-    SELECT 'CCMC', 'Surgical Ward' UNION ALL
-    SELECT 'CCHD', 'Community Health Nursing Area' UNION ALL
-    SELECT 'CCHD', 'Community Assessment' UNION ALL
-    SELECT 'SHN', 'Community Health Nursing Area' UNION ALL
-    SELECT 'CHN', 'Community Health Nursing Area' UNION ALL
-    SELECT 'PPBL', 'Community Health Nursing Area' UNION ALL
-    SELECT 'MBC', 'Delivery Room' UNION ALL
-    SELECT 'IBC', 'Delivery Room' UNION ALL
-    SELECT 'QBC', 'Delivery Room' UNION ALL
-    SELECT 'TBC', 'Delivery Room'
-) allowed ON allowed.hospital_name = h.name AND allowed.ward_name = hw.ward_name
-WHERE hw.ward_name IN ('Emergency Room', 'Delivery Room', 'Operating Room', 'Pedia Pulmo Ward', 'SP St 201', 'Medical Ward', 'Surgical Ward', 'ICU', 'OB-Gyne', 'Pedia', 'Community Health Nursing Area', 'Community Assessment')
-AND allowed.hospital_name IS NULL;
+UPDATE hospitals
+SET active = b'1'
+WHERE name IN ('VSMMC', 'LCH', 'PSH', 'CCMC', 'CBS', 'SAMCH', 'MMC', 'VMH', 'VMCH', 'CSMC', 'ECS', 'CCHD', 'SHN', 'CHN', 'MMH', 'VMCHI', 'HHDC', 'MBC', 'IBC', 'QBC', 'TBC', 'PPBL')
+AND NOT EXISTS (
+    SELECT 1
+    FROM (SELECT id FROM hospitals WHERE active = b'1' LIMIT 1) active_hospitals
+);
 
 INSERT INTO hospital_wards (hospital_id, ward_name)
 SELECT h.id, allowed.ward_name

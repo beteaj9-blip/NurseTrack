@@ -18,11 +18,10 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
   const { showToast } = useToast();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const user = useAuthStore((state) => state.user);
-  const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: apiNotifications = [], refetch } = useNotifications(userId, true);
-  const markRead = useMarkNotificationRead(userId);
-  const markUnread = useMarkNotificationUnread(userId);
-  const markAllRead = useMarkAllNotificationsRead(userId);
+  const { data: apiNotifications = [], refetch } = useNotifications(undefined, true);
+  const markRead = useMarkNotificationRead();
+  const markUnread = useMarkNotificationUnread();
+  const markAllRead = useMarkAllNotificationsRead();
   const notifications = apiNotifications;
 
   const markOneRead = (notificationId: number) => {

@@ -1,6 +1,8 @@
 package edu.cit.nursetracker.clinicalcase;
 
 import lombok.RequiredArgsConstructor;
+import edu.cit.nursetracker.user.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,10 +17,17 @@ public class ClinicalCaseController {
 
     private final ClinicalCaseService caseService;
     private final ClinicalCaseCategoryOptionRepository categoryRepository;
+    private final JwtService jwtService;
 
     @PostMapping
     public ResponseEntity<ClinicalCase> submitCase(@RequestBody ClinicalCase clinicalCase) {
         return ResponseEntity.ok(caseService.submitCase(clinicalCase));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ClinicalCase>> getAllCases(@RequestParam(required = false) Long viewerId) {
+        if (viewerId != null) return ResponseEntity.ok(caseService.getCasesVisibleTo(viewerId));
+        return ResponseEntity.ok(caseService.getAllCases());
     }
 
     @GetMapping("/student/{studentId}")
@@ -26,14 +35,29 @@ public class ClinicalCaseController {
         return ResponseEntity.ok(caseService.getStudentCases(studentId));
     }
 
+    @GetMapping("/student")
+    public ResponseEntity<List<ClinicalCase>> getCurrentStudentCases(HttpServletRequest request) {
+        return ResponseEntity.ok(caseService.getStudentCases(jwtService.getUserId(request)));
+    }
+
     @GetMapping("/student/{studentId}/requirements")
     public ResponseEntity<List<RequirementProgressGroup>> getStudentRequirementProgress(@PathVariable Long studentId) {
         return ResponseEntity.ok(caseService.getStudentRequirementProgress(studentId));
     }
 
+    @GetMapping("/student/requirements")
+    public ResponseEntity<List<RequirementProgressGroup>> getCurrentStudentRequirementProgress(HttpServletRequest request) {
+        return ResponseEntity.ok(caseService.getStudentRequirementProgress(jwtService.getUserId(request)));
+    }
+
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<List<ClinicalCase>> getInstructorCases(@PathVariable Long instructorId) {
         return ResponseEntity.ok(caseService.getInstructorCases(instructorId));
+    }
+
+    @GetMapping("/instructor")
+    public ResponseEntity<List<ClinicalCase>> getCurrentInstructorCases(HttpServletRequest request) {
+        return ResponseEntity.ok(caseService.getInstructorCases(jwtService.getUserId(request)));
     }
 
     @GetMapping("/categories")

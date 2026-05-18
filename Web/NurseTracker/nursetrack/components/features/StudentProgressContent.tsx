@@ -66,11 +66,10 @@ function getPendingItemsHref(basePath: string) {
 
 export function StudentProgressContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: cases = [] } = useStudentCases(userId);
-  const { data: requirements = [] } = useStudentRequirementProgress(userId) as { data: RequirementGroup[] };
-  const { data: dutyRecords = [] } = useAttendance(userId);
-  const { data: extensionDays = [] } = useStudentExtensionDays(userId);
+  const { data: cases = [] } = useStudentCases();
+  const { data: requirements = [] } = useStudentRequirementProgress() as { data: RequirementGroup[] };
+  const { data: dutyRecords = [] } = useAttendance();
+  const { data: extensionDays = [] } = useStudentExtensionDays();
 
   const student = {
     name: user?.fullName ?? "Nursing Student",

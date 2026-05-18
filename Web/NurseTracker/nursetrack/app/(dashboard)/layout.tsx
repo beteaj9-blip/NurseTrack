@@ -38,22 +38,29 @@ export default function DashboardLayout({
   const router = useRouter();
   const role = pathname.split("/")[1];
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [routeAnimating, setRouteAnimating] = useState(true);
 
   const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const hasHydrated = useAuthStore((state) => state._hasHydrated);
   const logout = useAuthStore((state) => state.logout);
 
   // Auth guard — only redirect AFTER Zustand has finished loading from localStorage
   useEffect(() => {
-    if (hasHydrated && (!isAuthenticated || !user)) {
+    if (hasHydrated && (!isAuthenticated || !user || !token)) {
+      logout();
       router.replace("/");
     }
-  }, [hasHydrated, isAuthenticated, user, router]);
+  }, [hasHydrated, isAuthenticated, user, token, logout, router]);
+
+  useEffect(() => {
+    setRouteAnimating(true);
+  }, [pathname]);
 
   // Show nothing until hydration is complete (prevents flash redirect)
   if (!hasHydrated) return null;
-  if (!isAuthenticated || !user) return null;
+  if (!isAuthenticated || !user || !token) return null;
 
   // Validate role segment
   if (!role || !roleNavConfigs[role]) {
@@ -144,15 +151,21 @@ export default function DashboardLayout({
         />
       )}
 
-      <main className="flex flex-col min-h-screen min-w-0">
+      <main className="flex flex-col h-screen min-h-0 min-w-0 overflow-hidden">
         <Topbar
           titleKicker={titleKicker}
           title={displayTitle}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           backHref={backHref}
         />
-        <div key={pathname} className="animate-[fadeUp_480ms_ease_both]">
-          {children}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <div
+            key={pathname}
+            className={routeAnimating ? "animate-[fadeUp_480ms_ease_both]" : undefined}
+            onAnimationEnd={() => setRouteAnimating(false)}
+          >
+            {children}
+          </div>
         </div>
       </main>
     </div>

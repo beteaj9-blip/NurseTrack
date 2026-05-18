@@ -45,7 +45,7 @@ export function StudentReportsContent() {
 
     try {
       setIsGenerating(true);
-      const { data } = await apiClient.get(`/reports/student/${user.id}/export`, {
+      const { data } = await apiClient.get('/reports/student/export', {
         params: { startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals },
         responseType: "blob",
       });

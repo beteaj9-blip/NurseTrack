@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { apiClient } from "@/core/api/axios";
-import { useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -20,7 +20,10 @@ type Person = {
 export function ReportsContent() {
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
-  const { data: cases = [] } = useInstructorCases(user?.id != null ? String(user.id) : undefined);
+  const isChair = user?.role === "CHAIR";
+  const { data: instructorCases = [] } = useInstructorCases();
+  const { data: allCases = [] } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
+  const cases = isChair ? allCases : instructorCases;
   const [reportScope, setReportScope] = useState("person");
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -124,8 +127,8 @@ export function ReportsContent() {
       if (person.role === "Student" && person.userId != null) {
         try {
           setIsGenerating(true);
-          const { data } = await apiClient.get(`/reports/student/${person.userId}/export`, {
-            params: { startDate, endDate },
+          const { data } = await apiClient.get('/reports/student/export-by-school-id', {
+            params: { schoolId: person.id, startDate, endDate },
             responseType: "blob",
           });
           const url = window.URL.createObjectURL(data);

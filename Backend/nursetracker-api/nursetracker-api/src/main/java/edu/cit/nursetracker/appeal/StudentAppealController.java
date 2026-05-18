@@ -1,6 +1,8 @@
 package edu.cit.nursetracker.appeal;
 
 import lombok.RequiredArgsConstructor;
+import edu.cit.nursetracker.user.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +15,7 @@ public class StudentAppealController {
 
     private final StudentAppealService appealService;
     private final AppealTypeOptionRepository appealTypeOptionRepository;
+    private final JwtService jwtService;
 
     @GetMapping("/types")
     public ResponseEntity<List<AppealTypeOption>> getAppealTypes() {
@@ -24,14 +27,30 @@ public class StudentAppealController {
         return ResponseEntity.ok(appealService.createAppeal(appeal));
     }
 
+    @GetMapping
+    public ResponseEntity<List<StudentAppeal>> getAllAppeals(@RequestParam(required = false) Long viewerId) {
+        if (viewerId != null) return ResponseEntity.ok(appealService.getAppealsVisibleTo(viewerId));
+        return ResponseEntity.ok(appealService.getAllAppeals());
+    }
+
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<StudentAppeal>> getStudentAppeals(@PathVariable Long studentId) {
         return ResponseEntity.ok(appealService.getStudentAppeals(studentId));
     }
 
+    @GetMapping("/student")
+    public ResponseEntity<List<StudentAppeal>> getCurrentStudentAppeals(HttpServletRequest request) {
+        return ResponseEntity.ok(appealService.getStudentAppeals(jwtService.getUserId(request)));
+    }
+
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<List<StudentAppeal>> getInstructorAppeals(@PathVariable Long instructorId) {
         return ResponseEntity.ok(appealService.getInstructorAppeals(instructorId));
+    }
+
+    @GetMapping("/instructor")
+    public ResponseEntity<List<StudentAppeal>> getCurrentInstructorAppeals(HttpServletRequest request) {
+        return ResponseEntity.ok(appealService.getInstructorAppeals(jwtService.getUserId(request)));
     }
 
     @GetMapping("/{id}")

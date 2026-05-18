@@ -11,6 +11,8 @@ import { apiClient } from "@/core/api/axios";
 import { useAuthStore } from "@/core/store/authStore";
 import { User, roleToBasePath } from "@/core/types/user";
 
+type LoginResponse = { user: User; token: string };
+
 export default function Login() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
@@ -37,16 +39,16 @@ export default function Login() {
     }
 
     try {
-      const { data } = await apiClient.post<User>("/users/login", {
+      const { data } = await apiClient.post<LoginResponse>("/users/login", {
         userId,
         password,
       });
 
       // Save user to global store (persisted in localStorage)
-      login(data);
+      login(data.user, data.token);
 
       // Redirect to the correct dashboard based on role
-      const basePath = roleToBasePath[data.role];
+      const basePath = roleToBasePath[data.user.role];
       router.push(`${basePath}/dashboard`);
 
     } catch (error: any) {

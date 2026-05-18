@@ -27,8 +27,16 @@ public class Hospital {
     @Column(nullable = false)
     private String address;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(nullable = false)
+    private Boolean active = true;
+
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "hospital_wards", joinColumns = @JoinColumn(name = "hospital_id"))
     @Column(name = "ward_name")
     private List<String> wards;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "hospital_inactive_wards", joinColumns = @JoinColumn(name = "hospital_id"))
+    @Column(name = "ward_name")
+    private List<String> inactiveWards;
 }

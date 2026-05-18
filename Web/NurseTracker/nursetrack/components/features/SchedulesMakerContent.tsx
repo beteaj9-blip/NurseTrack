@@ -1,272 +1,402 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useMemo, useRef, useState } from "react";
+import { useHospitals } from "@/core/api/hooks/useHospitals";
+import { useInstructors, useUsers } from "@/core/api/hooks/useUsers";
+import { usePreviewScheduleImport, usePublishScheduleImport } from "@/core/api/hooks/useSchedules";
+import { useAuthStore } from "@/core/store/authStore";
+import type { User } from "@/core/types/user";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+import { useToast } from "@/components/ui/ToastProvider";
 
-export function SchedulesMakerContent({ basePath }: { basePath: string }) {
-  const [isRosterModalOpen, setIsRosterModalOpen] = useState(false);
-  const dutyTypeOptions = [{ value: "Regular", label: "Regular" }, { value: "Extension", label: "Extension" }, { value: "Completion", label: "Completion" }];
-  const firstHospitalOptions = [{ value: "CCMC - Emergency Room", label: "CCMC - Emergency Room" }];
-  const secondHospitalOptions = [{ value: "CCMC - Emergency Room", label: "CCMC - Emergency Room" }, { value: "LCH - 3rd Floor", label: "LCH - 3rd Floor" }, { value: "VSMMC - Main Station 205", label: "VSMMC - Main Station 205" }];
-  const firstCiOptions = [{ value: "Arlene G. Vecino", label: "Arlene G. Vecino" }];
-  const secondCiOptions = [{ value: "Arlene G. Vecino", label: "Arlene G. Vecino" }, { value: "Annalyn A. Hole", label: "Annalyn A. Hole" }, { value: "Maria Carmina Villardar", label: "Maria Carmina Villardar" }];
+type StudentRecord = {
+  name: string;
+  matched: boolean;
+  schoolId?: string;
+  section?: string;
+  levels?: number[];
+  profileImageUrl?: string;
+};
+
+type DraftGroup = {
+  id: string;
+  section: string;
+  startDate: string;
+  endDate: string;
+  breakDates: string[];
+  shiftStart: string;
+  shiftEnd: string;
+  hospitalArea: string;
+  dutyType: string;
+  casePresentationDate: string;
+  casePresentationTime: string;
+  noCasePresentation: boolean;
+  instructor: string;
+  students: string[];
+  studentRecords?: StudentRecord[];
+  matchedStudents?: number;
+  skippedStudents?: number;
+  instructorMatched?: boolean;
+  locationMatched?: boolean;
+};
+
+const dutyTypeOptions = [
+  { value: "Regular", label: "Regular" },
+  { value: "Completion", label: "Completion" },
+  { value: "Extension", label: "Extension" },
+];
+
+function parseTimeParts(value: string) {
+  const match = value.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
+  return {
+    hour: match ? match[1].padStart(2, "0") : "08",
+    minute: match ? match[2] ?? "00" : "00",
+    period: match ? match[3].toUpperCase() : "AM",
+  };
+}
+
+function ScheduleTimePicker({ label, value, onChange, disabled }: { label: string; value: string; onChange: (value: string) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const parts = parseTimeParts(value);
+  const hours = ["08", "09", "10", "11", "12", "01", "02"];
+  const minutes = ["00", "01", "02", "03", "04", "05", "06"];
+  const periods = ["AM", "PM"];
+
+  function setPart(updates: Partial<typeof parts>, close = false) {
+    const next = { ...parts, ...updates };
+    onChange(`${next.hour}:${next.minute} ${next.period}`);
+    if (close) setOpen(false);
+  }
 
   return (
-    <>
-      <main className="p-[clamp(24px,4vw,42px)] content-start grid gap-6 w-full">
-        <section className="mt-0 p-[1.45rem] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
-          <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-[#e5eaf1] flex-wrap">
-            <div>
-              <h2 className="m-0 !text-[#111827] !text-[1.25rem] leading-[1.15] !font-bold">Upload Schedule Source File</h2>
-            </div>
-            <span className="inline-flex items-center px-[10px] py-[4px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#fff6cc] !text-[#6c4c00]" id="chair-import-status">Review required</span>
+    <label className="relative grid gap-2 !text-[#344054] !text-[0.88rem] !font-[800]">
+      {label}
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className="flex min-h-[48px] items-center justify-between rounded-lg border border-[#dbe3ee] bg-white px-4 text-left !font-[800] !text-[#111827] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span>{value || "--:-- --"}</span>
+        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+      </button>
+      {open && !disabled && (
+        <div className="absolute left-0 top-[76px] z-30 grid w-[172px] grid-cols-3 border border-[#cbd5e1] bg-white p-1 shadow-[0_16px_34px_rgba(15,23,42,0.12)]">
+          <div className="grid gap-1">
+            {hours.map((hour) => <button key={hour} type="button" onClick={() => setPart({ hour })} className={`min-h-[34px] px-3 !font-[800] cursor-pointer ${parts.hour === hour ? "bg-[#0d6efd] !text-white" : "bg-white !text-[#111827] hover:bg-[#f1f5f9]"}`}>{hour}</button>)}
           </div>
-
-          <div className="flex flex-col justify-between gap-8 min-h-[210px] p-[1.9rem] border border-dashed border-[#8A252C]/28 rounded-[0.85rem] bg-[linear-gradient(135deg,#fff7d6_0%,#fffaf0_55%,#ffffff_100%)]">
-            <div>
-              <strong className="block !text-[#0f172a] !text-[1.15rem] !font-[800] mb-4">Drop Excel or CSV file here</strong>
-              <p className="max-w-[1180px] m-0 !text-[#475569] !text-base !font-[700] leading-[1.55]">Accepted data: section/group, inclusive dates, RLE rotation, hospital or area, shift, case presentation date, student count, clinical instructor, and remarks. Student names are kept in the source file but hidden from this review to keep the page readable.</p>
-            </div>
-            <div className="flex items-center justify-end gap-3 flex-wrap max-[900px]:justify-start">
-              <input type="file" accept=".xlsx,.xls,.csv,.pdf" hidden />
-              <button className="inline-flex items-center justify-center w-auto min-w-[175px] min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button">Choose schedule file</button>
-              <button className="inline-flex items-center justify-center w-auto min-w-[175px] min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button">Create schedule manually</button>
-            </div>
+          <div className="grid gap-1">
+            {minutes.map((minute) => <button key={minute} type="button" onClick={() => setPart({ minute })} className={`min-h-[34px] px-3 !font-[800] cursor-pointer ${parts.minute === minute ? "bg-[#0d6efd] !text-white" : "bg-white !text-[#111827] hover:bg-[#f1f5f9]"}`}>{minute}</button>)}
           </div>
-
-          <div id="chair-import-message" className="flex items-center min-h-[48px] mt-4 px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-sm !font-bold border border-[#e2e8f0]" role="status" aria-live="polite">
-            Upload an imported file or create a schedule manually before publishing.
+          <div className="grid content-start gap-1">
+            {periods.map((period) => <button key={period} type="button" onClick={() => setPart({ period }, true)} className={`min-h-[34px] px-3 !font-[800] cursor-pointer ${parts.period === period ? "bg-[#0d6efd] !text-white" : "bg-white !text-[#111827] hover:bg-[#f1f5f9]"}`}>{period}</button>)}
           </div>
-        </section>
-
-        <section className="mt-0 p-[1.45rem] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
-          <div className="flex items-center gap-4 mb-4 pb-4 border-b border-[#e5eaf1] flex-wrap">
-            <h2 className="m-0 !text-[#111827] !text-[1.25rem] leading-[1.15] !font-bold">Review Imported Schedule Before Publishing</h2>
-            <span className="inline-flex items-center px-[10px] py-[4px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#fff6cc] !text-[#6c4c00]">Draft review</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mb-6 max-[980px]:grid-cols-1">
-            <div className="p-[18px] border border-[#e2e8f0] rounded-lg bg-[#f8fafc]">
-              <span className="block mb-[5px] !text-[#64748b] !text-[0.72rem] !font-[900] uppercase">Imported file</span>
-              <strong className="!text-[#111827] !text-[0.98rem] leading-[1.3] !font-[850]">LEVEL-III-RLE-ROTATION-April-27-30.xlsx</strong>
-            </div>
-            <div className="p-[18px] border border-[#e2e8f0] rounded-lg bg-[#f8fafc]">
-              <span className="block mb-[5px] !text-[#64748b] !text-[0.72rem] !font-[900] uppercase">Review records</span>
-              <strong className="!text-[#111827] !text-[0.98rem] leading-[1.3] !font-[850]">6 groups / 58 students</strong>
-            </div>
-            <div className="p-[18px] border border-[#e2e8f0] rounded-lg bg-[#f8fafc]">
-              <span className="block mb-[5px] !text-[#64748b] !text-[0.72rem] !font-[900] uppercase">Publish scope</span>
-              <strong className="!text-[#111827] !text-[0.98rem] leading-[1.3] !font-[850]">Students and Clinical Instructors</strong>
-            </div>
-          </div>
-
-          <div className="grid gap-[22px]" aria-label="Editable schedule draft">
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(132px,auto)] gap-[22px_26px] items-start p-[24px] rounded-xl border border-[#e2e8f0] bg-white max-[980px]:grid-cols-1">
-              <div className="flex flex-col gap-3 min-w-0">
-                <div>
-                  <strong className="block !text-[#111827] !text-[0.98rem] !font-[850] leading-[1.3] mb-1">N1 G1</strong>
-                  <button className="inline-flex items-center justify-center w-fit min-h-[34px] px-[0.85rem] py-[0.45rem] border border-[#8a252c]/18 rounded-full bg-[#fff7d6] !text-[#8a252c] !text-[0.86rem] !font-extrabold leading-none transition-all cursor-pointer hover:bg-[#ffefad] hover:border-[#8a252c]/35 hover:-translate-y-px" type="button" onClick={() => setIsRosterModalOpen(true)}>View students (9)</button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap justify-end gap-[10px] max-[980px]:justify-start">
-                <button className="inline-flex items-center justify-center w-auto min-h-[44px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button">Save edits</button>
-                <button className="inline-flex items-center justify-center w-auto min-h-[44px] px-4 rounded-lg bg-white border border-[#c62828]/34 !text-[#b42318] !text-[0.95rem] !font-extrabold hover:bg-[#fff1f0] transition-colors cursor-pointer" type="button">Remove</button>
-              </div>
-
-              <div className="col-span-full grid grid-cols-2 gap-[18px_22px] pt-[4px] max-[980px]:grid-cols-1">
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Start Date
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" defaultValue="2026-04-27" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">End Date
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" defaultValue="2026-04-30" />
-                </label>
-
-                <div className="col-span-full grid gap-[8px] min-w-0 p-[18px] border border-[#dbe3ee] rounded-lg bg-[#f8fafc]">
-                  <span className="!text-[#344054] !text-[0.88rem] !font-[800]">Break Dates</span>
-                  <div className="grid grid-cols-[1fr_auto] gap-[14px] items-center max-[720px]:grid-cols-1">
-                    <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" />
-                    <button className="inline-flex items-center justify-center min-w-[110px] min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button">Add break</button>
-                  </div>
-                  <div className="mt-2 text-[#64748b] text-sm font-bold">No breaks added</div>
-                </div>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Shift Start
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="time" defaultValue="14:00" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Shift End
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="time" defaultValue="22:00" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Hospital / Area
-                  <InlineSelect value="CCMC - Emergency Room" options={firstHospitalOptions} placeholder="Select hospital / area" onChange={() => {}} />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Duty Type
-                  <InlineSelect value="Regular" options={dutyTypeOptions} placeholder="Select duty type" onChange={() => {}} />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Case Presentation date
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Case Presentation time
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="time" />
-                </label>
-
-                <label className="flex items-center gap-3 m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0 mt-[14px]">
-                  <input type="checkbox" defaultChecked className="w-[18px] h-[18px] text-[#8a252c] border-[#dbe3ee] rounded focus:ring-[#8a252c]" />
-                  No Case Presentation
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Supervising CI
-                  <InlineSelect value="Arlene G. Vecino" options={firstCiOptions} placeholder="Select CI" onChange={() => {}} />
-                </label>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(132px,auto)] gap-[22px_26px] items-start p-[24px] rounded-xl border border-[#e2e8f0] bg-white max-[980px]:grid-cols-1">
-              <div className="flex flex-col gap-3 min-w-0">
-                <div>
-                  <strong className="block !text-[#111827] !text-[0.98rem] !font-[850] leading-[1.3] mb-1">N2 G4</strong>
-                  <button className="inline-flex items-center min-h-[30px] p-0 border-0 bg-transparent !text-[#8a252c] !text-[0.9rem] !font-[900] text-left cursor-pointer hover:!text-[#5c191d]" type="button" onClick={() => setIsRosterModalOpen(true)}>View students (9)</button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap justify-end gap-[10px] max-[980px]:justify-start">
-                <button className="inline-flex items-center justify-center w-auto min-h-[44px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button">Save edits</button>
-                <button className="inline-flex items-center justify-center w-auto min-h-[44px] px-4 rounded-lg bg-white border border-[#c62828]/34 !text-[#b42318] !text-[0.95rem] !font-extrabold hover:bg-[#fff1f0] transition-colors cursor-pointer" type="button">Remove</button>
-              </div>
-
-              <div className="col-span-full grid grid-cols-2 gap-[18px_22px] pt-[4px] max-[980px]:grid-cols-1">
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Start Date
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" defaultValue="2026-04-27" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">End Date
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" defaultValue="2026-04-30" />
-                </label>
-
-                <div className="col-span-full grid gap-[8px] min-w-0 p-[18px] border border-[#dbe3ee] rounded-lg bg-[#f8fafc]">
-                  <span className="!text-[#344054] !text-[0.88rem] !font-[800]">Break Dates</span>
-                  <div className="grid grid-cols-[1fr_auto] gap-[14px] items-center max-[720px]:grid-cols-1">
-                    <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" />
-                    <button className="inline-flex items-center justify-center min-w-[110px] min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button">Add break</button>
-                  </div>
-                  <div className="mt-2 text-[#64748b] text-sm font-bold">No breaks added</div>
-                </div>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Shift Start
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="time" defaultValue="14:00" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Shift End
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="time" defaultValue="22:00" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Hospital / Area
-                  <InlineSelect value="CCMC - Emergency Room" options={secondHospitalOptions} placeholder="Select hospital / area" onChange={() => {}} />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Duty Type
-                  <InlineSelect value="Regular" options={dutyTypeOptions} placeholder="Select duty type" onChange={() => {}} />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Case Presentation date
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="date" />
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Case Presentation time
-                  <input className="w-full min-w-0 min-h-[48px] px-[14px] border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] outline-none transition-all focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" type="time" />
-                </label>
-
-                <label className="flex items-center gap-3 m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0 mt-[14px]">
-                  <input type="checkbox" defaultChecked className="w-[18px] h-[18px] text-[#8a252c] border-[#dbe3ee] rounded focus:ring-[#8a252c]" />
-                  No Case Presentation
-                </label>
-
-                <label className="flex flex-col gap-[8px] m-0 !text-[#344054] !text-[0.88rem] !font-[800] min-w-0">Supervising CI
-                  <InlineSelect value="Arlene G. Vecino" options={secondCiOptions} placeholder="Select CI" onChange={() => {}} />
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 mt-6">
-            <button className="inline-flex items-center justify-center w-auto min-h-[50px] px-[30px] rounded-[10px] whitespace-nowrap bg-[#8A252C] !text-white !text-[0.95rem] tracking-[-0.01em] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer" type="button">Publish Schedule</button>
-          </div>
-
-          <div id="chair-schedule-message" className="flex items-center min-h-[48px] mt-4 px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-sm !font-bold border border-[#e2e8f0]" role="status" aria-live="polite">
-            Schedule Maker is ready for review.
-          </div>
-        </section>
-      </main>
-
-      {isRosterModalOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-[1.25rem] bg-[#0f172a]/[0.45]" id="schedule-roster-modal">
-          <section className="relative w-[min(980px,calc(100vw-32px))] p-6 bg-white rounded-2xl shadow-[0_26px_68px_rgba(15,23,42,0.24)]" role="dialog" aria-modal="true" aria-labelledby="schedule-roster-title">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <h2 className="m-0 !text-[#111827] !text-[1.45rem] leading-[1.2] !font-bold" id="schedule-roster-title">N1 G1 Students</h2>
-              <div className="flex items-center gap-2">
-                <button className="inline-flex items-center justify-center w-auto min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#94a3b8] !text-sm !font-extrabold disabled:cursor-not-allowed" type="button" disabled>Undo</button>
-                <button className="relative grid place-items-center w-[40px] h-[40px] border border-[#e2e8f0] rounded-lg bg-white !text-transparent outline-none cursor-pointer hover:border-[#8a252c] transition-colors before:absolute before:content-[''] before:w-[14px] before:h-[2px] before:rounded-full before:bg-[#0f172a] before:rotate-45 after:absolute after:content-[''] after:w-[14px] after:h-[2px] after:rounded-full after:bg-[#0f172a] after:-rotate-45" type="button" onClick={() => setIsRosterModalOpen(false)} aria-label="Close student roster"></button>
-              </div>
-            </div>
-
-            <div className="grid gap-[10px] m-[0_0_1rem]">
-              <label className="!text-[#14213d] !font-[900]" htmlFor="schedule-roster-add-search">Search student to add</label>
-              <input className="w-full min-h-[58px] px-[18px] border border-[#8a252c]/28 rounded-lg bg-white !text-[#14213d] !font-[800] focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] outline-none" id="schedule-roster-add-search" type="search" placeholder="Search by name, ID, section, or clinical site" autoComplete="off" />
-              <div className="max-h-[280px] overflow-y-auto border border-[#e2e8f0] rounded-lg bg-white hidden" id="schedule-roster-add-results" hidden></div>
-            </div>
-
-            <div className="mt-4 max-h-[50vh] overflow-y-auto" id="schedule-roster-list">
-              <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="border-b border-[#e2e8f0]">
-                    <th className="py-4 px-3 !font-[900] !text-[0.8rem] uppercase !text-[#111827]">NO.</th>
-                    <th className="py-4 px-3 !font-[900] !text-[0.8rem] uppercase !text-[#111827]">STUDENT</th>
-                    <th className="py-4 px-3 !font-[900] !text-[0.8rem] uppercase !text-[#111827]">SECTION</th>
-                    <th className="py-4 px-3 !font-[900] !text-[0.8rem] uppercase !text-[#111827] text-right">ACTION</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { id: 1, init: 'ZA', name: 'Zander Aligato' },
-                    { id: 2, init: 'BM', name: 'Bianca Mariel Lumbre' },
-                    { id: 3, init: 'KM', name: 'Klarisse Mumar' },
-                    { id: 4, init: 'SP', name: 'Shaina Perez' },
-                    { id: 5, init: 'RP', name: 'Rui Parba' },
-                    { id: 6, init: 'RR', name: 'Relieza Rellon' },
-                    { id: 7, init: 'EM', name: 'Ella Mae Maranga' }
-                  ].map((s) => (
-                    <tr key={s.id} className="border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc]">
-                      <td className="py-4 px-3 !text-[#475569] !text-[0.95rem]">{s.id}.</td>
-                      <td className="py-4 px-3">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#ffc107] !font-[800] !text-[0.8rem] !text-[#111827]">{s.init}</span>
-                          <span className="!font-[800] !text-[#111827] !text-[0.95rem]">{s.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-3 !text-[#475569] !text-[0.95rem] !font-medium">N1 G1</td>
-                      <td className="py-4 px-3 text-right">
-                        <button className="px-4 py-2 border border-[#c62828]/30 rounded-lg bg-white !text-[#b42318] !text-[0.85rem] !font-bold hover:bg-[#fff1f0] transition-colors" type="button">Remove</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 mt-[1.25rem] pt-[1.25rem] border-t border-[#e2e8f0] max-[720px]:justify-start max-[720px]:flex-col">
-              <button className="inline-flex items-center justify-center w-auto min-w-[130px] min-h-[46px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer max-[720px]:w-full" type="button" onClick={() => setIsRosterModalOpen(false)}>Cancel</button>
-              <button className="inline-flex items-center justify-center w-auto min-w-[130px] min-h-[46px] px-4 rounded-lg bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_6px_14px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_10px_22px_rgba(138,37,44,0.22)] transition-all cursor-pointer max-[720px]:w-full" type="button" onClick={() => setIsRosterModalOpen(false)}>Save Changes</button>
-            </div>
-          </section>
         </div>
       )}
-    </>
+    </label>
+  );
+}
+
+function getStudentRecords(group: DraftGroup) {
+  return group.studentRecords?.length ? group.studentRecords : group.students.map((name) => ({ name, matched: true }));
+}
+
+function formatStudentLevel(student: User) {
+  return formatLevels(student.assignedLevels);
+}
+
+function formatLevels(value?: number[]) {
+  const levels = value?.filter((level) => Number.isFinite(level)).sort((a, b) => a - b) ?? [];
+  if (levels.length === 0) return "No level";
+  if (levels.length === 1) return `Level ${levels[0]}`;
+  return `Levels ${levels.join(", ")}`;
+}
+
+export function SchedulesMakerContent({ basePath }: { basePath: string }) {
+  const user = useAuthStore((state) => state.user);
+  const { data: hospitals = [] } = useHospitals();
+  const { data: instructors = [] } = useInstructors((basePath === "/chair" || basePath === "/coordinator") && user?.id != null ? String(user.id) : undefined);
+  const { data: databaseStudents = [] } = useUsers("STUDENT");
+  const { showToast } = useToast();
+  const previewImport = usePreviewScheduleImport();
+  const publishImport = usePublishScheduleImport();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState("No file selected");
+  const [message, setMessage] = useState("Upload an imported file or create a schedule manually before publishing.");
+  const [groups, setGroups] = useState<DraftGroup[]>([]);
+  const [preview, setPreview] = useState<any>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [breakDrafts, setBreakDrafts] = useState<Record<string, string>>({});
+  const [studentSearch, setStudentSearch] = useState("");
+  const [modalRecords, setModalRecords] = useState<StudentRecord[]>([]);
+  const [modalOriginalRecords, setModalOriginalRecords] = useState<StudentRecord[]>([]);
+
+  const selectedGroup = groups.find((group) => group.id === selectedGroupId);
+  const selectedStudentRecords = selectedGroup ? modalRecords : [];
+  const matchedModalRecords = selectedStudentRecords.filter((student) => student.matched);
+  const unmatchedModalRecords = selectedStudentRecords.filter((student) => !student.matched);
+  const modalChanged = modalRecords.length !== modalOriginalRecords.length || modalRecords.some((student, index) => student.name !== modalOriginalRecords[index]?.name || student.matched !== modalOriginalRecords[index]?.matched);
+
+  const hospitalAreaOptions = useMemo(() => (hospitals as any[]).flatMap((hospital: any) => (hospital.wards?.length ? hospital.wards : [""]).map((ward: string) => {
+    const value = ward ? `${hospital.name} - ${ward}` : hospital.name;
+    return { value, label: value };
+  })), [hospitals]);
+  const instructorOptions = useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: instructor.fullName, label: instructor.fullName })), [instructors]);
+  const totalStudents = groups.reduce((sum, group) => sum + getStudentRecords(group).length, 0);
+  const studentSearchResults = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return [];
+    const existing = new Set(modalRecords.map((record) => record.name.toLowerCase()));
+    return (databaseStudents as User[])
+      .filter((student) => !existing.has(student.fullName.toLowerCase()))
+      .filter((student) => `${student.fullName} ${student.schoolId} ${student.sectionInfo ?? ""} ${student.email}`.toLowerCase().includes(query))
+      .slice(0, 8);
+  }, [databaseStudents, modalRecords, studentSearch]);
+
+  function updateGroup(id: string, updates: Partial<DraftGroup>) {
+    setGroups((current) => current.map((group) => group.id === id ? { ...group, ...updates } : group));
+  }
+
+  async function handleFile(file: File) {
+    try {
+      const data = await previewImport.mutateAsync(file);
+      setPreview(data);
+      setFileName(data.fileName || file.name);
+      setGroups(data.groups || []);
+      setMessage(`Extracted ${data.groups?.length ?? 0} groups for level ${data.level}. ${data.matchedStudents} students matched in the database, ${data.skippedStudents} need review.`);
+      showToast({ variant: "success", title: "Schedule extracted", message: `${data.groups?.length ?? 0} groups are ready for review.` });
+    } catch {
+      setMessage("Could not extract the schedule file. Make sure it is saved as CSV/XLSX with the required schedule header.");
+      showToast({ variant: "error", title: "Extract failed", message: "The schedule file could not be read." });
+    }
+  }
+
+  async function publishSchedule() {
+    if (!preview || groups.length === 0) return;
+    try {
+      const result = await publishImport.mutateAsync({ ...preview, groups });
+      setMessage(`${result.schedulesCreated} schedules published for level ${result.level}. ${result.studentsMatched} students matched, ${result.studentsSkipped} skipped, ${result.duplicateSchedules} duplicates ignored.`);
+      setPreview(null);
+      setGroups([]);
+      setFileName("No file selected");
+      setBreakDrafts({});
+      closeStudentModal();
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      showToast({ variant: "success", title: "Schedule published", message: `${result.schedulesCreated} schedules are now visible to students and CIs.` });
+    } catch {
+      showToast({ variant: "error", title: "Publish failed", message: "The reviewed schedule could not be published." });
+    }
+  }
+
+  function addManualGroup() {
+    setGroups((current) => [{
+      id: `${Date.now()}`,
+      section: "New Group",
+      startDate: "",
+      endDate: "",
+      breakDates: [],
+      shiftStart: "",
+      shiftEnd: "",
+      hospitalArea: "",
+      dutyType: "Regular",
+      casePresentationDate: "",
+      casePresentationTime: "",
+      noCasePresentation: false,
+      instructor: "",
+      students: [],
+      studentRecords: [],
+    }, ...current]);
+    setMessage("Manual schedule draft added for review.");
+  }
+
+  function openStudentModal(group: DraftGroup) {
+    const records = getStudentRecords(group);
+    setModalRecords(records);
+    setModalOriginalRecords(records);
+    setStudentSearch("");
+    setSelectedGroupId(group.id);
+  }
+
+  function closeStudentModal() {
+    setSelectedGroupId(null);
+    setStudentSearch("");
+    setModalRecords([]);
+    setModalOriginalRecords([]);
+  }
+
+  function addStudent(student: User) {
+    setModalRecords((current) => [...current, {
+      name: student.fullName,
+      matched: true,
+      schoolId: student.schoolId,
+      section: student.sectionInfo,
+      levels: student.assignedLevels,
+      profileImageUrl: student.profileImageUrl,
+    }]);
+    setStudentSearch("");
+  }
+
+  function removeStudent(name: string) {
+    setModalRecords((current) => current.filter((student) => student.name !== name));
+  }
+
+  function saveStudentModal() {
+    if (!selectedGroup) return;
+    const matchedStudents = modalRecords.filter((student) => student.matched).length;
+    setGroups((current) => current.map((group) => group.id === selectedGroup.id ? {
+      ...group,
+      students: modalRecords.map((student) => student.name),
+      studentRecords: modalRecords,
+      matchedStudents,
+      skippedStudents: modalRecords.length - matchedStudents,
+    } : group));
+    showToast({ variant: "success", title: "Roster saved", message: "Student changes were applied to this schedule draft." });
+    closeStudentModal();
+  }
+
+  function addBreakDate(group: DraftGroup) {
+    const value = breakDrafts[group.id];
+    if (!value) return;
+    if (!group.startDate || !group.endDate) {
+      showToast({ variant: "error", title: "Set date range first", message: "Choose a start and end date before adding break dates." });
+      return;
+    }
+    if (value < group.startDate || value > group.endDate) {
+      showToast({ variant: "error", title: "Invalid break date", message: "Break dates must be within the schedule start and end dates." });
+      return;
+    }
+    if (group.breakDates.includes(value)) {
+      showToast({ variant: "error", title: "Already added", message: "This break date is already listed." });
+      return;
+    }
+    updateGroup(group.id, { breakDates: [...group.breakDates, value].sort() });
+    setBreakDrafts((current) => ({ ...current, [group.id]: "" }));
+  }
+
+  return (
+    <main className="grid w-full content-start gap-6 p-[clamp(24px,4vw,42px)]">
+      <section className="mt-0 rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-[#e5eaf1] pb-4">
+          <h2 className="m-0 !text-[1.25rem] !font-bold leading-[1.15] !text-[#111827]">Upload Schedule Source File</h2>
+          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#fff6cc] px-[10px] py-[4px] !text-[0.76rem] !font-extrabold !text-[#6c4c00]">Review required</span>
+        </div>
+        <div className="flex min-h-[210px] flex-col justify-between gap-8 rounded-[0.85rem] border border-dashed border-[#8A252C]/28 bg-[linear-gradient(135deg,#fff7d6_0%,#fffaf0_55%,#ffffff_100%)] p-[1.9rem]">
+          <div>
+            <strong className="mb-4 block !text-[1.15rem] !font-[800] !text-[#0f172a]">Drop Excel or CSV file here</strong>
+            <p className="m-0 max-w-[1180px] !text-base !font-[700] leading-[1.55] !text-[#475569]">Accepted data: section/group, inclusive dates, RLE rotation, hospital or area, shift, case presentation date, student count, clinical instructor, and remarks. Student names are shown during review so missing database records can be checked before publishing.</p>
+          </div>
+          <div className="flex max-[900px]:justify-start flex-wrap items-center justify-end gap-3">
+            <input ref={fileInputRef} type="file" accept=".csv,.xlsx" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleFile(file); }} />
+            <button className="inline-flex min-h-[48px] w-auto min-w-[175px] items-center justify-center rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.95rem] !font-extrabold !text-[#344054] transition-all cursor-pointer hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] disabled:opacity-60" type="button" disabled={previewImport.isPending} onClick={() => fileInputRef.current?.click()}>{previewImport.isPending ? "Reading file..." : "Choose schedule file"}</button>
+            <button className="inline-flex min-h-[48px] w-auto min-w-[175px] items-center justify-center rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.95rem] !font-extrabold !text-[#344054] transition-all cursor-pointer hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C]" type="button" onClick={addManualGroup}>Create schedule manually</button>
+          </div>
+        </div>
+        <div className="mt-4 flex min-h-[48px] items-center rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 !text-sm !font-bold !text-[#4c5d7d]" role="status" aria-live="polite">{message}</div>
+      </section>
+
+      {groups.length > 0 && <section className="mt-0 rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <h2 className="m-0 !text-[1.25rem] !font-bold leading-[1.15] !text-[#111827]">Review Imported Schedule Before Publishing</h2>
+          <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#fff6cc] px-[10px] py-[4px] !text-[0.76rem] !font-extrabold !text-[#6c4c00]">Draft review</span>
+        </div>
+        <div className="mb-6 grid grid-cols-3 gap-4 max-[980px]:grid-cols-1">
+          <div className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-[18px]"><span className="mb-[5px] block !text-[0.72rem] !font-[900] uppercase !text-[#64748b]">Imported file</span><strong className="!text-[0.98rem] !font-[850] leading-[1.3] !text-[#111827]">{fileName}</strong></div>
+          <div className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-[18px]"><span className="mb-[5px] block !text-[0.72rem] !font-[900] uppercase !text-[#64748b]">Review records</span><strong className="!text-[0.98rem] !font-[850] leading-[1.3] !text-[#111827]">{groups.length} groups / {totalStudents} source students</strong></div>
+          <div className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-[18px]"><span className="mb-[5px] block !text-[0.72rem] !font-[900] uppercase !text-[#64748b]">Publish scope</span><strong className="!text-[0.98rem] !font-[850] leading-[1.3] !text-[#111827]">Database-matched students only</strong></div>
+        </div>
+
+        <div className="grid gap-[22px]">
+          {groups.map((group) => <article key={group.id} className="grid grid-cols-[minmax(0,1fr)_minmax(240px,auto)] items-start gap-[22px_26px] rounded-xl border border-[#e2e8f0] bg-white p-[24px] max-[980px]:grid-cols-1">
+            <div>
+              <input className="w-full border-0 bg-transparent p-0 !text-[1.02rem] !font-[900] !text-[#111827] outline-none" value={group.section} onChange={(event) => updateGroup(group.id, { section: event.target.value })} />
+              <button className="mt-4 inline-flex min-h-[34px] w-fit items-center justify-center rounded-full border border-[#8a252c]/18 bg-[#fff7d6] px-[0.85rem] py-[0.45rem] !text-[0.86rem] !font-extrabold leading-none !text-[#8a252c] transition-all cursor-pointer hover:bg-[#ffefad]" type="button" onClick={() => openStudentModal(group)}>View students ({getStudentRecords(group).length})</button>
+            </div>
+            <div className="flex flex-wrap justify-end gap-[10px] max-[980px]:justify-start">
+              <button className="inline-flex min-h-[44px] w-auto items-center justify-center rounded-lg border border-[#c62828]/20 bg-white px-4 !text-[0.95rem] !font-extrabold !text-[#c62828] cursor-pointer hover:bg-[#fff5f5]" type="button" onClick={() => setGroups((current) => current.filter((item) => item.id !== group.id))}>Remove</button>
+            </div>
+            <div className="col-span-full grid grid-cols-2 gap-[18px_22px] pt-[4px] max-[980px]:grid-cols-1">
+              <label className="grid gap-2 !text-[0.88rem] !font-[800] !text-[#344054]">Start Date<input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-white px-4 !font-[800] !text-[#111827]" type="date" value={group.startDate} onChange={(event) => updateGroup(group.id, { startDate: event.target.value })} /></label>
+              <label className="grid gap-2 !text-[0.88rem] !font-[800] !text-[#344054]">End Date<input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-white px-4 !font-[800] !text-[#111827]" type="date" value={group.endDate} onChange={(event) => updateGroup(group.id, { endDate: event.target.value })} /></label>
+              <label className="col-span-full grid gap-2 rounded-lg border border-[#dbe3ee] bg-[#f8fafc] p-[18px] !text-[0.88rem] !font-[800] !text-[#344054]">Break Dates
+                <div className="grid grid-cols-[1fr_auto] items-center gap-[14px] max-[720px]:grid-cols-1">
+                  <input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-white px-4 !font-[800] !text-[#111827]" type="date" min={group.startDate || undefined} max={group.endDate || undefined} value={breakDrafts[group.id] ?? ""} onChange={(event) => setBreakDrafts((current) => ({ ...current, [group.id]: event.target.value }))} />
+                  <button className="min-h-[48px] rounded-lg border border-[#e2e8f0] bg-white px-4 !font-extrabold !text-[#334155] cursor-pointer hover:bg-[#f8fafc]" type="button" onClick={() => addBreakDate(group)}>Add break</button>
+                </div>
+                <div className="mt-1 !text-xs !font-bold !text-[#64748b]">Break dates are skipped when publishing, so no duty schedule is created for those dates.</div>
+                {group.breakDates.length > 0 ? <div className="mt-2 flex flex-wrap gap-2">{group.breakDates.map((date) => <button key={date} type="button" className="rounded-full border border-[#c62828]/20 bg-white px-3 py-1 !font-bold !text-[#8A252C] cursor-pointer" onClick={() => updateGroup(group.id, { breakDates: group.breakDates.filter((item) => item !== date) })}>{date} x</button>)}</div> : <div className="mt-2 !text-sm !font-bold !text-[#64748b]">No breaks added</div>}
+              </label>
+              <ScheduleTimePicker label="Shift Start" value={group.shiftStart} onChange={(value) => updateGroup(group.id, { shiftStart: value })} />
+              <ScheduleTimePicker label="Shift End" value={group.shiftEnd} onChange={(value) => updateGroup(group.id, { shiftEnd: value })} />
+              <label className="grid gap-2 !text-[0.88rem] !font-[800] !text-[#344054]">Hospital / Area<InlineSelect value={group.hospitalArea} onChange={(value) => updateGroup(group.id, { hospitalArea: value })} options={hospitalAreaOptions} placeholder="Select hospital / area" /></label>
+              <label className="grid gap-2 !text-[0.88rem] !font-[800] !text-[#344054]">Duty Type<InlineSelect value={group.dutyType} onChange={(value) => updateGroup(group.id, { dutyType: value })} options={dutyTypeOptions} placeholder="Select duty type" /></label>
+              <label className="grid gap-2 !text-[0.88rem] !font-[800] !text-[#344054]">Case Presentation date<input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-white px-4 !font-[800] !text-[#111827] disabled:opacity-60" type="date" disabled={group.noCasePresentation} value={group.casePresentationDate} onChange={(event) => updateGroup(group.id, { casePresentationDate: event.target.value })} /></label>
+              <ScheduleTimePicker label="Case Presentation time" value={group.casePresentationTime} disabled={group.noCasePresentation} onChange={(value) => updateGroup(group.id, { casePresentationTime: value })} />
+              <label className="mt-7 flex items-center gap-3 !text-[0.9rem] !font-[850] !text-[#344054]"><input className="accent-[#8A252C]" type="checkbox" checked={group.noCasePresentation} onChange={(event) => updateGroup(group.id, { noCasePresentation: event.target.checked, casePresentationDate: event.target.checked ? "" : group.casePresentationDate, casePresentationTime: event.target.checked ? "" : group.casePresentationTime })} />No Case Presentation</label>
+              <label className="grid gap-2 !text-[0.88rem] !font-[800] !text-[#344054]">Supervising CI<InlineSelect value={group.instructor} onChange={(value) => updateGroup(group.id, { instructor: value })} options={instructorOptions} placeholder="Select clinical instructor" /></label>
+            </div>
+          </article>)}
+        </div>
+        <div className="mt-6 flex justify-end"><button className="inline-flex min-h-[52px] items-center justify-center rounded-lg bg-[#8A252C] px-8 !font-[900] !text-white cursor-pointer disabled:opacity-60" type="button" disabled={!preview || publishImport.isPending} onClick={publishSchedule}>{publishImport.isPending ? "Publishing..." : "Publish Schedule"}</button></div>
+      </section>}
+
+      {selectedGroup && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f172a]/45 p-5">
+        <section className="max-h-[92vh] w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-xl bg-white shadow-[0_26px_68px_rgba(15,23,42,0.24)]">
+          <div className="flex items-start justify-between gap-4 p-6">
+            <div>
+              <h2 className="m-0 !text-[1.35rem] !font-[900] !text-[#111827]">{selectedGroup.section} Students</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className={`min-h-[44px] rounded-lg border px-6 !font-[900] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 ${modalChanged ? "border-[#8A252C]/35 bg-[#fff7d6] !text-[#8A252C] hover:bg-[#ffefad]" : "border-[#e2e8f0] bg-white !text-[#94a3b8]"}`} type="button" disabled={!modalChanged} onClick={() => { setModalRecords(modalOriginalRecords); setStudentSearch(""); }}>Undo</button>
+              <button className="relative grid h-[48px] w-[48px] place-items-center rounded-lg border border-[#dbe3ee] bg-white !text-transparent outline-none cursor-pointer transition-colors hover:border-[#8a252c] before:absolute before:h-[2px] before:w-[15px] before:rotate-45 before:rounded-full before:bg-[#0f172a] before:content-[''] after:absolute after:h-[2px] after:w-[15px] after:-rotate-45 after:rounded-full after:bg-[#0f172a] after:content-['']" type="button" onClick={closeStudentModal} aria-label="Close student roster">Close</button>
+            </div>
+          </div>
+          <div className="grid gap-[10px] px-6 pb-4">
+            <label className="!font-[900] !text-[#14213d]" htmlFor="schedule-student-add-search">Search student to add</label>
+            <div className="relative">
+              <input id="schedule-student-add-search" className="min-h-[58px] w-full rounded-lg border border-[#8a252c]/45 bg-white px-[18px] pr-12 !font-[800] !text-[#14213d] outline-none focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search by name, ID, section, or email" autoComplete="off" />
+              {studentSearch && <button type="button" className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full !text-[#3f5f9f] !font-[900] cursor-pointer hover:bg-[#f1f5f9]" onClick={() => setStudentSearch("")}>x</button>}
+            </div>
+            {studentSearch.trim() && <div className="max-h-[220px] overflow-y-auto rounded-lg border border-[#e2e8f0] bg-white">
+              {studentSearchResults.length > 0 ? studentSearchResults.map((student) => <button key={student.id} type="button" className="block w-full p-5 text-left cursor-pointer hover:bg-[#f8fafc]" onClick={() => addStudent(student)}>
+                <strong className="block !font-[900] !text-[#14213d]">{student.fullName}</strong>
+                <span className="block !font-[800] !text-[#14213d]">Student | {student.schoolId} | {student.sectionInfo || "No section"} | {formatStudentLevel(student)}</span>
+              </button>) : <div className="p-5 !font-[800] !text-[#64748b]">No database students found.</div>}
+            </div>}
+            <div className="rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-4 py-3 !text-[0.86rem] !font-[800] !text-[#744b00]">Double-check every matched student before saving. If the file only has a last name or students share the same last name, the importer may leave it under Not In Database; use search to add the exact database student.</div>
+          </div>
+          <div className="grid max-h-[50vh] gap-5 overflow-y-auto px-6 pb-6">
+            <section className="grid gap-3">
+              <div className="flex items-center justify-between gap-3"><h3 className="m-0 !text-[1rem] !font-[900] !text-[#111827]">In Database</h3><span className="rounded-full bg-[#e9f8ef] px-3 py-1 !text-[0.76rem] !font-[900] !text-[#03703c]">{matchedModalRecords.length} students</span></div>
+              <div className="overflow-x-auto rounded-lg border border-[#e2e8f0]">
+                <table className="w-full min-w-[820px] table-fixed border-collapse">
+                  <colgroup><col className="w-[76px]" /><col /><col className="w-[160px]" /><col className="w-[150px]" /><col className="w-[150px]" /></colgroup>
+                  <thead className="bg-[#f8fafc]"><tr><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">No.</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Student</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Section</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Level</th><th className="px-4 py-4 text-right !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Action</th></tr></thead>
+                  <tbody>
+                    {matchedModalRecords.length > 0 ? matchedModalRecords.map((student, index) => <tr key={`matched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={40} /><div><span className="block !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</span>{student.schoolId && <span className="block !text-[0.78rem] !font-[850] !text-[#64748b]">{student.schoolId}</span>}</div></div></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{student.section || selectedGroup.section}</td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{formatLevels(student.levels)}</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>) : <tr><td colSpan={5} className="px-4 py-8 text-center !font-[800] !text-[#64748b]">No database students added.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            {unmatchedModalRecords.length > 0 && <section className="grid gap-3">
+              <div className="flex items-center justify-between gap-3"><h3 className="m-0 !text-[1rem] !font-[900] !text-[#111827]">Not In Database</h3><span className="rounded-full bg-[#fff4de] px-3 py-1 !text-[0.76rem] !font-[900] !text-[#9a5b00]">{unmatchedModalRecords.length} will not publish</span></div>
+              <div className="overflow-x-auto rounded-lg border border-[#e2e8f0]">
+                <table className="w-full min-w-[720px] table-fixed border-collapse">
+                  <colgroup><col className="w-[76px]" /><col className="w-[260px]" /><col /><col className="w-[150px]" /></colgroup>
+                  <thead className="bg-[#fffaf0]"><tr><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">No.</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Student Name</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Status</th><th className="px-4 py-4 text-right !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Action</th></tr></thead>
+                  <tbody>
+                    {unmatchedModalRecords.map((student, index) => <tr key={`unmatched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4 !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</td><td className="px-4 py-4 !text-[0.82rem] !font-[850] !text-[#9a5b00]">No database user. This student will not receive a published schedule.</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>)}
+                  </tbody>
+                </table>
+              </div>
+            </section>}
+          </div>
+          <div className="flex items-center justify-end gap-3 border-t border-[#e2e8f0] p-6 max-[720px]:flex-col max-[720px]:items-stretch">
+            <button className="inline-flex min-h-[46px] min-w-[130px] items-center justify-center rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.95rem] !font-extrabold !text-[#334155] cursor-pointer hover:bg-[#f8fafc]" type="button" onClick={closeStudentModal}>Cancel</button>
+            <button className="inline-flex min-h-[46px] min-w-[130px] items-center justify-center rounded-lg bg-[#8A252C] px-4 !text-[0.95rem] !font-extrabold !text-white shadow-[0_6px_14px_rgba(138,37,44,0.18)] cursor-pointer hover:bg-[#6d1d23]" type="button" onClick={saveStudentModal}>Save Changes</button>
+          </div>
+        </section>
+      </div>}
+    </main>
   );
 }

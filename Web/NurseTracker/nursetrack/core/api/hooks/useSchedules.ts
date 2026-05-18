@@ -24,6 +24,8 @@ function normalizeSchedule(schedule: any) {
     instructorProfileImageUrl: schedule.instructorProfileImageUrl ?? schedule.instructor?.profileImageUrl ?? '',
     date: schedule.date ?? schedule.shiftDate,
     area: schedule.area ?? schedule.ward,
+    rawStartTime: schedule.rawStartTime ?? schedule.startTime,
+    rawEndTime: schedule.rawEndTime ?? schedule.endTime,
     startTime: formatTime(schedule.startTime),
     endTime: formatTime(schedule.endTime),
   };
@@ -33,16 +35,14 @@ export const useSchedules = (userId?: string, role?: UserRole) => {
   return useQuery({
     queryKey: ['schedules', role ?? 'STUDENT', userId],
     queryFn: async () => {
-      if (!userId && role !== 'ADMIN' && role !== 'CHAIR' && role !== 'COORDINATOR' && role !== 'ASSISTANT') return [];
       const endpoint = role === 'INSTRUCTOR'
-        ? `/schedules/instructor/${userId}`
+        ? '/schedules/instructor'
         : role === 'ADMIN' || role === 'CHAIR' || role === 'COORDINATOR' || role === 'ASSISTANT'
           ? '/schedules/all'
-          : `/schedules/student/${userId}`;
+          : '/schedules/student';
       const { data } = await apiClient.get(endpoint);
       return data.map(normalizeSchedule);
     },
-    enabled: !!userId || role === 'ADMIN' || role === 'CHAIR' || role === 'COORDINATOR' || role === 'ASSISTANT',
   });
 };
 
@@ -52,6 +52,56 @@ export const useCreateSchedule = () => {
     mutationFn: async (scheduleData: any) => {
       const { data } = await apiClient.post('/schedules', scheduleData);
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+    },
+  });
+};
+
+export const usePreviewScheduleImport = () => {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await apiClient.post('/schedules/import/preview', formData);
+      return data;
+    },
+  });
+};
+
+export const usePublishScheduleImport = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (preview: any) => {
+      const { data } = await apiClient.post('/schedules/import/publish', preview);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
+
+export const useUpdateSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ scheduleId, schedule }: { scheduleId: string; schedule: any }) => {
+      const { data } = await apiClient.put(`/schedules/${scheduleId}`, schedule);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+    },
+  });
+};
+
+export const useDeleteSchedule = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (scheduleId: string) => {
+      await apiClient.delete(`/schedules/${scheduleId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });

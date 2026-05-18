@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
@@ -41,12 +41,13 @@ function CaseSection({ title, subtitle, records, basePath }: { title: string; su
         <h3 className="m-0 !text-[#8A252C] !text-[1.05rem] !font-[800]">{title}</h3>
         <span className="!text-[#475569] !text-[0.85rem] !font-[800]">{subtitle}</span>
       </div>
-      <div className="border border-[#e2e8f0] rounded-lg overflow-hidden">
-        <div className="grid grid-cols-[minmax(180px,1.2fr)_minmax(300px,2.2fr)_minmax(120px,0.9fr)_minmax(120px,0.9fr)_minmax(96px,0.6fr)_minmax(88px,0.5fr)] items-center gap-[1.5rem] p-[1rem_1.5rem] bg-[#f8fafc] !text-[#4c5d7d] !text-[0.75rem] !font-[700] uppercase rounded-t-lg border-b border-[#e2e8f0] max-[680px]:grid-cols-1 max-[680px]:gap-[0.5rem]">
+      <div className="border border-[#e2e8f0] rounded-lg overflow-x-auto overflow-y-hidden">
+        <div className="min-w-[920px]">
+        <div className="grid grid-cols-[minmax(180px,1.2fr)_minmax(300px,2.2fr)_minmax(120px,0.9fr)_minmax(120px,0.9fr)_minmax(96px,0.6fr)_minmax(88px,0.5fr)] items-center gap-[1.5rem] p-[1rem_1.5rem] bg-[#f8fafc] !text-[#4c5d7d] !text-[0.75rem] !font-[700] uppercase rounded-t-lg border-b border-[#e2e8f0]">
           <span>Category</span><span>Procedure Performed</span><span>Status</span><span>Date</span><span>Time</span><span>Action</span>
         </div>
         {records.map((record) => (
-          <div key={record.id} className="grid grid-cols-[minmax(180px,1.2fr)_minmax(300px,2.2fr)_minmax(120px,0.9fr)_minmax(120px,0.9fr)_minmax(96px,0.6fr)_minmax(88px,0.5fr)] items-center gap-[1.5rem] p-[1rem_1.5rem] border-b border-[#e2e8f0] last:border-b-0 max-[680px]:grid-cols-1 max-[680px]:gap-[0.5rem] bg-white">
+          <div key={record.id} className="grid grid-cols-[minmax(180px,1.2fr)_minmax(300px,2.2fr)_minmax(120px,0.9fr)_minmax(120px,0.9fr)_minmax(96px,0.6fr)_minmax(88px,0.5fr)] items-center gap-[1.5rem] p-[1rem_1.5rem] border-b border-[#e2e8f0] last:border-b-0 bg-white">
             <span className="!text-[#111827] !text-[0.86rem] !font-[700] leading-[1.4]">{caseCategoryLabel(record.category)}</span>
             <span><strong className="!font-[700] !text-[0.86rem] leading-[1.4] !text-[#111827]">{record.procedurePerformed}</strong></span>
             <span><span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(record.status)}`}>{record.status}</span></span>
@@ -55,6 +56,7 @@ function CaseSection({ title, subtitle, records, basePath }: { title: string; su
             <span><Link className="!text-[#8A252C] !font-[700] !text-[0.86rem] cursor-pointer no-underline hover:underline" href={`${basePath}/clinical-cases/validation?caseId=${record.id}`}>Open</Link></span>
           </div>
         ))}
+        </div>
       </div>
     </section>
   );
@@ -64,7 +66,11 @@ export function ClinicalCasesSelectionContent({ basePath }: { basePath: string; 
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId");
   const user = useAuthStore((state) => state.user);
-  const { data: cases = [], isLoading } = useInstructorCases(user?.id != null ? String(user.id) : undefined);
+  const isChair = basePath === "/chair";
+  const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
+  const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
+  const cases = isChair ? allCases : instructorCases;
+  const isLoading = isChair ? isAllLoading : isInstructorLoading;
   const studentCases = cases.filter((clinicalCase: any) => String(clinicalCase.studentId) === String(studentId));
   const firstCase = studentCases[0];
   const pendingCount = studentCases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length;

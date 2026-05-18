@@ -1,15 +1,18 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import { useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const user = useAuthStore((state) => state.user);
-    const instructorId = user?.id != null ? String(user.id) : undefined;
-    const { data: cases = [], isLoading } = useInstructorCases(instructorId);
+    const isChair = basePath === "/chair";
+    const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
+    const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
+    const cases = isChair ? allCases : instructorCases;
+    const isLoading = isChair ? isAllLoading : isInstructorLoading;
     const [search, setSearch] = useState("");
     const [sectionFilter, setSectionFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);

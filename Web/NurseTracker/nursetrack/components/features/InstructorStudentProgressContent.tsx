@@ -1,70 +1,155 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useInstructorCases } from "@/core/api/hooks/useClinicalCases";
-import { useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useAllAttendance, useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useUsers } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+
+type ProgressStudent = {
+  studentId?: number | string;
+  schoolId?: string;
+  name: string;
+  profileImageUrl?: string;
+  section: string;
+  cases: number;
+  approvedCases: number;
+  pending: number;
+  standing: string;
+};
+
+const standingOptions = [
+  { value: "all", label: "All" },
+  { value: "Checked", label: "Checked" },
+  { value: "Unchecked", label: "Unchecked" },
+  { value: "Cleared", label: "Cleared" },
+  { value: "Not cleared", label: "Not cleared" },
+];
+
+function statusBadge(status: string) {
+  if (status === "Unchecked") return "bg-[#fff8e1] !text-[#6c4c00]";
+  if (status === "Not cleared") return "bg-[#fef2f2] !text-[#991b1b]";
+  return "bg-[#e9f8ef] !text-[#03703c]";
+}
+
+function standingFor(student: Omit<ProgressStudent, "standing">) {
+  if (student.pending > 0) return "Unchecked";
+  if (student.cases > 0 && student.approvedCases >= student.cases) return "Cleared";
+  return "Checked";
+}
 
 export function InstructorStudentProgressContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: cases = [] } = useInstructorCases(userId);
-  const { data: attendance = [] } = useInstructorAttendance(userId);
+  const isChair = basePath === "/chair";
+  const isAdmin = basePath === "/admin";
+  const isAllSection = isAdmin || isChair;
+  const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
+  const { data: studentUsers = [] } = useUsers("STUDENT", isAllSection ? viewerId : undefined);
+  const { data: instructorCases = [] } = useInstructorCases();
+  const { data: allCases = [] } = useAllClinicalCases(isAllSection, viewerId);
+  const { data: instructorAttendance = [] } = useInstructorAttendance();
+  const { data: allAttendance = [] } = useAllAttendance(isAllSection, viewerId);
+  const cases = isAllSection ? allCases : instructorCases;
+  const attendance = isAllSection ? allAttendance : instructorAttendance;
   const [search, setSearch] = useState("");
+  const [section, setSection] = useState("all");
+  const [standing, setStanding] = useState("all");
 
-  const students = Object.values([...(cases as any[]), ...(attendance as any[])].reduce((acc: Record<string, any>, record: any) => {
-    const key = String(record.studentId ?? record.studentSchoolId ?? record.studentName);
-    if (!key) return acc;
-    const current = acc[key] ?? {
-      studentId: record.studentId,
-      schoolId: record.studentSchoolId,
-      name: record.studentName || "Nursing Student",
-      profileImageUrl: record.studentProfileImageUrl,
-      section: record.studentSection || "Nursing Student",
-      cases: 0,
-      approvedCases: 0,
-      pending: 0,
-      extensionDays: 0,
-    };
-    if (record.caseType || record.procedurePerformed) {
-      current.cases += 1;
-      if (record.status === "APPROVED") current.approvedCases += 1;
-      if (record.status === "PENDING") current.pending += 1;
-    } else {
-      if (record.status === "PENDING") current.pending += 1;
-      if (record.status === "REJECTED") current.extensionDays += 1;
+  const students = useMemo(() => {
+    const source = new Map<string, Omit<ProgressStudent, "standing">>();
+
+    if (isAllSection) {
+      (studentUsers as any[]).forEach((student) => {
+        const key = String(student.id ?? student.schoolId ?? student.fullName);
+        source.set(key, {
+          studentId: student.id,
+          schoolId: student.schoolId,
+          name: student.fullName || "Nursing Student",
+          profileImageUrl: student.profileImageUrl,
+          section: student.sectionInfo || "No Section",
+          cases: 0,
+          approvedCases: 0,
+          pending: 0,
+        });
+      });
     }
-    acc[key] = current;
-    return acc;
-  }, {}));
 
-  const filtered = students.filter((student: any) => {
-    const q = search.toLowerCase();
-    return !search || student.name.toLowerCase().includes(q) || student.schoolId?.toLowerCase().includes(q) || student.section.toLowerCase().includes(q);
+    [...(cases as any[]), ...(attendance as any[])].forEach((record: any) => {
+      const key = String(record.studentId ?? record.studentSchoolId ?? record.studentName);
+      if (!key || key === "undefined") return;
+      const current = source.get(key) ?? {
+        studentId: record.studentId,
+        schoolId: record.studentSchoolId,
+        name: record.studentName || "Nursing Student",
+        profileImageUrl: record.studentProfileImageUrl,
+        section: record.studentSection || "No Section",
+        cases: 0,
+        approvedCases: 0,
+        pending: 0,
+      };
+      if (record.caseType || record.procedurePerformed) {
+        current.cases += 1;
+        if (record.status === "APPROVED" || record.status === "VALIDATED") current.approvedCases += 1;
+      }
+      if (record.status === "PENDING") current.pending += 1;
+      source.set(key, current);
+    });
+
+    return Array.from(source.values())
+      .map((student) => ({ ...student, standing: standingFor(student) }))
+      .sort((a, b) => a.section.localeCompare(b.section) || a.name.localeCompare(b.name));
+  }, [attendance, cases, isAllSection, studentUsers]);
+
+  const sectionOptions = useMemo(() => [
+    { value: "all", label: "All" },
+    ...Array.from(new Set(students.map((student) => student.section).filter(Boolean))).map((value) => ({ value, label: value })),
+  ], [students]);
+
+  useEffect(() => {
+    if (section !== "all" && !sectionOptions.some((option) => option.value === section)) setSection("all");
+  }, [section, sectionOptions]);
+
+  const filtered = students.filter((student) => {
+    const q = search.trim().toLowerCase();
+    const matchesSearch = !q || `${student.name} ${student.schoolId ?? ""} ${student.section} ${student.standing}`.toLowerCase().includes(q);
+    const matchesSection = section === "all" || student.section === section;
+    const matchesStanding = standing === "all" || student.standing === standing;
+    return matchesSearch && matchesSection && matchesStanding;
   });
+
+  const title = isAllSection ? "All-Section Student List" : "Assigned Student List";
 
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem]">
-        <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap">
-          <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-[800] tracking-[-0.03em]">Assigned Student Progress</h2>
-          <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] bg-[#e9f8ef] !text-[#03703c]">{filtered.length} students</span>
+        <div className="flex items-center justify-between gap-[22px] mb-[1.1rem] flex-wrap">
+          <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-[800] tracking-[-0.03em]">{title}</h2>
+          <div className="flex items-center justify-end gap-3 flex-wrap">
+            <button className="inline-flex items-center justify-center min-h-[38px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button" onClick={() => window.print()}>Print</button>
+            <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span>
+          </div>
         </div>
-        <input className="w-full min-h-[48px] px-3 py-2 mb-4 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" type="search" placeholder="Search name, student ID, or section" value={search} onChange={(event) => setSearch(event.target.value)} />
+
+        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(190px,1fr)_minmax(190px,1fr)] gap-4 mb-5 max-[900px]:grid-cols-1" aria-label="Student progress search filters">
+          <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="student-progress-search">Search<input className="w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-[700] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="student-progress-search" type="search" placeholder="Search name, student ID, section, or status" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+          <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Section<InlineSelect value={section} options={sectionOptions} placeholder="All" onChange={setSection} /></label>
+          <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Standing<InlineSelect value={standing} options={standingOptions} placeholder="All" onChange={setStanding} /></label>
+        </div>
+
         <div className="flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-lg">
-          {filtered.map((student: any, index) => (
-            <Link key={student.studentId ?? student.schoolId} href={`${basePath}/student-progress/detail?studentId=${student.studentId}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0">
-              <div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{index + 1}.</div>
-              <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={34} />
-              <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{student.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{student.section} - {student.schoolId}</small></span>
-              <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{student.pending} pending</span>
-              <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#e9f8ef] !text-[#03703c]">{student.approvedCases}/{student.cases} cases</span>
+          {filtered.map((student, index) => (
+            <Link key={student.studentId ?? student.schoolId ?? student.name} href={`${basePath}/student-progress/detail?studentId=${student.studentId ?? ""}`} className="grid grid-cols-[42px_44px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[34px_minmax(0,1fr)]">
+              <div className="grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900] max-[680px]:row-span-2">{index + 1}.</div>
+              <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={38} />
+              <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{student.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{student.section} - {student.schoolId || "No student ID"}</small></span>
+              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap max-[680px]:col-start-2 ${statusBadge(student.standing)}`}>{student.standing}</span>
             </Link>
           ))}
         </div>
-        {filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No assigned student progress found.</div>}
+        {filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No assigned students match the selected filters.</div>}
       </section>
     </main>
   );

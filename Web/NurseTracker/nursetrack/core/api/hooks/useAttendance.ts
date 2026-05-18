@@ -38,11 +38,9 @@ export const useAttendance = (studentId?: string) => {
   return useQuery({
     queryKey: ['attendance', studentId],
     queryFn: async () => {
-      if (!studentId) return [];
-      const { data } = await apiClient.get(`/duties/student/${studentId}`);
+      const { data } = await apiClient.get('/duties/student');
       return data.map(normalizeDuty);
     },
-    enabled: !!studentId,
   });
 };
 
@@ -50,21 +48,20 @@ export const useInstructorAttendance = (instructorId?: string) => {
   return useQuery({
     queryKey: ['attendance', 'instructor', instructorId],
     queryFn: async () => {
-      if (!instructorId) return [];
-      const { data } = await apiClient.get(`/duties/instructor/${instructorId}`);
+      const { data } = await apiClient.get('/duties/instructor');
       return data.map(normalizeDuty);
     },
-    enabled: !!instructorId,
   });
 };
 
-export const useAllAttendance = () => {
+export const useAllAttendance = (enabled = true, viewerId?: string) => {
   return useQuery({
-    queryKey: ['attendance', 'all'],
+    queryKey: ['attendance', 'all', viewerId],
     queryFn: async () => {
-      const { data } = await apiClient.get('/duties');
+      const { data } = await apiClient.get('/duties', { params: viewerId ? { viewerId } : undefined });
       return data.map(normalizeDuty);
     },
+    enabled,
   });
 };
 

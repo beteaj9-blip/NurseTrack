@@ -9,7 +9,9 @@ import edu.cit.nursetracker.duty.DutyRepository;
 import edu.cit.nursetracker.schedule.Schedule;
 import edu.cit.nursetracker.schedule.ScheduleRepository;
 import edu.cit.nursetracker.user.User;
+import edu.cit.nursetracker.user.JwtService;
 import edu.cit.nursetracker.user.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -41,6 +43,7 @@ public class StudentReportController {
     private final ClinicalCaseRepository caseRepository;
     private final DutyRepository dutyRepository;
     private final StudentAppealRepository appealRepository;
+    private final JwtService jwtService;
 
     @GetMapping("/student/{studentId}")
     public ResponseEntity<Map<String, Object>> getStudentReport(
@@ -115,6 +118,19 @@ public class StudentReportController {
         return ResponseEntity.ok(report);
     }
 
+    @GetMapping("/student")
+    public ResponseEntity<Map<String, Object>> getCurrentStudentReport(
+            HttpServletRequest request,
+            @RequestParam(required = false, defaultValue = "2025-06-01") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false, defaultValue = "2026-05-31") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProfile,
+            @RequestParam(required = false, defaultValue = "true") boolean includeSchedules,
+            @RequestParam(required = false, defaultValue = "true") boolean includeCases,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProgress,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAppeals) {
+        return getStudentReport(jwtService.getUserId(request), startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals);
+    }
+
     @GetMapping("/student/{studentId}/export")
     public ResponseEntity<byte[]> exportStudentReport(
             @PathVariable Long studentId,
@@ -132,6 +148,33 @@ public class StudentReportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=student-report-" + studentId + ".pdf")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(bytes);
+    }
+
+    @GetMapping("/student/export")
+    public ResponseEntity<byte[]> exportCurrentStudentReport(
+            HttpServletRequest request,
+            @RequestParam(required = false, defaultValue = "2025-06-01") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false, defaultValue = "2026-05-31") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProfile,
+            @RequestParam(required = false, defaultValue = "true") boolean includeSchedules,
+            @RequestParam(required = false, defaultValue = "true") boolean includeCases,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProgress,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAppeals) {
+        return exportStudentReport(jwtService.getUserId(request), startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals);
+    }
+
+    @GetMapping("/student/export-by-school-id")
+    public ResponseEntity<byte[]> exportStudentReportBySchoolId(
+            @RequestParam String schoolId,
+            @RequestParam(required = false, defaultValue = "2025-06-01") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false, defaultValue = "2026-05-31") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProfile,
+            @RequestParam(required = false, defaultValue = "true") boolean includeSchedules,
+            @RequestParam(required = false, defaultValue = "true") boolean includeCases,
+            @RequestParam(required = false, defaultValue = "true") boolean includeProgress,
+            @RequestParam(required = false, defaultValue = "true") boolean includeAppeals) {
+        User student = userRepository.findBySchoolId(schoolId).orElseThrow(() -> new RuntimeException("Student not found."));
+        return exportStudentReport(student.getId(), startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals);
     }
 
     private byte[] buildPdfReport(Map<String, Object> report) {

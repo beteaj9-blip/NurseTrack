@@ -1,5 +1,5 @@
-import { StudentProgressContent } from "@/components/features/StudentProgressContent";
+import { InstructorStudentProgressContent } from "@/components/features/InstructorStudentProgressContent";
 
 export default function Page() {
-  return <StudentProgressContent basePath="/chair" />;
+  return <InstructorStudentProgressContent basePath="/chair" />;
 }

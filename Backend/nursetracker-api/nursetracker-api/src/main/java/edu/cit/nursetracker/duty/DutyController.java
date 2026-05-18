@@ -1,6 +1,8 @@
 package edu.cit.nursetracker.duty;
 
 import lombok.RequiredArgsConstructor;
+import edu.cit.nursetracker.user.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +15,7 @@ import java.util.List;
 public class DutyController {
 
     private final DutyService dutyService;
+    private final JwtService jwtService;
 
     @PostMapping("/time-in")
     public ResponseEntity<DutyRecord> timeIn(@RequestBody DutyRecord dutyRecord) {
@@ -39,13 +42,24 @@ public class DutyController {
         return ResponseEntity.ok(dutyService.getStudentDuties(studentId));
     }
 
+    @GetMapping("/student")
+    public ResponseEntity<List<DutyRecord>> getCurrentStudentDuties(HttpServletRequest request) {
+        return ResponseEntity.ok(dutyService.getStudentDuties(jwtService.getUserId(request)));
+    }
+
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<List<DutyRecord>> getInstructorValidations(@PathVariable Long instructorId) {
         return ResponseEntity.ok(dutyService.getInstructorValidations(instructorId));
     }
 
+    @GetMapping("/instructor")
+    public ResponseEntity<List<DutyRecord>> getCurrentInstructorValidations(HttpServletRequest request) {
+        return ResponseEntity.ok(dutyService.getInstructorValidations(jwtService.getUserId(request)));
+    }
+
     @GetMapping
-    public ResponseEntity<List<DutyRecord>> getAllDuties() {
+    public ResponseEntity<List<DutyRecord>> getAllDuties(@RequestParam(required = false) Long viewerId) {
+        if (viewerId != null) return ResponseEntity.ok(dutyService.getDutiesVisibleTo(viewerId));
         return ResponseEntity.ok(dutyService.getAllDuties());
     }
 

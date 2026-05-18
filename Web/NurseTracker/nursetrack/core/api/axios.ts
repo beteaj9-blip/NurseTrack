@@ -1,14 +1,26 @@
 import axios from 'axios';
 
-// Points to the real backend nursetracker-api running on port 8080
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
-
 export const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: '/api',
   withCredentials: true,
+});
+
+apiClient.interceptors.request.use((config) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    if (typeof config.headers?.delete === 'function') {
+      config.headers.delete('Content-Type');
+    } else if (config.headers) {
+      delete config.headers['Content-Type'];
+    }
+  } else if (config.headers) {
+    config.headers['Content-Type'] = 'application/json';
+  }
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem('nursetrack-auth');
+    const token = raw ? JSON.parse(raw)?.state?.token : null;
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 // Response interceptor — log errors globally

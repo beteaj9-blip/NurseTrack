@@ -27,7 +27,7 @@ export default function AddClinicalCaseContent() {
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: schedules = [] } = useSchedules(userId);
+  const { data: schedules = [] } = useSchedules(undefined, user?.role);
   const { data: hospitals = [] } = useHospitals();
   const { data: instructors = [] } = useInstructors();
   const { data: categories = [] } = useQuery<CaseCategoryOption[]>({

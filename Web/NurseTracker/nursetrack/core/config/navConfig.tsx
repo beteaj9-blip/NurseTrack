@@ -29,6 +29,12 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
     { label: "Manual Backup", topbarTitle: "Manual Attendance Review", href: "/admin/manual-backup", icon: ManualBackupIcon },
     { label: "Student Progress", href: "/admin/student-progress", icon: StudentProgressIcon },
     { label: "Extension Days", href: "/admin/extension-days", icon: ExtensionDaysIcon },
+    { label: "Clearance", href: "/admin/clearance", icon: ClearanceIcon },
+    { label: "Clinical Cases", href: "/admin/clinical-cases", icon: ClinicalCasesIcon },
+    { label: "CI Recommendations", href: "/admin/ci-recommendations", icon: CiRecommendationsIcon },
+    { label: "Overtime Details", href: "/admin/overtime-details", icon: OvertimeDetailsIcon },
+    { label: "Reports", href: "/admin/reports", icon: ReportsIcon },
+    { label: "Audit Logs", href: "/admin/audit-logs", icon: SectionImportIcon },
   ],
   chair: [
     { label: "Dashboard", href: "/chair/dashboard", icon: DashboardIcon },
@@ -92,11 +98,11 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
 };
 
 export const roleUserContexts: Record<string, any> = {
-  admin: { role: "Admin", userName: "Admin Santos", userContext: "System Admin", avatarInitials: "AS" },
-  chair: { role: "Chair", userName: "Carlos Reyes", userContext: "Chair", avatarInitials: "CR" },
+  admin: { role: "Admin", userName: "Admin", userContext: "System Admin", avatarInitials: "AD" },
+  chair: { role: "Chair", userName: "Chair", userContext: "Chair", avatarInitials: "CH" },
   assistant: { role: "Assistant", userName: "Assistant", userContext: "Chair Assistant", avatarInitials: "CA" },
-  coordinator: { role: "Coordinator", userName: "Ana Santos", userContext: "Coordinator", avatarInitials: "CS" },
-  "clinical-instructor": { role: "Clinical Instructor", userName: "Patricia Reyes", userContext: "Clinical Instructor", avatarInitials: "PR" },
+  coordinator: { role: "Coordinator", userName: "Coordinator", userContext: "Coordinator", avatarInitials: "CO" },
+  "clinical-instructor": { role: "Clinical Instructor", userName: "Clinical Instructor", userContext: "Clinical Instructor", avatarInitials: "CI" },
   "enrollment-team": { role: "Enrollment Team", userName: "Enrollment Office", userContext: "CIT-U Nursing", avatarInitials: "ET" },
   "nursing-student": { role: "Nursing Student", userName: "Student", userContext: "Nursing Student", avatarInitials: "NS" },
 };

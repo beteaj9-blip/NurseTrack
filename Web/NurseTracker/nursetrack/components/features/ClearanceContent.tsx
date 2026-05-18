@@ -6,13 +6,13 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function statusLabel(status?: string) {
-  if (status === "APPROVED") return "Approved";
+  if (status === "CLEARED" || status === "APPROVED") return "Approved";
   if (status === "IN_REVIEW") return "Submitted";
   return "Not submitted";
 }
 
 function statusClass(status?: string) {
-  if (status === "APPROVED") return "bg-[#e9f8ef] !text-[#03703c]";
+  if (status === "CLEARED" || status === "APPROVED") return "bg-[#e9f8ef] !text-[#03703c]";
   if (status === "IN_REVIEW") return "bg-[#fff8e1] !text-[#6c4c00]";
   return "bg-[#fef2f2] !text-[#991b1b]";
 }
@@ -24,7 +24,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const sections = Array.from(new Set((clearances as any[]).map((c) => c.studentSection).filter(Boolean))).sort();
   const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section: any) => ({ value: section, label: section }))];
-  const statusOptions = [{ value: "all", label: "All statuses" }, { value: "LOCKED", label: "Not submitted" }, { value: "IN_REVIEW", label: "Submitted" }, { value: "APPROVED", label: "Approved" }];
+  const statusOptions = [{ value: "all", label: "All statuses" }, { value: "LOCKED", label: "Not submitted" }, { value: "IN_REVIEW", label: "Submitted" }, { value: "CLEARED", label: "Approved" }];
   const filtered = (clearances as any[]).filter((c) => {
     const q = search.toLowerCase();
     const label = statusLabel(c.status);

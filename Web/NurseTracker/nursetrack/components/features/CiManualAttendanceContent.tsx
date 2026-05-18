@@ -85,6 +85,7 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
   const [clinicalSite, setClinicalSite] = useState("");
   const [instructorNote, setInstructorNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [hasLoadedEditRecord, setHasLoadedEditRecord] = useState(false);
 
   const selectedHospital = (hospitals as any[]).find((hospital: any) => hospital.name === clinicalSite);
   const allDutyAreas = useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
@@ -102,7 +103,7 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
   }, [dutyArea, dutyAreas]);
 
   React.useEffect(() => {
-    if (!isEditMode || addedStudents.length > 0) return;
+    if (!isEditMode || hasLoadedEditRecord) return;
     const manualRecords = (attendanceRecords as any[])
       .filter((record) => record.instructorFeedback)
       .sort((a, b) => Number(b.id ?? 0) - Number(a.id ?? 0));
@@ -130,7 +131,8 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
       checkIn: record.timeInLabel ? toTimeInput(record.timeInLabel) : shiftStart,
       checkOut: record.timeOutLabel ? toTimeInput(record.timeOutLabel) : shiftEnd,
     })));
-  }, [isEditMode, attendanceRecords, addedStudents.length, shiftEnd, shiftStart]);
+    setHasLoadedEditRecord(true);
+  }, [isEditMode, hasLoadedEditRecord, attendanceRecords, shiftEnd, shiftStart]);
 
   const assignedStudents = Object.values((schedules as any[]).reduce((acc: Record<string, AddedStudent>, schedule: any) => {
     const key = String(schedule.studentId ?? schedule.studentSchoolId ?? schedule.studentName);
@@ -344,8 +346,12 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
                 {/* Remove button */}
                 <button
                   type="button"
-                  onClick={() => removeStudent(st.id)}
-                  className="absolute top-5 right-5 w-[30px] h-[30px] flex items-center justify-center rounded-[6px] border border-[#fecaca] bg-white !text-[#ef4444] hover:bg-[#fef2f2] transition-colors !text-[1rem] !font-[900]"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    removeStudent(st.id);
+                  }}
+                  className="absolute top-5 right-5 z-10 w-[30px] h-[30px] flex items-center justify-center rounded-[6px] border border-[#fecaca] bg-white !text-[#ef4444] hover:bg-[#fef2f2] transition-colors !text-[1rem] !font-[900] cursor-pointer"
                   aria-label={`Remove ${st.name}`}
                 >
                   ×

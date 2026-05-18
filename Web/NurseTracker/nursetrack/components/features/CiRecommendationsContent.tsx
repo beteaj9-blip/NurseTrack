@@ -2,20 +2,24 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useInstructorAppeals } from "@/core/api/hooks/useStudentAppeals";
+import { useAllAppeals, useInstructorAppeals } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function statusClass(status?: string) {
   if (status === "ACCEPTED") return "bg-[#e9f8ef] !text-[#03703c]";
-  if (status === "REJECTED") return "bg-[#fef2f2] !text-[#991b1b]";
+  if (status === "RETURNED") return "bg-[#fef2f2] !text-[#991b1b]";
   return "bg-[#fff8e1] !text-[#6c4c00]";
 }
 
 export function CiRecommendationsContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const { data: appeals = [], isLoading } = useInstructorAppeals(user?.id != null ? String(user.id) : undefined);
+  const isChair = basePath === "/chair";
+  const { data: instructorAppeals = [], isLoading: isInstructorLoading } = useInstructorAppeals();
+  const { data: allAppeals = [], isLoading: isAllLoading } = useAllAppeals(isChair, isChair && user?.id != null ? String(user.id) : undefined);
+  const appeals = isChair ? allAppeals : instructorAppeals;
+  const isLoading = isChair ? isAllLoading : isInstructorLoading;
   const [search, setSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -23,7 +27,7 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
   const PER_PAGE = 10;
   const sections = Array.from(new Set((appeals as any[]).map((appeal: any) => appeal.sectionInfo).filter(Boolean))).sort() as string[];
   const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section) => ({ value: section, label: section }))];
-  const statusOptions = [{ value: "all", label: "All statuses" }, { value: "PENDING", label: "Pending review" }, { value: "ACCEPTED", label: "Accepted" }, { value: "REJECTED", label: "Rejected" }];
+  const statusOptions = [{ value: "all", label: "All statuses" }, { value: "PENDING", label: "Pending review" }, { value: "ACCEPTED", label: "Accepted" }, { value: "RETURNED", label: "Rejected" }];
   const filtered = (appeals as any[]).filter((appeal: any) => {
     const q = search.toLowerCase();
     return (!search || appeal.studentName.toLowerCase().includes(q) || appeal.schoolId.toLowerCase().includes(q) || appeal.sectionInfo.toLowerCase().includes(q) || appeal.title.toLowerCase().includes(q))
@@ -54,7 +58,7 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
               <div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
               <ProfileAvatar name={appeal.studentName} imageUrl={appeal.studentProfileImageUrl} size={34} />
               <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#0f172a] !text-[1rem] !font-[850] leading-[1.25]">{appeal.studentName}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{appeal.sectionInfo} - {appeal.schoolId}</small><small className="!text-[#475569] !text-[0.875rem] !font-[600] mt-[2px]">{appeal.title}</small></span>
-              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(appeal.status)}`}>{appeal.status}</span>
+              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(appeal.status)}`}>{appeal.status === "RETURNED" ? "REJECTED" : appeal.status}</span>
             </Link>
           ))}
         </div>

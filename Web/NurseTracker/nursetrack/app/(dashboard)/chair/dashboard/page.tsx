@@ -3,9 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { useOverallMetrics } from "@/core/api/hooks/useMetrics";
+import { useAllAppeals } from "@/core/api/hooks/useStudentAppeals";
+import { useAuthStore } from "@/core/store/authStore";
 
 export default function ChairDashboard() {
+  const user = useAuthStore((state) => state.user);
   const { data: metrics, isLoading } = useOverallMetrics();
+  const { data: appeals = [], isLoading: isAppealsLoading } = useAllAppeals(true, user?.id != null ? String(user.id) : undefined);
+  const pendingAppeals = (appeals as any[]).filter((appeal) => appeal.status === "PENDING").length;
+  const chairName = user?.fullName?.split(" ").filter(Boolean).slice(-1)[0] || user?.fullName || "Chair";
   return (
     <main className="p-[clamp(24px,4vw,42px)] content-start">
 
@@ -13,7 +19,7 @@ export default function ChairDashboard() {
       <section className="flex items-center justify-between gap-7 p-[clamp(24px,4vw,34px)] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] animate-[fadeUp_520ms_ease_both]">
         <div>
           <h2 className="mb-2 !text-[clamp(1.55rem,3vw,2.15rem)] !font-[800] !text-[#111827]">
-            Good Evening, Reyes.
+            Good Evening, {chairName}.
           </h2>
           <p className="max-w-[650px] mb-0 text-[#64748b] font-semibold leading-relaxed">
             Welcome back! Here is an overview of today's active schedules and pending appeals.
@@ -50,12 +56,12 @@ export default function ChairDashboard() {
             </div>
 
             <h3 className="m-0 mb-1 !text-[1.12rem] !font-[800] !text-[#111827]">Appeal Recommendations</h3>
-            <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">3 student appeals are waiting for Chair approval</p>
+            <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{isAppealsLoading ? "Loading" : pendingAppeals} student appeals are waiting for Chair approval</p>
 
             <div className="w-full h-[6px] bg-[#dadde0] rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: '60%' }}></div>
+              <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: `${Math.min(100, pendingAppeals * 20)}%` }}></div>
             </div>
-            <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">3</strong>
+            <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{isAppealsLoading ? "..." : pendingAppeals}</strong>
           </div>
         </article>
 
@@ -85,7 +91,7 @@ export default function ChairDashboard() {
               <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: '72%' }}></div>
             </div>
             <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">
-              {isLoading ? "..." : metrics?.totalSchedules || 5}
+              {isLoading ? "..." : metrics?.totalSchedules || 0}
             </strong>
           </div>
         </article>

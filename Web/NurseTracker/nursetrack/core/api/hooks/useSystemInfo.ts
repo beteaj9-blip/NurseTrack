@@ -5,8 +5,6 @@ export type SystemInfo = {
   id: number;
   version: string;
   lastUpdated: string;
-  schoolYear?: string;
-  semester?: string;
 };
 
 export const useSystemInfo = () => {

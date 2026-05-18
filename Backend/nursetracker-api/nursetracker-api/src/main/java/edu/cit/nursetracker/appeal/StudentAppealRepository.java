@@ -7,6 +7,7 @@ import java.util.List;
 
 @Repository
 public interface StudentAppealRepository extends JpaRepository<StudentAppeal, Long> {
+    List<StudentAppeal> findAllByOrderByCreatedAtDesc();
     List<StudentAppeal> findByStudentIdOrderByCreatedAtDesc(Long studentId);
     List<StudentAppeal> findByInstructorIdOrderByCreatedAtDesc(Long instructorId);
 }

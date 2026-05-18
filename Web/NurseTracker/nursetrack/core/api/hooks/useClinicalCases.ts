@@ -23,11 +23,9 @@ export const useStudentCases = (studentId?: string) => {
   return useQuery({
     queryKey: ['clinical-cases', 'student', studentId],
     queryFn: async () => {
-      if (!studentId) return [];
-      const { data } = await apiClient.get(`/cases/student/${studentId}`);
+      const { data } = await apiClient.get('/cases/student');
       return data.map(normalizeClinicalCase);
     },
-    enabled: !!studentId,
   });
 };
 
@@ -35,11 +33,9 @@ export const useStudentRequirementProgress = (studentId?: string) => {
   return useQuery({
     queryKey: ['clinical-cases', 'student', studentId, 'requirements'],
     queryFn: async () => {
-      if (!studentId) return [];
-      const { data } = await apiClient.get(`/cases/student/${studentId}/requirements`);
+      const { data } = await apiClient.get('/cases/student/requirements');
       return data;
     },
-    enabled: !!studentId,
   });
 };
 
@@ -59,13 +55,9 @@ export const usePendingCases = (instructorId?: string) => {
   return useQuery({
     queryKey: ['clinical-cases', 'instructor', instructorId, 'pending'],
     queryFn: async () => {
-      if (!instructorId) return [];
-      // The new backend doesn't have a /pending filter, so we'll fetch all and filter client-side if needed, 
-      // or assume the backend handles it. For now let's just fetch all instructor cases.
-      const { data } = await apiClient.get(`/cases/instructor/${instructorId}`);
+      const { data } = await apiClient.get('/cases/instructor');
       return data.map(normalizeClinicalCase);
     },
-    enabled: !!instructorId,
   });
 };
 
@@ -73,11 +65,20 @@ export const useInstructorCases = (instructorId?: string) => {
   return useQuery({
     queryKey: ['clinical-cases', 'instructor', instructorId],
     queryFn: async () => {
-      if (!instructorId) return [];
-      const { data } = await apiClient.get(`/cases/instructor/${instructorId}`);
+      const { data } = await apiClient.get('/cases/instructor');
       return data.map(normalizeClinicalCase);
     },
-    enabled: !!instructorId,
+  });
+};
+
+export const useAllClinicalCases = (enabled = true, viewerId?: string) => {
+  return useQuery({
+    queryKey: ['clinical-cases', 'all', viewerId],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/cases', { params: viewerId ? { viewerId } : undefined });
+      return data.map(normalizeClinicalCase);
+    },
+    enabled,
   });
 };
 

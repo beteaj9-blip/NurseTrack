@@ -17,21 +17,26 @@ function normalizeExtensionDay(record: any) {
 export const useInstructorExtensionDays = (instructorId?: string, studentId?: string) => useQuery({
   queryKey: ['extension-days', 'instructor', instructorId, studentId],
   queryFn: async () => {
-    if (!instructorId) return [];
-    const { data } = await apiClient.get(`/extension-days/instructor/${instructorId}`, { params: studentId ? { studentId } : undefined });
+    const { data } = await apiClient.get('/extension-days/instructor');
     return data.map(normalizeExtensionDay);
   },
-  enabled: !!instructorId,
 });
 
 export const useStudentExtensionDays = (studentId?: string) => useQuery({
   queryKey: ['extension-days', 'student', studentId],
   queryFn: async () => {
-    if (!studentId) return [];
-    const { data } = await apiClient.get(`/extension-days/student/${studentId}`);
+    const { data } = await apiClient.get('/extension-days/student');
     return data.map(normalizeExtensionDay);
   },
-  enabled: !!studentId,
+});
+
+export const useAllExtensionDays = (studentId?: string, enabled = true, viewerId?: string) => useQuery({
+  queryKey: ['extension-days', 'all', studentId, viewerId],
+  queryFn: async () => {
+    const { data } = await apiClient.get('/extension-days', { params: { ...(studentId ? { studentId } : {}), ...(viewerId ? { viewerId } : {}) } });
+    return data.map(normalizeExtensionDay);
+  },
+  enabled,
 });
 
 export const useCreateExtensionDay = (instructorId?: string, studentId?: string) => {
@@ -39,6 +44,7 @@ export const useCreateExtensionDay = (instructorId?: string, studentId?: string)
   return useMutation({
     mutationFn: async (payload: any) => (await apiClient.post('/extension-days', payload)).data,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['extension-days'] });
       queryClient.invalidateQueries({ queryKey: ['extension-days', 'instructor', instructorId, studentId] });
       queryClient.invalidateQueries({ queryKey: ['extension-days', 'instructor', instructorId] });
     },
@@ -50,6 +56,7 @@ export const useUpdateExtensionDay = (instructorId?: string, studentId?: string)
   return useMutation({
     mutationFn: async ({ id, ...payload }: any) => (await apiClient.put(`/extension-days/${id}`, payload)).data,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['extension-days'] });
       queryClient.invalidateQueries({ queryKey: ['extension-days', 'instructor', instructorId, studentId] });
       queryClient.invalidateQueries({ queryKey: ['extension-days', 'instructor', instructorId] });
     },
@@ -61,6 +68,7 @@ export const useCancelExtensionDay = (instructorId?: string, studentId?: string)
   return useMutation({
     mutationFn: async (id: string) => (await apiClient.put(`/extension-days/${id}/cancel`)).data,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['extension-days'] });
       queryClient.invalidateQueries({ queryKey: ['extension-days', 'instructor', instructorId, studentId] });
       queryClient.invalidateQueries({ queryKey: ['extension-days', 'instructor', instructorId] });
     },

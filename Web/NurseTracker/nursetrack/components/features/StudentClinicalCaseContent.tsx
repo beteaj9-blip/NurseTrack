@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { useStudentCases } from "@/core/api/hooks/useClinicalCases";
 import { useStudentClearance, useSubmitClearance } from "@/core/api/hooks/useClearance";
-import { useSystemInfo } from "@/core/api/hooks/useSystemInfo";
+import { useActiveAcademicTerm } from "@/core/api/hooks/useAcademicTerms";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -91,11 +91,10 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
 export default function StudentClinicalCaseContent() {
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
-  const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: cases, isLoading } = useStudentCases(userId);
-  const { data: systemInfo } = useSystemInfo();
-  const { data: clearance } = useStudentClearance(userId);
-  const submitClearance = useSubmitClearance(userId);
+  const { data: cases, isLoading } = useStudentCases();
+  const { data: activeTerm } = useActiveAcademicTerm();
+  const { data: clearance } = useStudentClearance();
+  const submitClearance = useSubmitClearance();
   const pendingCount = cases?.filter((c: any) => c.status === "PENDING")?.length ?? 0;
   const clearanceStatus = clearance?.status ?? "LOCKED";
   const clearanceLabel = clearanceStatus === "IN_REVIEW" ? "In review" : clearanceStatus === "CLEARED" ? "Cleared" : "Clearance locked";
@@ -158,11 +157,11 @@ export default function StudentClinicalCaseContent() {
         <div className="grid grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_auto_auto] gap-4 items-end p-4 mb-6 rounded-lg border border-[#e2e8f0] bg-[linear-gradient(135deg,#fff9db,#ffffff_56%)] max-[980px]:grid-cols-1">
           <label className="grid gap-2 text-[#344054] text-[0.85rem] font-[800]">
             School Year
-            <InlineSelect value={systemInfo?.schoolYear ?? ""} options={systemInfo?.schoolYear ? [{ value: systemInfo.schoolYear, label: systemInfo.schoolYear }] : []} placeholder="School year" onChange={() => {}} />
+            <InlineSelect value={activeTerm?.schoolYear ?? ""} options={activeTerm?.schoolYear ? [{ value: activeTerm.schoolYear, label: activeTerm.schoolYear }] : []} placeholder="School year" onChange={() => {}} />
           </label>
           <label className="grid gap-2 text-[#344054] text-[0.85rem] font-[800]">
             Semester
-            <InlineSelect value={systemInfo?.semester ?? ""} options={systemInfo?.semester ? [{ value: systemInfo.semester, label: systemInfo.semester }] : []} placeholder="Semester" onChange={() => {}} />
+            <InlineSelect value={activeTerm?.semester ?? ""} options={activeTerm?.semester ? [{ value: activeTerm.semester, label: activeTerm.semester }] : []} placeholder="Semester" onChange={() => {}} />
           </label>
           <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
           <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer" type="button" onClick={() => window.print()}>Print Clearance</button>

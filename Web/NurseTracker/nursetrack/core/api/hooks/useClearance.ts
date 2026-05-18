@@ -24,11 +24,9 @@ export const useStudentClearance = (studentId?: string) => {
   return useQuery({
     queryKey: ['student-clearance', studentId],
     queryFn: async () => {
-      if (!studentId) return null;
-      const { data } = await apiClient.get(`/clearances/student/${studentId}`);
+      const { data } = await apiClient.get('/clearances/student');
       return normalizeClearance(data);
     },
-    enabled: !!studentId,
   });
 };
 
@@ -36,12 +34,25 @@ export const useSubmitClearance = (studentId?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      if (!studentId) throw new Error('Missing student id');
-      const { data } = await apiClient.post(`/clearances/student/${studentId}/submit`);
+      const { data } = await apiClient.post('/clearances/student/submit');
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-clearance', studentId] });
+    },
+  });
+};
+
+export const useUpdateClearanceStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clearanceId, status }: { clearanceId: string; status: string }) => {
+      const { data } = await apiClient.put(`/clearances/${clearanceId}/status`, null, { params: { status } });
+      return normalizeClearance(data);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['clearances'] });
+      queryClient.invalidateQueries({ queryKey: ['student-clearance', data.studentId != null ? String(data.studentId) : undefined] });
     },
   });
 };

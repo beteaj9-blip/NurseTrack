@@ -1,37 +1,63 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import { useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useAllAttendance, useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useAllExtensionDays, useInstructorExtensionDays } from "@/core/api/hooks/useExtensionDays";
+import { useUsers } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function ExtensionDaysContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const { data: attendance = [], isLoading } = useInstructorAttendance(user?.id != null ? String(user.id) : undefined);
+  const isChair = basePath === "/chair";
+  const isAdmin = basePath === "/admin";
+  const isAllSection = isAdmin || isChair;
+  const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
+  const { data: studentUsers = [], isLoading: isStudentsLoading } = useUsers("STUDENT", isAllSection ? viewerId : undefined, isAllSection);
+  const { data: instructorAttendance = [], isLoading: isInstructorLoading } = useInstructorAttendance(!isChair && user?.id != null ? String(user.id) : undefined);
+  const { data: allAttendance = [], isLoading: isAllLoading } = useAllAttendance(isAllSection, viewerId);
+  const { data: instructorExtensionDays = [], isLoading: isInstructorExtensionLoading } = useInstructorExtensionDays(!isAllSection && user?.id != null ? String(user.id) : undefined);
+  const { data: allExtensionDays = [], isLoading: isAllExtensionLoading } = useAllExtensionDays(undefined, isAllSection, viewerId);
+  const attendance = isAllSection ? allAttendance : instructorAttendance;
+  const extensionDays = isAllSection ? allExtensionDays : instructorExtensionDays;
+  const isLoading = isAllSection ? isAllLoading || isAllExtensionLoading || isStudentsLoading : isInstructorLoading || isInstructorExtensionLoading;
   const [search, setSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const PER_PAGE = 10;
-  const students = Object.values((attendance as any[]).reduce((acc: Record<string, any>, record: any) => {
-    const key = String(record.studentId ?? record.studentSchoolId ?? record.studentName);
+  const students = Object.values([...(studentUsers as any[]), ...(attendance as any[]), ...(extensionDays as any[])].reduce((acc: Record<string, any>, record: any) => {
+    const isUser = record.role === "STUDENT" || record.fullName;
+    const key = isUser
+      ? String(record.id ?? record.schoolId ?? record.fullName)
+      : String(record.studentId ?? record.studentSchoolId ?? record.studentName);
+    if (!key || key === "undefined") return acc;
     const rejectedCount = record.status === "REJECTED" ? 1 : 0;
-    const current = acc[key] ?? { studentId: record.studentId, id: record.studentSchoolId, name: record.studentName || "Nursing Student", profileImageUrl: record.studentProfileImageUrl, section: record.studentSection || "Nursing Student", rejected: 0 };
+    const activeExtensionCount = record.days && record.status === "ACTIVE" ? 1 : 0;
+    const current = acc[key] ?? { studentId: isUser ? record.id : record.studentId, id: isUser ? record.schoolId : record.studentSchoolId, name: record.fullName || record.studentName || "Nursing Student", profileImageUrl: record.profileImageUrl ?? record.studentProfileImageUrl, section: record.sectionInfo || record.studentSection || "No Section", rejected: 0, activeExtensions: 0 };
+    if (isUser) {
+      current.studentId = record.id;
+      current.id = record.schoolId;
+      current.name = record.fullName || current.name;
+      current.profileImageUrl = record.profileImageUrl || current.profileImageUrl;
+      current.section = record.sectionInfo || current.section;
+    }
     current.rejected += rejectedCount;
+    current.activeExtensions += activeExtensionCount;
     acc[key] = current;
     return acc;
   }, {})).map((student: any) => ({
     ...student,
-    status: student.rejected > 0 ? "Needs action" : "On track",
-    statusClass: student.rejected > 0 ? "status-rejected" : "status-verified",
+    status: student.rejected > 0 || student.activeExtensions > 0 ? "Needs action" : "On track",
+    statusClass: student.rejected > 0 || student.activeExtensions > 0 ? "status-rejected" : "status-verified",
   }));
   const sections = Array.from(new Set(students.map((student: any) => student.section).filter(Boolean))).sort() as string[];
   const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section) => ({ value: section, label: section }))];
   const standingOptions = ["all", "In progress", "On track", "Needs action", "Completed"].map((standing) => ({ value: standing, label: standing === "all" ? "All standings" : standing }));
   const filtered = students.filter(s => {
     const q = search.toLowerCase();
-    return (!search || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.section.toLowerCase().includes(q) || s.status.toLowerCase().includes(q))
+    return (!search || s.name.toLowerCase().includes(q) || String(s.id ?? "").toLowerCase().includes(q) || s.section.toLowerCase().includes(q) || s.status.toLowerCase().includes(q))
       && (sectionFilter === "all" || s.section === sectionFilter)
       && (statusFilter === "all" || s.status === statusFilter);
   });

@@ -5,11 +5,10 @@ export const useNotifications = (userId?: string, enabled = true) => {
   return useQuery({
     queryKey: ['notifications', userId],
     queryFn: async () => {
-      if (!userId) return [];
-      const { data } = await apiClient.get(`/notifications/user/${userId}`);
+      const { data } = await apiClient.get('/notifications/me');
       return data;
     },
-    enabled: enabled && !!userId,
+    enabled,
   });
 };
 
@@ -43,8 +42,7 @@ export const useMarkAllNotificationsRead = (userId?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      if (!userId) return;
-      await apiClient.put(`/notifications/user/${userId}/read-all`);
+      await apiClient.put('/notifications/me/read-all');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications', userId] });

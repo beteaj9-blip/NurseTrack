@@ -19,11 +19,9 @@ export const useStudentAppeals = (studentId?: string) => {
   return useQuery({
     queryKey: ['student-appeals', studentId],
     queryFn: async () => {
-      if (!studentId) return [];
-      const { data } = await apiClient.get(`/appeals/student/${studentId}`);
+      const { data } = await apiClient.get('/appeals/student');
       return data.map(normalizeAppeal);
     },
-    enabled: !!studentId,
   });
 };
 
@@ -31,11 +29,20 @@ export const useInstructorAppeals = (instructorId?: string) => {
   return useQuery({
     queryKey: ['instructor-appeals', instructorId],
     queryFn: async () => {
-      if (!instructorId) return [];
-      const { data } = await apiClient.get(`/appeals/instructor/${instructorId}`);
+      const { data } = await apiClient.get('/appeals/instructor');
       return data.map(normalizeAppeal);
     },
-    enabled: !!instructorId,
+  });
+};
+
+export const useAllAppeals = (enabled = true, viewerId?: string) => {
+  return useQuery({
+    queryKey: ['appeals', 'all', viewerId],
+    queryFn: async () => {
+      const { data } = await apiClient.get('/appeals');
+      return data.map(normalizeAppeal);
+    },
+    enabled,
   });
 };
 
@@ -98,6 +105,8 @@ export const useUpdateAppealStatus = (instructorId?: string) => {
       return normalizeAppeal(data);
     },
     onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['instructor-appeals'] });
+      queryClient.invalidateQueries({ queryKey: ['appeals'] });
       queryClient.invalidateQueries({ queryKey: ['instructor-appeals', instructorId] });
       queryClient.invalidateQueries({ queryKey: ['student-appeal', variables.appealId] });
       queryClient.invalidateQueries({ queryKey: ['student-appeals', data.studentId != null ? String(data.studentId) : undefined] });

@@ -62,6 +62,53 @@
   input[type="search"]::-webkit-search-cancel-button:hover {
     opacity: 1;
   }
+
+  .nurse-sidebar-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #FFCF01 #681920;
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar {
+    width: 9px !important;
+    background: #681920 !important;
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-track {
+    background: #681920 !important;
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-track-piece {
+    background: #681920 !important;
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: #FFCF01 !important;
+    border-radius: 999px !important;
+    border: 2px solid #681920 !important;
+    min-height: 42px;
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-corner {
+    background: #681920 !important;
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-button:single-button:vertical:decrement,
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-button:single-button:vertical:increment {
+    display: block;
+    height: 10px;
+    background-color: #681920 !important;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 7px 7px;
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-button:single-button:vertical:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 2 1 7h8z' fill='%23FFCF01'/%3E%3C/svg%3E");
+  }
+
+  .nurse-sidebar-scrollbar::-webkit-scrollbar-button:single-button:vertical:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 3h8L5 8z' fill='%23FFCF01'/%3E%3C/svg%3E");
+  }
 }
 
 

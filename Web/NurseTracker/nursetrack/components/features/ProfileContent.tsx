@@ -6,6 +6,8 @@ import { useUpdateUser } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 
+const withoutLetters = (value: string) => value.replace(/\p{L}/gu, "");
+
 interface ProfileUser {
   id?: number;
   name: string;
@@ -41,7 +43,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
   const handleReset = () => {
     setFullName(user.name);
     setEmail(user.email);
-    setMobile(user.mobile);
+                    setMobile(withoutLetters(user.mobile));
     setProfileImageUrl(user.profileImageUrl ?? "");
     setMessage({ text: "Review your information before saving.", type: "" });
   };
@@ -57,7 +59,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
       formData.append("file", file);
       const { data: uploaded } = await apiClient.post("/uploads/cloudinary", formData, { headers: { "Content-Type": "multipart/form-data" } });
       const nextUrl = uploaded.secure_url ?? uploaded.url ?? "";
-      const updatedUser = await updateUser.mutateAsync({ userId: user.id, updates: { profileImageUrl: nextUrl } });
+      const updatedUser = await updateUser.mutateAsync({ updates: { profileImageUrl: nextUrl } });
       setProfileImageUrl(nextUrl);
       login(updatedUser);
       if (!hasTextChanges) {
@@ -100,10 +102,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
 
     try {
       if (user.id != null) {
-        const updatedUser = await updateUser.mutateAsync({
-          userId: user.id,
-          updates: { fullName, email, mobileNumber: mobile, profileImageUrl },
-        });
+        const updatedUser = await updateUser.mutateAsync({ updates: { fullName, email, mobileNumber: mobile, profileImageUrl } });
         login(updatedUser);
       }
       setMessage({ text: "Review your information before saving.", type: "" });
@@ -244,7 +243,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 </div>
                 <div>
                   <label className={labelCls} htmlFor="mobileNumber">Mobile Number</label>
-                  <input id="mobileNumber" className={inputCls} type="tel" value={mobile} onChange={e => setMobile(e.target.value)} />
+                  <input id="mobileNumber" className={inputCls} type="tel" inputMode="tel" value={mobile} onChange={e => setMobile(withoutLetters(e.target.value))} />
                 </div>
               </div>
               <div className={`flex items-center px-4 py-3 rounded-lg text-[0.85rem] font-semibold mb-5 ${message.type === "is-success" ? "bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0]" : message.type === "is-error" ? "bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]" : "bg-[#f8fafc] text-[#64748b] border border-[#e2e8f0]"}`} role="status" aria-live="polite">
@@ -325,7 +324,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
                   <span className="text-[#111827] text-[0.85rem] font-bold">{user.role}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#64748b] text-[0.85rem] font-bold">Last login</span>
+                  <span className="text-[#64748b] text-[0.85rem] font-bold">Last updated</span>
                   <span className="text-[#111827] text-[0.85rem] font-bold">{user.lastLogin}</span>
                 </div>
                 <div className="mt-2 px-4 py-3 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-[#64748b] text-[0.85rem] font-semibold">

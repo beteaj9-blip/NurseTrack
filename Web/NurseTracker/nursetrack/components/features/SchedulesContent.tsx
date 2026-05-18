@@ -33,10 +33,29 @@ function buildCalendar(year: number, month: number) {
   return cells;
 }
 
+function getScheduleGroupKey(schedule: any) {
+  return [schedule.date, schedule.hospital, schedule.area, schedule.startTime, schedule.endTime, schedule.instructorId, schedule.studentSection].map((value) => value ?? "").join("|");
+}
+
+function groupSchedulesByDuty(records: any[]) {
+  const groups = new Map<string, any>();
+  records.forEach((schedule: any) => {
+    const key = getScheduleGroupKey(schedule);
+    const current = groups.get(key);
+    if (current) {
+      current.students.push(schedule);
+      return;
+    }
+    groups.set(key, { ...schedule, groupKey: key, students: [schedule] });
+  });
+  return Array.from(groups.values());
+}
+
 export function SchedulesContent({ basePath }: { basePath: string }) {
   const router = useRouter();
   const [viewMode, setViewMode] = React.useState<"calendar" | "list">("calendar");
   const canEdit = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator";
+  const usesChairScheduleView = basePath === "/admin" || basePath === "/chair";
 
   const today = new Date();
   const [calYear, setCalYear] = React.useState(today.getFullYear());
@@ -55,14 +74,16 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
     return records;
   }, [routeRole, schedules, user?.id]);
 
-  // Build a set of dates that have schedules: "YYYY-MM-DD" -> schedule
+  // Build a map of dates that have one or more duty groups.
   const scheduleMap = React.useMemo(() => {
-    const map: Record<string, any> = {};
-    visibleSchedules.forEach((s: any) => {
-      if (s.date) map[s.date] = s;
+    const map: Record<string, any[]> = {};
+    groupSchedulesByDuty(visibleSchedules).forEach((schedule: any) => {
+      if (!schedule.date) return;
+      map[schedule.date] = [...(map[schedule.date] ?? []), schedule];
     });
     return map;
   }, [visibleSchedules]);
+  const scheduleGroups = React.useMemo(() => groupSchedulesByDuty(visibleSchedules), [visibleSchedules]);
 
   const cells = buildCalendar(calYear, calMonth);
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -88,10 +109,10 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
             </div>
 
             <div className="flex items-center gap-4 flex-wrap ml-auto">
-              <div className="flex items-center gap-2">
+              {!usesChairScheduleView && <div className="flex items-center gap-2">
                 <button onClick={() => setViewMode("calendar")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border ${viewMode === "calendar" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>Calendar</button>
                 <button onClick={() => setViewMode("list")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border ${viewMode === "list" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>List</button>
-              </div>
+              </div>}
 
               {canEdit && (
                 <div className="flex items-center gap-2 flex-wrap">
@@ -131,13 +152,14 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                 {cells.map((cell, i) => {
                   const isOtherMonth = cell.month !== "cur";
                   const dateStr = `${cell.month === "prev" ? (calMonth === 0 ? calYear - 1 : calYear) : cell.month === "next" ? (calMonth === 11 ? calYear + 1 : calYear) : calYear}-${String(cell.month === "prev" ? (calMonth === 0 ? 12 : calMonth) : cell.month === "next" ? (calMonth === 11 ? 1 : calMonth + 2) : calMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
-                  const sched = scheduleMap[dateStr];
+                  const daySchedules = scheduleMap[dateStr] ?? [];
+                  const sched = daySchedules[0];
                   const isToday = dateStr === todayStr;
 
                   return (
                     <button
                       key={i} type="button"
-                      onClick={sched ? () => router.push(`${basePath}/schedules/day?schedule=${sched.id}`) : undefined}
+                      onClick={sched ? () => router.push(`${basePath}/schedules/day?date=${dateStr}&schedule=${sched.id}`) : undefined}
                       className={`relative flex flex-col min-h-[110px] overflow-hidden border rounded-lg p-3 text-left outline-none max-[980px]:min-h-[90px]
                         ${sched ? "cursor-pointer border-[#ffcf01]/82 bg-[linear-gradient(145deg,#fff8d9_0%,#fff3bc_58%,#fffdf4_100%)] shadow-[0_12px_30px_rgba(161,92,7,0.1)] transition-all hover:-translate-y-0.5 hover:border-[#8a252c]/34 hover:shadow-[0_16px_34px_rgba(32,33,36,0.11)] before:absolute before:inset-[0_auto_0_0] before:w-1 before:bg-[#ffcf01]" : "cursor-default border-[#e4e7ec]/95 bg-[#fcfcfd] shadow-[0_1px_2px_rgba(32,33,36,0.03)]"}
                         ${isToday && !sched ? "!border-[#8a252c]/50 !bg-[linear-gradient(135deg,#fff8d6_0%,#fafafb_100%)] !shadow-[0_12px_26px_rgba(138,37,44,0.08)]" : ""}
@@ -147,8 +169,8 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                       <span className={`inline-flex items-center justify-center w-fit min-w-[28px] min-h-[28px] rounded-lg !text-[0.76rem] !font-[900] uppercase
                         ${isToday ? "!bg-[#8A252C] !text-white" : sched ? "!bg-[#8a252c]/10 !text-[#8a252c]" : "!text-[#475467]"}
                       `}>{cell.day}</span>
-                       {sched && <strong className="block mt-[10px] !text-[#111827] !text-[0.88rem] leading-[1.25] !font-[850]">{sched.area}</strong>}
-                       {sched && <p className="m-[6px_0_0] !text-[0.76rem] leading-[1.4] !text-[#344054] !font-[800]">{sched.hospital}</p>}
+                       {sched && <strong className="block mt-[10px] !text-[#111827] !text-[0.88rem] leading-[1.25] !font-[850]">{daySchedules.length > 1 ? `${daySchedules.length} duties` : sched.area}</strong>}
+                       {sched && <p className="m-[6px_0_0] !text-[0.76rem] leading-[1.4] !text-[#344054] !font-[800]">{daySchedules.length > 1 ? "Multiple duty assignments" : sched.hospital}</p>}
                       {!sched && !isOtherMonth && <p className="m-[10px_0_0] !text-[0.76rem] leading-[1.4] !text-[#94a3b8] !font-[800]">No assigned duty</p>}
                        {isToday && <small className="inline-flex items-center justify-center w-fit mt-auto border border-[#8a252c]/18 rounded-full bg-white/78 !text-[#8a252c] !text-[0.76rem] !font-[900] px-[8px] py-[5px]">Today</small>}
                      </button>
@@ -161,8 +183,8 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
               {isLoading ? (
                 <div className="p-4 text-center text-[#64748b] !font-bold">Loading schedules...</div>
               ) : visibleSchedules.length > 0 ? (
-                visibleSchedules.map((item: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between gap-4 p-[1.1rem_1.25rem] border border-[#e2e8f0] rounded-lg bg-white shadow-sm hover:border-[#cbd5e1] transition-colors max-[600px]:flex-col max-[600px]:items-start">
+                scheduleGroups.map((item: any) => (
+                  <div key={item.groupKey} className="flex items-center justify-between gap-4 p-[1.1rem_1.25rem] border border-[#e2e8f0] rounded-lg bg-white shadow-sm hover:border-[#cbd5e1] transition-colors max-[600px]:flex-col max-[600px]:items-start">
                     <div>
                       <h3 className="m-0 mb-1 !text-[#1e293b] !text-[0.95rem] !font-[800]">{item.area} Rotation</h3>
                       <p className="m-0 !text-[#475569] !text-[0.85rem] !font-[600]">
@@ -171,7 +193,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="inline-flex items-center justify-center px-3 py-1 bg-[#fef3c7] !text-[#92400e] !text-[0.75rem] !font-[800] rounded-full whitespace-nowrap">{item.status ?? "Scheduled"}</span>
-                      <button type="button" onClick={() => router.push(`${basePath}/schedules/day?schedule=${item.id}`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap">View roster</button>
+                      <button type="button" onClick={() => router.push(`${basePath}/schedules/day?date=${item.date}&schedule=${item.id}`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap">View roster</button>
                     </div>
                   </div>
                 ))

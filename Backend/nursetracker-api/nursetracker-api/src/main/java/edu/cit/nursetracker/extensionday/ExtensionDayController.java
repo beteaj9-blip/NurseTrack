@@ -3,13 +3,17 @@ package edu.cit.nursetracker.extensionday;
 import edu.cit.nursetracker.notification.Notification;
 import edu.cit.nursetracker.notification.NotificationService;
 import edu.cit.nursetracker.notification.NotificationType;
+import edu.cit.nursetracker.user.JwtService;
 import edu.cit.nursetracker.user.User;
 import edu.cit.nursetracker.user.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/extension-days")
@@ -18,16 +22,36 @@ public class ExtensionDayController {
     private final ExtensionDayRepository extensionDayRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final JwtService jwtService;
+
+    @GetMapping
+    public ResponseEntity<List<ExtensionDay>> getAll(@RequestParam(required = false) Long studentId, @RequestParam(required = false) Long viewerId) {
+        if (viewerId != null) return ResponseEntity.ok(filterVisible(extensionDayRepository.findAllByOrderByCreatedAtDesc(), viewerId).stream()
+                .filter(record -> studentId == null || record.getStudent().getId().equals(studentId))
+                .toList());
+        if (studentId != null) return ResponseEntity.ok(extensionDayRepository.findByStudentIdOrderByCreatedAtDesc(studentId));
+        return ResponseEntity.ok(extensionDayRepository.findAllByOrderByCreatedAtDesc());
+    }
 
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<ExtensionDay>> getByStudent(@PathVariable Long studentId) {
         return ResponseEntity.ok(extensionDayRepository.findByStudentIdOrderByCreatedAtDesc(studentId));
     }
 
+    @GetMapping("/student")
+    public ResponseEntity<List<ExtensionDay>> getCurrentStudent(HttpServletRequest request) {
+        return ResponseEntity.ok(extensionDayRepository.findByStudentIdOrderByCreatedAtDesc(jwtService.getUserId(request)));
+    }
+
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<List<ExtensionDay>> getByInstructor(@PathVariable Long instructorId, @RequestParam(required = false) Long studentId) {
         if (studentId != null) return ResponseEntity.ok(extensionDayRepository.findByInstructorIdAndStudentIdOrderByCreatedAtDesc(instructorId, studentId));
         return ResponseEntity.ok(extensionDayRepository.findByInstructorIdOrderByCreatedAtDesc(instructorId));
+    }
+
+    @GetMapping("/instructor")
+    public ResponseEntity<List<ExtensionDay>> getCurrentInstructor(HttpServletRequest request, @RequestParam(required = false) Long studentId) {
+        return getByInstructor(jwtService.getUserId(request), studentId);
     }
 
     @PostMapping
@@ -75,5 +99,20 @@ public class ExtensionDayController {
                 .type(NotificationType.SCHEDULE_CHANGE)
                 .actionUrl("/nursing-student/student-progress")
                 .build());
+    }
+
+    private List<ExtensionDay> filterVisible(List<ExtensionDay> records, Long viewerId) {
+        Set<Integer> visibleLevels = userRepository.findById(viewerId).map(User::getAssignedLevels).orElse(Set.of());
+        if (visibleLevels.isEmpty()) return List.of();
+        return records.stream()
+                .filter(record -> intersects(record.getStudent().getAssignedLevels(), visibleLevels) || intersects(record.getInstructor().getAssignedLevels(), visibleLevels))
+                .toList();
+    }
+
+    private boolean intersects(Set<Integer> recordLevels, Set<Integer> visibleLevels) {
+        if (recordLevels == null || recordLevels.isEmpty()) return false;
+        Set<Integer> overlap = new HashSet<>(recordLevels);
+        overlap.retainAll(visibleLevels);
+        return !overlap.isEmpty();
     }
 }

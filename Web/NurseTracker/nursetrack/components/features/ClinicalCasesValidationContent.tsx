@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useClinicalCase, useInstructorCases, useReviewCase } from "@/core/api/hooks/useClinicalCases";
+import { useAllClinicalCases, useClinicalCase, useInstructorCases, useReviewCase } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
@@ -18,9 +18,13 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
   const searchParams = useSearchParams();
   const caseId = searchParams.get("caseId") ?? undefined;
   const user = useAuthStore((state) => state.user);
+  const isChair = basePath === "/chair";
   const { data: detailCase, isLoading: isDetailLoading } = useClinicalCase(caseId);
-  const { data: instructorCases = [], isLoading: isListLoading } = useInstructorCases(user?.id != null ? String(user.id) : undefined);
-  const listCase = (instructorCases as any[]).find((clinicalCase: any) => String(clinicalCase.id) === String(caseId));
+  const { data: instructorCases = [], isLoading: isInstructorListLoading } = useInstructorCases();
+  const { data: allCases = [], isLoading: isAllListLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
+  const listCases = isChair ? allCases : instructorCases;
+  const isListLoading = isChair ? isAllListLoading : isInstructorListLoading;
+  const listCase = (listCases as any[]).find((clinicalCase: any) => String(clinicalCase.id) === String(caseId));
   const clinicalCase = detailCase ?? listCase;
   const reviewCase = useReviewCase();
   const [comment, setComment] = useState("");

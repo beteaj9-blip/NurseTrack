@@ -35,7 +35,7 @@ export function Sidebar({ role, userName, userContext, avatarInitials, avatarIma
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-[100] w-[min(286px,86vw)] transform transition-transform duration-220 ease-in-out lg:sticky lg:top-0 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col gap-[22px] h-screen bg-[linear-gradient(135deg,rgba(255,207,1,0.08)_0_1px,transparent_1px_72px),linear-gradient(180deg,#982a32_0%,#8A252C_46%,#681920_100%)] bg-[length:72px_72px,100%_100%] bg-[#681920] text-white px-[22px] pt-[22px] pb-[28px] overflow-y-auto overflow-x-hidden`}
+      className={`fixed inset-y-0 left-0 z-[100] w-[min(286px,86vw)] transform transition-transform duration-220 ease-in-out lg:sticky lg:top-0 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col gap-[22px] h-screen bg-[linear-gradient(135deg,rgba(255,207,1,0.08)_0_1px,transparent_1px_72px),linear-gradient(180deg,#982a32_0%,#8A252C_46%,#681920_100%)] bg-[length:72px_72px,100%_100%] bg-[#681920] text-white px-[22px] pt-[22px] pb-[28px] overflow-hidden`}
       aria-label="Primary navigation"
     >
       {/* Brand */}
@@ -58,7 +58,7 @@ export function Sidebar({ role, userName, userContext, avatarInitials, avatarIma
       <div className="inline-flex items-center justify-center min-h-[38px] rounded-lg bg-[#FFCF01] text-[#332800] text-[0.84rem] font-bold shadow-[0_2px_4px_rgba(255,207,1,0.22)] px-3">{role}</div>
 
       {/* Nav links */}
-      <nav className="grid content-start gap-2 min-h-0 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-[#FFCF01]/[0.72] scrollbar-track-white/[0.08] [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-white/[0.08] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#FFCF01]/[0.72] [&::-webkit-scrollbar-thumb]:rounded-full">
+      <nav className="nurse-sidebar-scrollbar grid content-start gap-2 min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
         {navItems.map((item) => (
           <Link
             key={item.href}

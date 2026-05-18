@@ -7,6 +7,8 @@ import { useUpdateUser } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 
+const withoutLetters = (value: string) => value.replace(/\p{L}/gu, "");
+
 function getInitials(name?: string) {
   if (!name) return "?";
   return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
@@ -49,7 +51,7 @@ export function StudentProfileEditContent() {
       formData.append("file", file);
       const { data: uploaded } = await apiClient.post("/uploads/cloudinary", formData, { headers: { "Content-Type": "multipart/form-data" } });
       const nextUrl = uploaded.secure_url ?? uploaded.url ?? "";
-      const updatedUser = await updateUser.mutateAsync({ userId: user.id, updates: { profileImageUrl: nextUrl } });
+      const updatedUser = await updateUser.mutateAsync({ updates: { profileImageUrl: nextUrl } });
       setProfileImageUrl(nextUrl);
       login(updatedUser);
       showToast({ variant: "success", title: "Profile photo updated", message: "Your profile picture was saved." });
@@ -73,7 +75,6 @@ export function StudentProfileEditContent() {
 
     try {
       const updatedUser = await updateUser.mutateAsync({
-        userId: user.id,
         updates: {
           fullName: currentFullName,
           email: currentSchoolEmail,
@@ -174,7 +175,7 @@ export function StudentProfileEditContent() {
               </div>
               <div>
                 <label className={labelCls} htmlFor="mobileNumber">Mobile Number</label>
-                <input id="mobileNumber" className={inputCls} type="tel" value={currentMobileNumber} onChange={e => setMobileNumber(e.target.value)} />
+                <input id="mobileNumber" className={inputCls} type="tel" inputMode="tel" value={currentMobileNumber} onChange={e => setMobileNumber(withoutLetters(e.target.value))} />
               </div>
             </div>
 
