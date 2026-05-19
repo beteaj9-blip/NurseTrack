@@ -16,7 +16,15 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
     cache: "no-store",
   };
 
-  const response = await fetch(targetUrl, init);
+  let response: Response;
+  try {
+    response = await fetch(targetUrl, init);
+  } catch {
+    return Response.json(
+      { message: `Unable to reach backend API at ${BACKEND_API_URL}. Check BACKEND_API_URL and make sure the backend is running.` },
+      { status: 502 }
+    );
+  }
   const responseHeaders = new Headers(response.headers);
   responseHeaders.delete("content-encoding");
   responseHeaders.delete("transfer-encoding");

@@ -17,8 +17,12 @@ apiClient.interceptors.request.use((config) => {
   }
   if (typeof window !== 'undefined') {
     const raw = localStorage.getItem('nursetrack-auth');
-    const token = raw ? JSON.parse(raw)?.state?.token : null;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = raw ? JSON.parse(raw)?.state?.token : null;
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+    } catch {
+      localStorage.removeItem('nursetrack-auth');
+    }
   }
   return config;
 });

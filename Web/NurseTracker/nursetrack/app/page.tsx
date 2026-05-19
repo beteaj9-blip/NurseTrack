@@ -13,6 +13,20 @@ import { User, roleToBasePath } from "@/core/types/user";
 
 type LoginResponse = { user: User; token: string };
 
+function normalizeLoginResponse(raw: unknown): LoginResponse | null {
+  let parsed: unknown;
+  try {
+    parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return null;
+  }
+  const payload = parsed && typeof parsed === "object" && "data" in parsed ? (parsed as { data?: unknown }).data : parsed;
+  if (!payload || typeof payload !== "object") return null;
+  const value = payload as Partial<LoginResponse> & { accessToken?: string; jwt?: string };
+  const token = value.token ?? value.accessToken ?? value.jwt;
+  return value.user && token ? { user: value.user, token } : null;
+}
+
 export default function Login() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
@@ -38,13 +52,13 @@ export default function Login() {
       return;
     }
 
-    let data: LoginResponse;
+    let rawData: unknown;
     try {
       const response = await apiClient.post<LoginResponse>("/users/login", {
         userId,
         password,
       });
-      data = response.data;
+      rawData = response.data;
     } catch (error: any) {
       setIsError(true);
       if (error.response?.status === 401) {
@@ -57,7 +71,9 @@ export default function Login() {
     }
 
     try {
-      if (!data?.user || !data?.token) {
+      const data = normalizeLoginResponse(rawData);
+      if (!data) {
+        console.error("Unexpected login response", rawData);
         throw new Error("Login response is missing user or token.");
       }
       // Save user to global store (persisted in localStorage)
