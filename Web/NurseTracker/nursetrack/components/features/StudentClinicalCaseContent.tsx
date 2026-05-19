@@ -6,6 +6,7 @@ import { useActiveAcademicTerm } from "@/core/api/hooks/useAcademicTerms";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 const CASES_PER_PAGE = 5;
@@ -100,7 +101,7 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={7} className="p-4 text-center font-bold text-gray-500">Loading cases...</td></tr>
+              <tr><td colSpan={7}><LoadingState message="Loading cases..." className="p-4" /></td></tr>
             ) : pageCases.length > 0 ? (
               pageCases.map((clinicalCase: any) => (
                 <tr key={clinicalCase.id} className="border-b border-[#e2e8f0] last:border-b-0 hover:bg-[#fcfcfc] transition-colors">

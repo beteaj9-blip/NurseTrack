@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuditLogs } from "@/core/api/hooks/useAuditLogs";
 
 type AuditLog = {
@@ -117,7 +118,7 @@ export default function AuditLogsPage() {
 
         {totalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {page} of {totalPages}</span><button className={ghostBtn} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages}>Next</button></div>}
 
-        {filteredLogs.length === 0 && <div className="mt-[1rem] p-[1.1rem_1.25rem] border border-dashed border-[rgba(138,37,44,0.24)] rounded-[12px] bg-[#fffaf0] !text-[#8a252c] !font-[800]">{isLoading ? "Loading audit log entries..." : "No audit log entries match this view. New admin actions will appear here after they are saved."}</div>}
+        {filteredLogs.length === 0 && (isLoading ? <LoadingState message="Loading audit log entries..." className="mt-[1rem] rounded-[12px] border border-dashed border-[rgba(138,37,44,0.24)] bg-[#fffaf0]" /> : <div className="mt-[1rem] p-[1.1rem_1.25rem] border border-dashed border-[rgba(138,37,44,0.24)] rounded-[12px] bg-[#fffaf0] !text-[#8a252c] !font-[800]">No audit log entries match this view. New admin actions will appear here after they are saved.</div>)}
       </section>
     </main>
   );

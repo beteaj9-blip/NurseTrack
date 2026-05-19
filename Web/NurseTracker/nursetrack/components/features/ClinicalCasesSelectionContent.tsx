@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function formatDate(date?: string) {
@@ -98,7 +99,7 @@ export function ClinicalCasesSelectionContent({ basePath }: { basePath: string; 
               <div className="flex items-center gap-[0.75rem] p-[1rem] rounded-[8px] !text-[#1e293b] !font-[500] bg-[#f8fafc] border border-[#e2e8f0] mt-[1.2rem]" role="status" aria-live="polite">Select a clinical case to continue validation.</div>
             </>
           ) : (
-            <div className="border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">{isLoading ? "Loading clinical cases..." : "No clinical cases found for this student."}</div>
+            isLoading ? <LoadingState message="Loading clinical cases..." className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No clinical cases found for this student.</div>
           )}
         </article>
       </section>

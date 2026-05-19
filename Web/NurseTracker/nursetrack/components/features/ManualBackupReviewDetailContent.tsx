@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/core/api/axios";
 import { useAllAttendance } from "@/core/api/hooks/useAttendance";
 import { useAuthStore } from "@/core/store/authStore";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -73,7 +74,7 @@ export function ManualBackupReviewDetailContent({ basePath = "/chair" }: { baseP
   };
 
   if (isLoading) {
-    return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><section className="bg-white rounded-xl border border-[#e2e8f0] shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-6 !text-[#64748b] !font-bold">Loading manual attendance...</section></main>;
+    return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><LoadingState message="Loading manual attendance..." className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)]" /></main>;
   }
 
   if (!record) {

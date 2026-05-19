@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useAllAttendance } from "@/core/api/hooks/useAttendance";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 function overtimeHours(record: any) {
   return Math.max(Number(record.hours || 0) - 8, 0);
@@ -60,7 +61,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="bg-white rounded-xl border border-[#e2e8f0] shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-[1.6rem_1.75rem_1.75rem]">
-        {isLoading ? <div className="p-6 !text-[#64748b] !font-bold">Loading overtime records...</div> : first ? <div className="grid gap-5">
+        {isLoading ? <LoadingState message="Loading overtime records..." /> : first ? <div className="grid gap-5">
           <div className="grid grid-cols-4 gap-3 max-[980px]:grid-cols-2 max-[640px]:grid-cols-1">
             <Summary label="Name" value={first.studentName || "Nursing Student"} />
             <Summary label="Role" value="Student" />

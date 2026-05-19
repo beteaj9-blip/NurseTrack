@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAllAppeals, useInstructorAppeals } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function statusClass(status?: string) {
@@ -63,7 +64,7 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
           ))}
         </div>
         {totalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {currentPage} of {totalPages}</span><button className={ghostBtn} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button></div>}
-        {filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">{isLoading ? "Loading student appeals..." : "No appeals match the selected filters."}</div>}
+        {filtered.length === 0 && (isLoading ? <LoadingState message="Loading student appeals..." className="mt-[1rem] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No appeals match the selected filters.</div>)}
       </section>
     </main>
   );

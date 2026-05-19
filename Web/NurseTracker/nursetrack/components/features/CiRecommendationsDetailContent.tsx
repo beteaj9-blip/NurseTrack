@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useStudentAppeal, useUpdateAppealStatus } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/ToastProvider";
 
 function formatDate(date?: string) {
@@ -64,7 +65,7 @@ export function CiRecommendationsDetailContent({ basePath }: { basePath: string;
     }
   };
 
-  if (isLoading) return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><div className="bg-white border border-[#e2e8f0] rounded-xl p-6 text-[#64748b] font-bold">Loading appeal...</div></main>;
+  if (isLoading) return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><LoadingState message="Loading appeal..." className="rounded-xl border border-[#e2e8f0] bg-white" /></main>;
   if (!appeal) return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><div className="bg-white border border-[#e2e8f0] rounded-xl p-6 text-[#64748b] font-bold">Appeal not found.</div></main>;
 
   return (

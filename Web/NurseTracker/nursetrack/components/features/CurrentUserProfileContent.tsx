@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ProfileContent } from "@/components/features/ProfileContent";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useCurrentUser } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { User } from "@/core/types/user";
@@ -49,7 +50,7 @@ export function CurrentUserProfileContent() {
   }, [data, login]);
 
   if (!user) {
-    return <main className="p-[clamp(24px,4vw,42px)]"><section className="rounded-xl border border-[#e2e8f0] bg-white p-6 !text-[#4c5d7d] !font-bold">Loading profile...</section></main>;
+    return <main className="p-[clamp(24px,4vw,42px)]"><LoadingState message="Loading profile..." className="rounded-xl border border-[#e2e8f0] bg-white" /></main>;
   }
 
   const profileUser = {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminCreateUser, useAdminResetPassword, useAdminUpdateUser, useUsers } from "@/core/api/hooks/useUsers";
@@ -231,7 +232,7 @@ export default function ManageUsersPage() {
               </div>
             </div>
 
-            {filteredUsers.length === 0 && <div className="flex items-center justify-center min-h-[120px] mt-4 p-6 border border-dashed border-gray-300 rounded-lg !text-gray-500 !font-medium">{isLoading ? "Loading users..." : "No matching users found."}</div>}
+            {filteredUsers.length === 0 && (isLoading ? <LoadingState message="Loading users..." className="min-h-[120px] mt-4 rounded-lg border border-dashed border-gray-300" /> : <div className="flex items-center justify-center min-h-[120px] mt-4 p-6 border border-dashed border-gray-300 rounded-lg !text-gray-500 !font-medium">No matching users found.</div>)}
             <div className="flex items-center min-h-[48px] mt-4 px-4 rounded-lg bg-[#e9f8ef] !text-[#078033] !text-sm !font-bold border border-[#bbf7d0]" role="status" aria-live="polite">{message}</div>
           </article>
         </section>

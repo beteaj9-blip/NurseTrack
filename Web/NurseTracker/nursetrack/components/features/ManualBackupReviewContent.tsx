@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAllAttendance, useInstructorAttendance } from "@/core/api/hooks/useAttendance";
 import { useAuthStore } from "@/core/store/authStore";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function statusLabel(status?: string) {
@@ -81,7 +82,7 @@ export function ManualBackupReviewContent({ basePath }: { basePath: string }) {
         <div className="flex items-center justify-between gap-[1rem] mb-[1.5rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-[850] tracking-[-0.03em]">Records Awaiting Review</h2><span className="inline-flex items-center w-max min-h-[28px] px-[12px] py-[6px] rounded-full bg-[#fff3c4] !text-[#6c4c00] !text-[0.76rem] !font-[900]">{pendingCount} pending</span></div>
         <div className="border border-[#dbe3ee] rounded-lg overflow-hidden bg-white">
           {pendingRecords.map((record) => <ManualRecordRow key={record.id} record={record} basePath={basePath} />)}
-          {pendingRecords.length === 0 && <div className="p-[1.25rem] !text-[#64748b] !font-[800] text-center">{isLoading ? "Loading manual attendance records..." : "No records awaiting review."}</div>}
+          {pendingRecords.length === 0 && (isLoading ? <LoadingState message="Loading manual attendance records..." /> : <div className="p-[1.25rem] !text-[#64748b] !font-[800] text-center">No records awaiting review.</div>)}
         </div>
       </section>
 
@@ -89,7 +90,7 @@ export function ManualBackupReviewContent({ basePath }: { basePath: string }) {
         <div className="flex items-center justify-between gap-[1rem] mb-[1.5rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-[850] tracking-[-0.03em]">Manual Attendance Records</h2><span className="inline-flex items-center w-max min-h-[28px] px-[12px] py-[6px] rounded-full bg-[#e9f8ef] !text-[#03703c] !text-[0.76rem] !font-[900]">{completedRecords.length} records</span></div>
         <div className="border border-[#dbe3ee] rounded-lg overflow-hidden bg-white">
           {completedRecords.map((record) => <ManualRecordRow key={record.id} record={record} basePath={basePath} />)}
-          {completedRecords.length === 0 && <div className="p-[1.25rem] !text-[#64748b] !font-[800] text-center">{isLoading ? "Loading manual attendance records..." : "No completed manual attendance records."}</div>}
+          {completedRecords.length === 0 && (isLoading ? <LoadingState message="Loading manual attendance records..." /> : <div className="p-[1.25rem] !text-[#64748b] !font-[800] text-center">No completed manual attendance records.</div>)}
         </div>
       </section>
     </main>

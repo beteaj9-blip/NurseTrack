@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
 import { UserRole } from "@/core/types/user";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -186,7 +187,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
           ) : (
             <div className="flex flex-col gap-3">
               {isLoading ? (
-                <div className="p-4 text-center text-[#64748b] !font-bold">Loading schedules...</div>
+                <LoadingState message="Loading schedules..." className="p-4" />
               ) : visibleSchedules.length > 0 ? (
                 scheduleGroups.map((item: any) => (
                   <div key={item.groupKey} className="flex items-center justify-between gap-4 p-[1.1rem_1.25rem] border border-[#e2e8f0] rounded-lg bg-white shadow-sm hover:border-[#cbd5e1] transition-colors max-[600px]:flex-col max-[600px]:items-start">

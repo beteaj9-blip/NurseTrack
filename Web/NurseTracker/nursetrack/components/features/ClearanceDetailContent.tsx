@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useUpdateClearanceStatus, useClearances } from "@/core/api/hooks/useClearance";
 import { useAllClinicalCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -100,7 +101,7 @@ export function ClearanceDetailContent({ basePath = "/chair" }: { basePath?: str
   }
 
   if (isLoading) {
-    return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><div className="bg-white border border-[#e2e8f0] rounded-xl p-6 !text-[#64748b] !font-bold">Loading clearance review...</div></main>;
+    return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><LoadingState message="Loading clearance review..." className="rounded-xl border border-[#e2e8f0] bg-white" /></main>;
   }
 
   return (

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAllAttendance } from "@/core/api/hooks/useAttendance";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 function fmt(hours: number) {
@@ -99,7 +100,7 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
         <div className="border-t border-[#e2e8f0] pt-[1.25rem]">
           {filtered.length > 0 ? <div className="flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-lg">
             {filtered.map((p: any, i: number) => <Link key={p.id} href={`${basePath}/overtime-details/detail?id=${p.id}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0"><div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{i + 1}.</div><ProfileAvatar name={p.name} imageUrl={p.profileImageUrl} size={34} /><span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{p.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{p.role} - {p.identifier} - {p.section}</small><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{p.site}</small></span><span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[900] bg-[#fff8e1] !text-[#6c4c00] whitespace-nowrap">{fmt(p.total)}</span></Link>)}
-          </div> : <div className="flex items-center justify-center min-h-[60px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-6 text-center !text-[#64748b] !font-[900]">{isLoading ? "Loading overtime records..." : "No overtime records match the selected filters."}</div>}
+          </div> : isLoading ? <LoadingState message="Loading overtime records..." className="min-h-[60px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="flex items-center justify-center min-h-[60px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-6 text-center !text-[#64748b] !font-[900]">No overtime records match the selected filters.</div>}
         </div>
       </section>
     </main>

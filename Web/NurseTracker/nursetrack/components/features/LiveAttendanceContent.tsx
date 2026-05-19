@@ -5,6 +5,7 @@ import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function LiveAttendanceContent() {
@@ -69,7 +70,7 @@ export function LiveAttendanceContent() {
             </label>
           </div>
           {isSchedulesLoading || (isChair ? isAllAttendanceLoading : isInstructorAttendanceLoading) ? (
-            <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">Loading today&apos;s live attendance...</div>
+            <LoadingState message="Loading today's live attendance..." className="p-8" />
           ) : todaySchedules.length === 0 ? (
             <div className="p-8 text-center rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.9rem] !font-bold">No schedule for today.</div>
           ) : (

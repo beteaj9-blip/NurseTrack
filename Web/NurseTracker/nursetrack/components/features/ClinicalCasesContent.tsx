@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function ClinicalCasesContent({ basePath }: { basePath: string }) {
@@ -74,7 +75,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
                         <button className={ghostBtn} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
                     </div>
                 )}
-                {filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">{isLoading ? "Loading assigned students..." : "No students match the selected filters."}</div>}
+                {filtered.length === 0 && (isLoading ? <LoadingState message="Loading assigned students..." className="mt-[1rem] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No students match the selected filters.</div>)}
             </section>
         </main>
     );

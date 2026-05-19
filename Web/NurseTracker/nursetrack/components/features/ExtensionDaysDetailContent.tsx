@@ -6,6 +6,7 @@ import { useAllExtensionDays, useCancelExtensionDay, useCreateExtensionDay, useI
 import { useUsers } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -138,7 +139,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
       <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)] grid gap-[1.25rem] content-start">
         <section className="border border-[#e2e8f0] rounded-xl bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-[1.5rem] grid gap-[1rem]">
           <h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Selected Student</h2>
-          {isLoading ? <div className="p-4 rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !font-bold">Loading student extension data...</div> : (
+          {isLoading ? <LoadingState message="Loading student extension data..." className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : (
             <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-[1rem] min-h-[5.25rem] p-[1rem_1.15rem] border border-[#dbe3ee] rounded-[0.85rem] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] max-[980px]:grid-cols-[auto_minmax(0,1fr)]">
               <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={48} />
               <span className="min-w-0 grid gap-[0.2rem]"><strong className="!text-[#111827] !text-[1.05rem] leading-[1.2]">{student.name}</strong><small className="!text-[#64748b] !text-[0.9rem] !font-[700]">{student.section} - {student.id}</small></span>

@@ -9,6 +9,7 @@ import { useInstructors } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { UserRole } from "@/core/types/user";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -209,7 +210,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   }
 
   if (isLoading) {
-    return <main className="p-[clamp(24px,4vw,42px)]"><div className="p-6 rounded-xl border border-[#e2e8f0] bg-white font-bold text-[#64748b]">Loading schedule...</div></main>;
+    return <main className="p-[clamp(24px,4vw,42px)]"><LoadingState message="Loading schedule..." className="rounded-xl border border-[#e2e8f0] bg-white" /></main>;
   }
 
   if (!selectedSchedule) {

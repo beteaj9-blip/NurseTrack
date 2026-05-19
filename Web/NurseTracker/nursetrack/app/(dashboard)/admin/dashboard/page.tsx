@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuditLogs } from "@/core/api/hooks/useAuditLogs";
 import { useAuthStore } from "@/core/store/authStore";
 
@@ -53,7 +54,7 @@ export default function AdminDashboard() {
         <div className="grid gap-3">
           {logs.map(log => { const affected = affectedRecord(log); return <div className="grid grid-cols-[minmax(180px,0.9fr)_minmax(220px,1.1fr)_minmax(190px,0.8fr)_auto] items-center gap-4 px-[1.15rem] py-4 border border-[#e2e8f0] rounded-[0.9rem] bg-white max-[1000px]:grid-cols-1 max-[1000px]:gap-[0.45rem]" key={log.id}><div><strong className="block text-[#111827] text-[0.95rem] font-bold leading-snug">{log.actor}</strong><span className="text-[#4c5d7d] text-[0.88rem] font-bold leading-snug">{formatRole(log.actorRole)}</span></div><span className="text-[#4c5d7d] text-[0.88rem] font-bold">{log.action}</span><span className="text-[#4c5d7d] text-[0.88rem] font-bold">{affected.name}{affected.context ? ` - ${affected.context}` : ""}</span><small className="text-[#64748b] text-[0.8rem] font-bold whitespace-nowrap">{formatTime(log.occurredAt)}</small></div>; })}
         </div>
-        {logs.length === 0 && <div className="p-5 border border-dashed border-[#dbe3ee] rounded-lg !text-[#4c5d7d] !font-bold">{isLoading ? "Loading recent audit activity..." : "No audit activity yet. New admin actions will appear here."}</div>}
+        {logs.length === 0 && (isLoading ? <LoadingState message="Loading recent audit activity..." className="rounded-lg border border-dashed border-[#dbe3ee]" /> : <div className="p-5 border border-dashed border-[#dbe3ee] rounded-lg !text-[#4c5d7d] !font-bold">No audit activity yet. New admin actions will appear here.</div>)}
         <div className="flex justify-end mt-4"><Link href="/admin/audit-logs" className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#334155] text-sm font-bold hover:bg-[#f8fafc] transition-colors no-underline cursor-pointer">Open Audit Logs</Link></div>
       </section>
     </main>

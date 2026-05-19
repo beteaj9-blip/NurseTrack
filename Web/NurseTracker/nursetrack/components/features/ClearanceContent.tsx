@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useClearanceSettings, useClearances, useUpdateClearanceSettings } from "@/core/api/hooks/useClearance";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -65,7 +66,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
         <div className="flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-lg">
           {filtered.map((c: any, i: number) => <Link key={c.id} href={`${basePath}/clearance/detail?studentId=${c.studentId}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0"><div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{i + 1}.</div><ProfileAvatar name={c.studentName} imageUrl={c.studentProfileImageUrl} size={34} /><span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{c.studentName}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{c.studentSection} - {c.studentSchoolId}</small></span><mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${statusClass(c.status)}`}>{statusLabel(c.status)}</mark></Link>)}
         </div>
-        {filtered.length === 0 && <p className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[700] text-center">{isLoading ? "Loading clearance records..." : "No clearance records found."}</p>}
+        {filtered.length === 0 && (isLoading ? <LoadingState message="Loading clearance records..." className="mt-[1rem] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <p className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[700] text-center">No clearance records found.</p>)}
       </section>
     </main>
   );
