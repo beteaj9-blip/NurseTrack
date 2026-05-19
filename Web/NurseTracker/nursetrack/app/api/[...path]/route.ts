@@ -27,9 +27,10 @@ async function proxy(request: Request, context: { params: Promise<{ path: string
   }
   const responseHeaders = new Headers(response.headers);
   responseHeaders.delete("content-encoding");
+  responseHeaders.delete("content-length");
   responseHeaders.delete("transfer-encoding");
 
-  return new Response(response.body, {
+  return new Response(await response.arrayBuffer(), {
     status: response.status,
     statusText: response.statusText,
     headers: responseHeaders,
