@@ -172,7 +172,7 @@ export default function DashboardLayout({
         />
         {showNetworkLoading && <div className="pointer-events-none fixed right-5 top-[92px] z-[9997] flex items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 py-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)]">
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#e2e8f0] border-t-[#8A252C]" aria-hidden="true" />
-          <span className="!text-[#334155] !text-[0.82rem] !font-[900]">Loading backend data...</span>
+          <span className="!text-[#334155] !text-[0.82rem] !font-[900]">Loading data...</span>
         </div>}
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <div
