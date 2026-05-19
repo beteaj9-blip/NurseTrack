@@ -1,18 +1,26 @@
 import axios from 'axios';
 
+const API_BASE_URL = process.env.BACKEND_API_URL?.replace(/\/+$/, '');
+
+if (!API_BASE_URL) {
+  throw new Error('BACKEND_API_URL is not configured. Set it in .env.');
+}
+
 export const apiClient = axios.create({
-  baseURL: '/api',
-  withCredentials: true,
+  baseURL: API_BASE_URL,
 });
 
 apiClient.interceptors.request.use((config) => {
+  const method = config.method?.toUpperCase() ?? 'GET';
+  const hasBody = config.data !== undefined && config.data !== null;
+
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
     if (typeof config.headers?.delete === 'function') {
       config.headers.delete('Content-Type');
     } else if (config.headers) {
       delete config.headers['Content-Type'];
     }
-  } else if (config.headers) {
+  } else if (config.headers && hasBody && method !== 'GET' && method !== 'HEAD') {
     config.headers['Content-Type'] = 'application/json';
   }
   if (typeof window !== 'undefined') {

@@ -40,7 +40,9 @@ export default function DashboardLayout({
   const role = pathname.split("/")[1];
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [routeAnimating, setRouteAnimating] = useState(true);
-  const activeFetches = useIsFetching();
+  const activeFetches = useIsFetching({
+    predicate: (query) => query.queryKey[0] !== "notifications",
+  });
   const activeMutations = useIsMutating();
   const [showNetworkLoading, setShowNetworkLoading] = useState(false);
 
