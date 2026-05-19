@@ -38,19 +38,13 @@ export default function Login() {
       return;
     }
 
+    let data: LoginResponse;
     try {
-      const { data } = await apiClient.post<LoginResponse>("/users/login", {
+      const response = await apiClient.post<LoginResponse>("/users/login", {
         userId,
         password,
       });
-
-      // Save user to global store (persisted in localStorage)
-      login(data.user, data.token);
-
-      // Redirect to the correct dashboard based on role
-      const basePath = roleToBasePath[data.user.role];
-      router.push(`${basePath}/dashboard`);
-
+      data = response.data;
     } catch (error: any) {
       setIsError(true);
       if (error.response?.status === 401) {
@@ -58,6 +52,25 @@ export default function Login() {
       } else {
         setFormMessage("Unable to connect to the server. Make sure the backend is running.");
       }
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      if (!data?.user || !data?.token) {
+        throw new Error("Login response is missing user or token.");
+      }
+      // Save user to global store (persisted in localStorage)
+      login(data.user, data.token);
+
+      // Redirect to the correct dashboard based on role
+      const basePath = roleToBasePath[data.user.role];
+      if (!basePath) throw new Error(`Unsupported user role: ${data.user.role}`);
+      router.replace(`${basePath}/dashboard`);
+    } catch (error) {
+      console.error("Login succeeded but session setup failed", error);
+      setIsError(true);
+      setFormMessage("Login succeeded, but the app could not open your dashboard. Please refresh and try again.");
     } finally {
       setIsLoading(false);
     }
