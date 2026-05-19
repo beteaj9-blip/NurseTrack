@@ -9,6 +9,18 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/health")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "OPTIONS")
+                .allowedHeaders("*")
+                .maxAge(3600);
+
+        registry.addMapping("/api/health")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "OPTIONS")
+                .allowedHeaders("*")
+                .maxAge(3600);
+
         registry.addMapping("/**")
                 .allowedOrigins("http://localhost:3000", "http://localhost:3001") // Next.js ports
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
