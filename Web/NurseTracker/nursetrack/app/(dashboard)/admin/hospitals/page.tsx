@@ -69,7 +69,7 @@ export default function HospitalsDutyAreasPage() {
 
   const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
   const [editingDutyArea, setEditingDutyArea] = useState<DutyArea | null>(null);
-  const [message, setMessage] = useState("Hospital and duty-area records are loaded from the database.");
+  const [message, setMessage] = useState("");
   const [hospitalSearch, setHospitalSearch] = useState("");
   const [dutyAreaSearch, setDutyAreaSearch] = useState("");
   const [hospitalStatus, setHospitalStatus] = useState<StatusFilter>("all");
@@ -135,7 +135,7 @@ export default function HospitalsDutyAreasPage() {
     try {
       await createHospital.mutateAsync(hospitalPayload(String(form.get("hospitalCode") ?? ""), String(form.get("hospitalName") ?? ""), [], "", true));
       formElement.reset();
-      setMessage("Hospital saved to the database.");
+      setMessage("Hospital saved.");
       showToast({ variant: "success", title: "Hospital added", message: "Hospital record was saved." });
     } catch {
       showToast({ variant: "error", title: "Save failed", message: "Hospital record could not be saved." });
@@ -241,7 +241,7 @@ export default function HospitalsDutyAreasPage() {
             <form className="grid grid-cols-2 gap-4 gap-y-5 items-start flex-1 max-[780px]:grid-cols-1" onSubmit={handleAddHospital}>
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="hospital-name">Hospital Name<input className={inputClass} id="hospital-name" name="hospitalName" type="text" placeholder="Cebu City Medical Center" required /></label>
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="hospital-code">Short Code<input className={inputClass} id="hospital-code" name="hospitalCode" type="text" placeholder="CCMC / VSMMC" required /></label>
-              <div className="col-span-full grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center mt-[0.15rem] max-[780px]:grid-cols-1"><div className="w-full min-h-[56px] flex items-center m-0 p-[0.9rem_1rem] bg-[#f8fafc] border border-[#e2e8f0] rounded-lg !text-[#4c5d7d] !text-sm !font-bold" role="status">Save creates a backend hospital record.</div><div className="flex justify-end items-center max-[780px]:justify-stretch"><button className="inline-flex items-center justify-center w-auto min-w-[210px] min-h-[50px] px-[30px] whitespace-nowrap rounded-[10px] bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-60 max-[780px]:w-full max-[780px]:min-w-0" type="submit" disabled={createHospital.isPending}>Add Hospital</button></div></div>
+              <div className="col-span-full grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center mt-[0.15rem] max-[780px]:grid-cols-1"><div className="w-full min-h-[56px] flex items-center m-0 p-[0.9rem_1rem] bg-[#f8fafc] border border-[#e2e8f0] rounded-lg !text-[#4c5d7d] !text-sm !font-bold" role="status">Add a hospital that can be used in schedules and duty assignments.</div><div className="flex justify-end items-center max-[780px]:justify-stretch"><button className="inline-flex items-center justify-center w-auto min-w-[210px] min-h-[50px] px-[30px] whitespace-nowrap rounded-[10px] bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-60 max-[780px]:w-full max-[780px]:min-w-0" type="submit" disabled={createHospital.isPending}>Add Hospital</button></div></div>
             </form>
           </article>
 
@@ -273,7 +273,7 @@ export default function HospitalsDutyAreasPage() {
           {dutyAreaTotalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setDutyAreaPage(page => Math.max(1, page - 1))} disabled={dutyAreaPage === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {dutyAreaPage} of {dutyAreaTotalPages}</span><button className={ghostBtn} onClick={() => setDutyAreaPage(page => Math.min(dutyAreaTotalPages, page + 1))} disabled={dutyAreaPage === dutyAreaTotalPages}>Next</button></div>}
         </section>
 
-        <div className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#e9f8ef] !text-[#078033] !text-sm !font-bold border border-[#bbf7d0]" role="status" aria-live="polite">{message}</div>
+        {message && <div className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#e9f8ef] !text-[#078033] !text-sm !font-bold border border-[#bbf7d0]" role="status" aria-live="polite">{message}</div>}
       </main>
 
       {(editingHospital || editingDutyArea) && (

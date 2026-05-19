@@ -145,7 +145,7 @@ export default function SectionImportPage() {
       setPreview(result);
       setAddStudentSearch("");
       setStatus("Preview ready");
-      setMessage(`Preview ready: ${result.matchedStudents} students found in database, ${result.skippedStudents} not in database. Section ${result.section || "not detected"}, level ${result.level ?? "not detected"}.`);
+      setMessage(`Preview ready: ${result.matchedStudents} matched, ${result.skippedStudents} need review. Section ${result.section || "not detected"}, level ${result.level ?? "not detected"}.`);
       setMessageClass("is-success");
       showToast({ variant: "success", title: "Preview ready", message: `${result.matchedStudents} matched, ${result.skippedStudents} unmatched.` });
     } catch (error: any) {
@@ -185,7 +185,7 @@ export default function SectionImportPage() {
         <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-[#e5eaf1] flex-wrap">
           <div>
             <h2 className="m-0 !text-[#111827] !text-[1.25rem] leading-[1.15] !font-bold">Upload Section Class Record</h2>
-            <p className="m-[0.45rem_0_0] !text-[#64748b] !text-[0.9rem] !font-[700]">Updates the active academic term, student section, and student level for database-matched students only.</p>
+            <p className="m-[0.45rem_0_0] !text-[#64748b] !text-[0.9rem] !font-[700]">Updates the active academic term, student section, and student level for matched students only.</p>
           </div>
           <span className="inline-flex items-center px-[10px] py-[4px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#fff6cc] !text-[#6c4c00]">{status}</span>
         </div>
@@ -194,7 +194,7 @@ export default function SectionImportPage() {
           <div className="flex flex-col justify-between gap-8 min-h-[210px] p-[1.9rem] border border-dashed border-[#8A252C]/28 rounded-[0.85rem] bg-[linear-gradient(135deg,#fff7d6_0%,#fffaf0_55%,#ffffff_100%)]">
             <div>
               <strong className="block !text-[#0f172a] !text-[1.15rem] !font-[800] mb-4">Drop class-record file here</strong>
-              <p className="max-w-[1180px] m-0 !text-[#475569] !text-base !font-[700] leading-[1.55]">The importer reads Term & School Year, Section, Student No., and Course & Year. Existing database students are matched by school ID for faster and safer updates.</p>
+              <p className="max-w-[1180px] m-0 !text-[#475569] !text-base !font-[700] leading-[1.55]">The importer reads Term & School Year, Section, Student No., and Course & Year. Existing students are matched by school ID for faster and safer updates.</p>
             </div>
             <div className="flex items-center justify-end gap-3 flex-wrap max-[900px]:justify-start">
               <input id="section-file" type="file" accept=".csv,.xlsx,.xls" hidden required ref={fileInputRef} onChange={handleFileChange} />
@@ -216,12 +216,12 @@ export default function SectionImportPage() {
       {preview && <section className="grid gap-4">
         <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-4">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
-            <div><h3 className="m-0 !text-[#111827] !text-[1rem] !font-[900]">Add Existing Student</h3><p className="m-[0.35rem_0_0] !text-[#64748b] !text-[0.84rem] !font-[700]">Search database students and add them to the matched import list before publishing.</p></div>
+            <div><h3 className="m-0 !text-[#111827] !text-[1rem] !font-[900]">Add Existing Student</h3><p className="m-[0.35rem_0_0] !text-[#64748b] !text-[0.84rem] !font-[700]">Search students and add them to the matched import list before publishing.</p></div>
             <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#f8fafc] !text-[#475569] !text-[0.75rem] !font-[900]">{matchedStudents.length} matched</span>
           </div>
           <input className="w-full min-h-[48px] px-4 rounded-lg border border-[#d0d5dd] bg-white !text-[#111827] !font-[800] outline-none focus:border-[#8A252C] focus:ring-2 focus:ring-[#8A252C]/15" placeholder="Search by name, school ID, or current section" value={addStudentSearch} onChange={(event) => setAddStudentSearch(event.target.value)} />
           {addStudentSearch && <div className="grid gap-2 mt-3">
-            {addableStudents.length === 0 ? <p className="m-0 p-3 rounded-lg bg-[#f8fafc] !text-[#64748b] !font-[800]">No available database students found.</p> : addableStudents.map((student) => <div key={student.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-[#e2e8f0] bg-[#fcfcfd]">
+            {addableStudents.length === 0 ? <p className="m-0 p-3 rounded-lg bg-[#f8fafc] !text-[#64748b] !font-[800]">No available students found.</p> : addableStudents.map((student) => <div key={student.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border border-[#e2e8f0] bg-[#fcfcfd]">
               <div className="flex items-center gap-3"><ProfileAvatar name={student.fullName} imageUrl={student.profileImageUrl} size={36} /><div><strong className="block !text-[#111827] !font-[900]">{student.fullName}</strong><span className="block !text-[#64748b] !text-[0.78rem] !font-[800]">{student.schoolId} · {student.sectionInfo || "No section"}</span></div></div>
               <button type="button" onClick={() => addDatabaseStudent(student)} className="min-h-[38px] px-4 rounded-lg bg-[#8A252C] !text-white !font-[900] cursor-pointer hover:bg-[#6d1d23]">Add</button>
             </div>)}
@@ -229,8 +229,8 @@ export default function SectionImportPage() {
         </article>
 
         <section className="grid grid-cols-2 gap-4 max-[1100px]:grid-cols-1">
-          <StudentTable title="In Database" tone="success" students={matchedStudents} section={preview.section} empty="No students from this file matched database users." onRemove={removeStudent} />
-          <StudentTable title="Not In Database" tone="danger" students={unmatchedStudents} section={preview.section} empty="Every student in this file matched a database user." onRemove={removeStudent} />
+          <StudentTable title="Matched" tone="success" students={matchedStudents} section={preview.section} empty="No students from this file matched existing users." onRemove={removeStudent} />
+          <StudentTable title="Unmatched" tone="danger" students={unmatchedStudents} section={preview.section} empty="Every student in this file matched an existing user." onRemove={removeStudent} />
         </section>
       </section>}
     </main>

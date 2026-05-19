@@ -46,7 +46,7 @@ function LevelAssignments({ title, badge, users, onLevelChange }: { title: strin
             </article>
           );
         })}
-        {users.length === 0 && <div className="p-5 border border-dashed border-[#dbe3ee] rounded-lg !text-[#4c5d7d] !font-bold">No matching users found in the database.</div>}
+        {users.length === 0 && <div className="p-5 border border-dashed border-[#dbe3ee] rounded-lg !text-[#4c5d7d] !font-bold">No matching users found.</div>}
       </div>
     </section>
   );
@@ -94,7 +94,7 @@ export default function AssistantAccessPage() {
       <LevelAssignments title="Assistant Level Assignments" badge="One level per assistant" users={assistants} onLevelChange={updateLevel} />
       <PermissionCards role="ASSISTANT" title="Assistant Edit Permissions" badge="Assistant controls" />
       <PermissionCards role="COORDINATOR" title="Coordinator Edit Permissions" badge="Coordinator controls" />
-      <div className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-[0.85rem] !font-bold border border-[#e2e8f0]" role="status" aria-live="polite">Level assignments and edit permissions are saved through backend APIs.</div>
+      <div className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-[0.85rem] !font-bold border border-[#e2e8f0]" role="status" aria-live="polite">Level assignments and edit permissions control assistant access.</div>
     </main>
   );
 }

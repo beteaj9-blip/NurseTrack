@@ -64,7 +64,7 @@ export default function Login() {
       if (error.response?.status === 401) {
         setFormMessage("Invalid credentials. Please check your ID/email and password.");
       } else {
-        setFormMessage("Unable to connect to the server. Make sure the backend is running.");
+        setFormMessage("Unable to connect to the server. Please try again later.");
       }
       setIsLoading(false);
       return;

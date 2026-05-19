@@ -72,7 +72,7 @@ export default function ManageUsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [message, setMessage] = useState("Directory loaded successfully.");
+  const [message, setMessage] = useState("");
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [selectedUserForAction, setSelectedUserForAction] = useState<DisplayUser | null>(null);
   const [actionStep, setActionStep] = useState<"menu" | "edit" | "status" | "reset">("menu");
@@ -132,8 +132,8 @@ export default function ManageUsersPage() {
         password: String(form.get("password") ?? form.get("schoolId") ?? "password"),
         status: "ACTIVE",
       });
-      setMessage("User account saved to the database.");
-      showToast({ variant: "success", title: "User added", message: "The account was saved to the database." });
+      setMessage("User account saved.");
+      showToast({ variant: "success", title: "User added", message: "The account was saved." });
       setIsAddUserModalOpen(false);
     } catch {
       showToast({ variant: "error", title: "Add user failed", message: "The account could not be saved." });
@@ -233,7 +233,7 @@ export default function ManageUsersPage() {
               </div>
             </div>
 
-            {!isLoading && <div className="flex items-center min-h-[48px] mt-4 px-4 rounded-lg bg-[#e9f8ef] !text-[#078033] !text-sm !font-bold border border-[#bbf7d0]" role="status" aria-live="polite">{message}</div>}
+            {!isLoading && message && <div className="flex items-center min-h-[48px] mt-4 px-4 rounded-lg bg-[#e9f8ef] !text-[#078033] !text-sm !font-bold border border-[#bbf7d0]" role="status" aria-live="polite">{message}</div>}
           </article>
         </section>
       </main>
@@ -253,7 +253,7 @@ export default function ManageUsersPage() {
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Assigned levels<input className={inputClass} name="assignedLevels" type="text" defaultValue="1" placeholder="1 or 1,2" /></label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Mobile number<input className={inputClass} name="mobileNumber" type="tel" inputMode="tel" placeholder="Optional" onInput={stripLettersFromInput} /></label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Initial password<input className={inputClass} name="password" type="text" placeholder="Defaults to ID" /></label>
-                <div className="col-span-full flex items-center min-h-[48px] px-4 rounded-lg bg-[#f0f3f8] !text-[#4c5d7d] !text-sm !font-bold border border-[#dbe3ee]" role="status">Account data will be saved through the backend users API.</div>
+                <div className="col-span-full flex items-center min-h-[48px] px-4 rounded-lg bg-[#f0f3f8] !text-[#4c5d7d] !text-sm !font-bold border border-[#dbe3ee]" role="status">Create a user account with the selected role and access details.</div>
               </div>
               <div className="grid grid-cols-2 gap-[0.8rem] m-0 px-[1.35rem] py-[1.1rem] pb-[1.35rem] mt-4 border-t border-[#e5eaf1] bg-white max-[680px]:grid-cols-1 shrink-0"><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button" onClick={() => setIsAddUserModalOpen(false)}>Cancel</button><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-60" type="submit" disabled={createUser.isPending}>Add User</button></div>
             </form>
