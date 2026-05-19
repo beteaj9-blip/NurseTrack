@@ -21,6 +21,18 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .maxAge(3600);
 
+        registry.addMapping("/db-health")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "OPTIONS")
+                .allowedHeaders("*")
+                .maxAge(3600);
+
+        registry.addMapping("/api/db-health")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "OPTIONS")
+                .allowedHeaders("*")
+                .maxAge(3600);
+
         registry.addMapping("/**")
                 .allowedOrigins("http://localhost:3000", "http://localhost:3001") // Next.js ports
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
