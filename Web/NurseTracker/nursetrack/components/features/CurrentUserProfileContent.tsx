@@ -23,8 +23,7 @@ function getInitials(name?: string) {
 }
 
 function getProfileCompletion(user: User) {
-  if (user.profileCompletionPercentage != null) return user.profileCompletionPercentage;
-  const fields = [user.fullName, user.email, user.mobileNumber, user.schoolId, user.sectionInfo, user.profileImageUrl];
+  const fields = [user.profileImageUrl, user.fullName, user.schoolId, user.email, user.mobileNumber];
   return Math.round((fields.filter(Boolean).length / fields.length) * 100);
 }
 

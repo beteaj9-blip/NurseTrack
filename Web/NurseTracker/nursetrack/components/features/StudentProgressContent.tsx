@@ -90,8 +90,8 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
   const totalRequiredCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.total, 0), 0);
 
   return (
-    <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
-      <section className="flex items-center justify-between gap-[28px] p-[clamp(24px,4vw,34px)] border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] mb-[18px]">
+    <main className="min-w-0 overflow-x-hidden p-[clamp(16px,3vw,42px)] min-h-[calc(100vh-64px)]">
+      <section className="flex items-center justify-between gap-[28px] p-[clamp(20px,3vw,34px)] border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] mb-[18px] max-[820px]:flex-col max-[820px]:items-start">
         <div className="flex items-center gap-[16px] min-w-0">
           <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={68} />
           <div>
@@ -104,7 +104,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
         </span>
       </section>
 
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[18px] mb-[18px]" aria-label="Student progress summary">
+      <section className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-[18px] mb-[18px]" aria-label="Student progress summary">
         <SummaryCard
           icon="calendar"
           status="Open"
@@ -125,9 +125,9 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
         />
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[18px] items-start">
-        <article className="border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[24px]">
-          <div className="flex justify-between items-start gap-[22px] mb-[20px]">
+      <div className="grid min-w-0 grid-cols-1 min-[1400px]:grid-cols-2 gap-[18px] items-start">
+        <article className="min-w-0 border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[clamp(18px,2.5vw,24px)]">
+          <div className="flex justify-between items-start gap-[22px] mb-[20px] max-[720px]:flex-col">
             <h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Requirement Progress</h2>
             <Link
               className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all duration-[160ms] ease cursor-pointer no-underline whitespace-nowrap"
@@ -140,7 +140,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
           <div className="grid gap-[18px]">
             {requirements.map((group) => (
               <section key={group.label} aria-label={`${group.label} requirements`}>
-                <div className="flex items-baseline justify-between gap-[12px] border-b border-[#e2e8f0] px-[2px] pb-[8px] mb-[10px]">
+                <div className="flex items-baseline justify-between gap-[12px] border-b border-[#e2e8f0] px-[2px] pb-[8px] mb-[10px] max-[640px]:items-start max-[640px]:flex-col">
                   <strong className="!text-[#8A252C] !text-[1.05rem] !font-bold">{group.code}</strong>
                   <span className="!text-[#64748b] !text-[0.78rem] !font-[800]">{group.label}</span>
                 </div>
@@ -150,7 +150,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
                     const badge = `${item.completed} / ${item.total}`;
 
                     return (
-                      <div key={item.label} className="grid grid-cols-[minmax(150px,1.3fr)_minmax(150px,1fr)_auto] gap-[14px] items-center border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] p-[14px]">
+                      <div key={item.label} className="grid min-w-0 grid-cols-[minmax(0,1.3fr)_minmax(120px,1fr)_auto] gap-[14px] items-center border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] p-[14px] max-[720px]:grid-cols-1">
                         <div className="grid gap-[5px]">
                           <strong className="!text-[0.96rem] !text-[#111827]">{item.label}</strong>
                           <span className="!text-[#64748b] !text-[0.82rem] !font-[800] leading-[1.4]">
@@ -175,25 +175,25 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
           </div>
         </article>
 
-        <article className="border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[24px] overflow-hidden">
+        <article className="min-w-0 border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[clamp(18px,2.5vw,24px)] overflow-hidden">
           <div className="flex justify-between items-start gap-[22px] mb-[20px]">
             <h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Weekly Duty Record</h2>
           </div>
 
           <div
-            className="flex items-center justify-between gap-[14px] border border-[rgba(138,37,44,0.14)] rounded-[8px] mb-[14px] p-[16px]"
+            className="flex items-center justify-between gap-[14px] border border-[rgba(138,37,44,0.14)] rounded-[8px] mb-[14px] p-[16px] max-[640px]:flex-col max-[640px]:items-start"
             style={{ background: "linear-gradient(135deg, rgba(255,207,1,0.22), rgba(138,37,44,0.04) 62%), #ffffff" }}
           >
             <div>
               <span className="block mb-[5px] !text-[#8A252C] !text-[0.72rem] !font-[900] uppercase">This week</span>
               <strong className="block !text-[#111827] !text-[1.25rem] leading-[1.2]">{formatHours(totalHours)} recorded</strong>
             </div>
-            <p className="m-0 max-w-[240px] !text-[#64748b] !text-[0.84rem] !font-[800] leading-[1.45] text-right">
+            <p className="m-0 max-w-[240px] !text-[#64748b] !text-[0.84rem] !font-[800] leading-[1.45] text-right max-[640px]:text-left">
               {formatHours(totalOvertime)} overtime across {dutyEntries.length} duty day{dutyEntries.length === 1 ? "" : "s"}.
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-[12px] mb-[16px]" aria-label="Weekly duty summary">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,120px),1fr))] gap-[12px] mb-[16px]" aria-label="Weekly duty summary">
             {[
               { label: "Duty Days", value: String(dutyEntries.length) },
               { label: "Total Hours", value: formatHours(totalHours) },
@@ -214,7 +214,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
               const [month = "", dayNumber = ""] = entry.date.split(" ");
 
               return (
-                <article key={`${entry.date}-${entry.day}-${entry.area}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-[14px] items-center border rounded-[8px] p-[12px_14px] ${hasOvertime ? "border-[rgba(180,35,24,0.2)] bg-[linear-gradient(90deg,#ffffff,#fff8f7)]" : "border-[#e2e8f0] bg-[linear-gradient(90deg,#ffffff,#f8fafc)]"}`}>
+                <article key={`${entry.date}-${entry.day}-${entry.area}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-[14px] items-center border rounded-[8px] p-[12px_14px] max-[720px]:grid-cols-1 ${hasOvertime ? "border-[rgba(180,35,24,0.2)] bg-[linear-gradient(90deg,#ffffff,#fff8f7)]" : "border-[#e2e8f0] bg-[linear-gradient(90deg,#ffffff,#f8fafc)]"}`}>
                   <div className="grid place-items-center min-w-[52px] min-h-[56px] border border-[rgba(255,207,1,0.45)] rounded-[8px] bg-[rgba(255,207,1,0.12)] !text-[#6c4c00] p-[7px] text-center">
                     <span className="m-0 !text-[0.66rem] !font-[900] uppercase leading-[1]">{month}</span>
                     <strong className="mt-[3px] !text-[1.04rem] leading-[1] !font-bold">{dayNumber}</strong>
@@ -226,7 +226,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
                   <span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${badgeClass}`}>
                     {badgeLabel}
                   </span>
-                  <div className="grid gap-[2px] text-right">
+                  <div className="grid gap-[2px] text-right max-[720px]:text-left">
                     <span className="!text-[#111827] !text-[0.96rem] !font-[900] whitespace-nowrap">{formatHours(entry.hours)}</span>
                     <small className="!text-[#64748b] !text-[0.67rem] !font-[800] uppercase whitespace-nowrap">Duty Record</small>
                   </div>

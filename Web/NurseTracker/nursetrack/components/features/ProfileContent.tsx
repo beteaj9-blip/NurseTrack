@@ -38,7 +38,8 @@ export function ProfileContent({ user }: ProfileContentProps) {
   const [message, setMessage] = useState({ text: "Review your information before saving.", type: "" });
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const isSaving = updateUser.isPending;
-  const profileCompletion = user.profileCompletionPercentage ?? 0;
+  const profileCompletionFields = [profileImageUrl, fullName, user.schoolId, email, mobile];
+  const profileCompletion = Math.round((profileCompletionFields.filter((field) => field.trim()).length / profileCompletionFields.length) * 100);
 
   const handleReset = () => {
     setFullName(user.name);
@@ -149,7 +150,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
             {isEditing ? (
               <>
                 <h2 className="text-[1.35rem] font-[900] text-[#111827] m-0 mb-1 leading-[1.2]">Update your account information.</h2>
-                <p className="text-[#64748b] text-[0.88rem] font-semibold m-0 mb-3">Keep contact details, section, and account records current.</p>
+                <p className="text-[#64748b] text-[0.88rem] font-semibold m-0 mb-3">Keep your contact details and account records current.</p>
               </>
             ) : (
               <>

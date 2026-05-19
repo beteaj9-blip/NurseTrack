@@ -31,7 +31,8 @@ export function StudentProfileEditContent() {
   const currentMobileNumber = mobileNumber ?? user?.mobileNumber ?? "";
   const currentProfileImageUrl = profileImageUrl ?? user?.profileImageUrl ?? "";
 
-  const profileCompletion = user?.profileCompletionPercentage ?? 0;
+  const profileCompletionFields = [currentProfileImageUrl, currentFullName, user?.schoolId ?? "", currentSchoolEmail, currentMobileNumber];
+  const profileCompletion = Math.round((profileCompletionFields.filter((field) => field.trim()).length / profileCompletionFields.length) * 100);
 
   const handleReset = () => {
     setFullName(null);
@@ -122,7 +123,7 @@ export function StudentProfileEditContent() {
           {/* Title / Badges */}
           <div className="flex-1 min-w-0">
             <h2 className="text-[1.35rem] font-[900] text-[#111827] m-0 mb-1 leading-[1.2]">Update your account information.</h2>
-            <p className="text-[#64748b] text-[0.88rem] font-semibold m-0 mb-3">Keep contact details, section, and student account records current.</p>
+            <p className="text-[#64748b] text-[0.88rem] font-semibold m-0 mb-3">Keep your contact details and student account records current.</p>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#e9f8ef] text-[#03703c] text-[0.75rem] font-[800]">Active account</span>
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#fff8e1] text-[#6c4c00] text-[0.75rem] font-[800]">{profileCompletion}% complete</span>
