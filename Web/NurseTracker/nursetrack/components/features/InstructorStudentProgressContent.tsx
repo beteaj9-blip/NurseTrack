@@ -7,6 +7,7 @@ import { useAllAttendance, useInstructorAttendance } from "@/core/api/hooks/useA
 import { useUsers } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 type ProgressStudent = {
@@ -47,13 +48,14 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
   const isAdmin = basePath === "/admin";
   const isAllSection = isAdmin || isChair;
   const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
-  const { data: studentUsers = [] } = useUsers("STUDENT", isAllSection ? viewerId : undefined);
-  const { data: instructorCases = [] } = useInstructorCases();
-  const { data: allCases = [] } = useAllClinicalCases(isAllSection, viewerId);
-  const { data: instructorAttendance = [] } = useInstructorAttendance();
-  const { data: allAttendance = [] } = useAllAttendance(isAllSection, viewerId);
+  const { data: studentUsers = [], isLoading: isUsersLoading } = useUsers("STUDENT", isAllSection ? viewerId : undefined);
+  const { data: instructorCases = [], isLoading: isInstructorCasesLoading } = useInstructorCases();
+  const { data: allCases = [], isLoading: isAllCasesLoading } = useAllClinicalCases(isAllSection, viewerId);
+  const { data: instructorAttendance = [], isLoading: isInstructorAttendanceLoading } = useInstructorAttendance();
+  const { data: allAttendance = [], isLoading: isAllAttendanceLoading } = useAllAttendance(isAllSection, viewerId);
   const cases = isAllSection ? allCases : instructorCases;
   const attendance = isAllSection ? allAttendance : instructorAttendance;
+  const isLoading = isAllSection ? isUsersLoading || isAllCasesLoading || isAllAttendanceLoading : isInstructorCasesLoading || isInstructorAttendanceLoading;
   const [search, setSearch] = useState("");
   const [section, setSection] = useState("all");
   const [standing, setStanding] = useState("all");
@@ -140,7 +142,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
         </div>
 
         <div className="flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-lg">
-          {filtered.map((student, index) => (
+          {isLoading ? <LoadingState message="Loading student progress..." /> : filtered.map((student, index) => (
             <Link key={student.studentId ?? student.schoolId ?? student.name} href={`${basePath}/student-progress/detail?studentId=${student.studentId ?? ""}`} className="grid grid-cols-[42px_44px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[34px_minmax(0,1fr)]">
               <div className="grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900] max-[680px]:row-span-2">{index + 1}.</div>
               <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={38} />
@@ -149,7 +151,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
             </Link>
           ))}
         </div>
-        {filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No assigned students match the selected filters.</div>}
+        {!isLoading && filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No assigned students match the selected filters.</div>}
       </section>
     </main>
   );

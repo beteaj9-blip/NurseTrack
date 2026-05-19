@@ -220,7 +220,7 @@ export default function ManageUsersPage() {
             <div className="max-h-[560px] rounded-lg border border-[#e2e8f0] overflow-y-auto bg-white">
               <div className="sticky top-0 z-10 grid grid-cols-[minmax(220px,1.15fr)_minmax(180px,0.9fr)_minmax(170px,0.85fr)_minmax(130px,0.7fr)_minmax(120px,0.55fr)] gap-[0.9rem] p-[1rem_1.1rem] bg-[#f8fafc] border-b border-[#e2e8f0] !text-xs !font-extrabold !text-gray-500 uppercase tracking-wider max-[680px]:hidden"><span>Name</span><span>Role</span><span>ID / Section</span><span>Status</span><span className="text-center">Action</span></div>
               <div className="divide-y divide-[#e2e8f0]">
-                {filteredUsers.map(user => (
+                {isLoading ? <LoadingState message="Loading users..." className="min-h-[120px]" /> : filteredUsers.map(user => (
                   <div className="grid grid-cols-[minmax(220px,1.15fr)_minmax(180px,0.9fr)_minmax(170px,0.85fr)_minmax(130px,0.7fr)_minmax(120px,0.55fr)] items-center gap-[0.9rem] p-[1rem_1.1rem] bg-white hover:bg-gray-50/50 transition-colors max-[680px]:grid-cols-1 max-[680px]:gap-2" key={user.api.id}>
                     <span className="flex items-center gap-3 min-w-0"><ProfileAvatar name={user.name} imageUrl={user.profileImageUrl} size={42} /><span className="flex flex-col min-w-0"><strong className="!text-[#111827] !text-[0.95rem] !font-bold truncate">{user.name}</strong><small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5 truncate">{user.email}</small></span></span>
                     <span className="!text-[#4c5d7d] !text-[0.88rem] !font-bold">{user.role}</span>
@@ -229,11 +229,11 @@ export default function ManageUsersPage() {
                     <span className="flex justify-center max-[680px]:justify-start max-[680px]:mt-2"><button className="flex items-center justify-center w-[40px] min-w-[40px] h-[40px] min-h-[40px] border border-[#e2e8f0] bg-white rounded-lg !text-[#64748b] hover:!text-[#111827] hover:bg-[#f8fafc] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#8A252C]/50 cursor-pointer" type="button" aria-label="Open account action" title="Actions" onClick={() => setSelectedUserForAction(user)}><svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg></button></span>
                   </div>
                 ))}
+                {!isLoading && filteredUsers.length === 0 && <div className="flex items-center justify-center min-h-[120px] p-6 !text-gray-500 !font-medium">No matching users found.</div>}
               </div>
             </div>
 
-            {filteredUsers.length === 0 && (isLoading ? <LoadingState message="Loading users..." className="min-h-[120px] mt-4 rounded-lg border border-dashed border-gray-300" /> : <div className="flex items-center justify-center min-h-[120px] mt-4 p-6 border border-dashed border-gray-300 rounded-lg !text-gray-500 !font-medium">No matching users found.</div>)}
-            <div className="flex items-center min-h-[48px] mt-4 px-4 rounded-lg bg-[#e9f8ef] !text-[#078033] !text-sm !font-bold border border-[#bbf7d0]" role="status" aria-live="polite">{message}</div>
+            {!isLoading && <div className="flex items-center min-h-[48px] mt-4 px-4 rounded-lg bg-[#e9f8ef] !text-[#078033] !text-sm !font-bold border border-[#bbf7d0]" role="status" aria-live="polite">{message}</div>}
           </article>
         </section>
       </main>
