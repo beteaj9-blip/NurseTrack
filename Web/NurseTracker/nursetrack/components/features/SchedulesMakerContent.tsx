@@ -15,6 +15,7 @@ type StudentRecord = {
   matched: boolean;
   schoolId?: string;
   section?: string;
+  group?: string;
   levels?: number[];
   profileImageUrl?: string;
 };
@@ -22,6 +23,7 @@ type StudentRecord = {
 type DraftGroup = {
   id: string;
   section: string;
+  group?: string;
   startDate: string;
   endDate: string;
   breakDates: string[];
@@ -113,6 +115,23 @@ function formatLevels(value?: number[]) {
   return `Levels ${levels.join(", ")}`;
 }
 
+function normalizeSection(value?: string) {
+  return (value ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+}
+
+function hasSectionMismatch(student: StudentRecord, group?: DraftGroup) {
+  return Boolean(student.section && group?.section && normalizeSection(student.section) !== normalizeSection(group.section));
+}
+
+function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSection?: string; uploadedSection?: string }) {
+  return <span className="group relative inline-flex items-center align-middle">
+    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#f59e0b] stroke-[#92400e] stroke-[1.8]" aria-label="Section mismatch warning"><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v5" className="stroke-white" /><path d="M12 17h.01" className="stroke-white" /></svg>
+    <span className="pointer-events-none absolute left-1/2 top-6 z-20 hidden w-[260px] -translate-x-1/2 rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-3 py-2 !text-[0.75rem] !font-[800] leading-[1.35] !text-[#744b00] shadow-[0_12px_24px_rgba(15,23,42,0.14)] group-hover:block">
+      Uploaded section is {uploadedSection || "blank"}, but this student is currently in {studentSection || "blank"}. Publishing will update the student to the uploaded section.
+    </span>
+  </span>;
+}
+
 export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
   const { data: hospitals = [] } = useHospitals();
@@ -150,7 +169,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
     const existing = new Set(modalRecords.map((record) => record.name.toLowerCase()));
     return (databaseStudents as User[])
       .filter((student) => !existing.has(student.fullName.toLowerCase()))
-      .filter((student) => `${student.fullName} ${student.schoolId} ${student.sectionInfo ?? ""} ${student.email}`.toLowerCase().includes(query))
+      .filter((student) => `${student.fullName} ${student.schoolId} ${student.sectionInfo ?? ""} ${student.groupInfo ?? ""} ${student.email}`.toLowerCase().includes(query))
       .slice(0, 8);
   }, [databaseStudents, modalRecords, studentSearch]);
 
@@ -193,6 +212,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
     setGroups((current) => [{
       id: `${Date.now()}`,
       section: "New Group",
+      group: "",
       startDate: "",
       endDate: "",
       breakDates: [],
@@ -231,6 +251,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
       matched: true,
       schoolId: student.schoolId,
       section: student.sectionInfo,
+      group: student.groupInfo,
       levels: student.assignedLevels,
       profileImageUrl: student.profileImageUrl,
     }]);
@@ -309,7 +330,10 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
         <div className="grid gap-[22px]">
           {groups.map((group) => <article key={group.id} className="grid grid-cols-[minmax(0,1fr)_minmax(240px,auto)] items-start gap-[22px_26px] rounded-xl border border-[#e2e8f0] bg-white p-[24px] max-[980px]:grid-cols-1">
             <div>
-              <input className="w-full border-0 bg-transparent p-0 !text-[1.02rem] !font-[900] !text-[#111827] outline-none" value={group.section} onChange={(event) => updateGroup(group.id, { section: event.target.value })} />
+              <div className="grid grid-cols-[1fr_140px] gap-3 max-[720px]:grid-cols-1">
+                <label className="grid gap-1 !text-[0.75rem] !font-[900] uppercase !text-[#64748b]">Section<input className="w-full rounded-lg border border-[#dbe3ee] bg-white px-3 py-2 !text-[1.02rem] !font-[900] !text-[#111827] outline-none" value={group.section} onChange={(event) => updateGroup(group.id, { section: event.target.value })} /></label>
+                <label className="grid gap-1 !text-[0.75rem] !font-[900] uppercase !text-[#64748b]">Group<input className="w-full rounded-lg border border-[#dbe3ee] bg-white px-3 py-2 !text-[1.02rem] !font-[900] !text-[#111827] outline-none" value={group.group ?? ""} onChange={(event) => updateGroup(group.id, { group: event.target.value })} /></label>
+              </div>
               <button className="mt-4 inline-flex min-h-[34px] w-fit items-center justify-center rounded-full border border-[#8a252c]/18 bg-[#fff7d6] px-[0.85rem] py-[0.45rem] !text-[0.86rem] !font-extrabold leading-none !text-[#8a252c] transition-all cursor-pointer hover:bg-[#ffefad]" type="button" onClick={() => openStudentModal(group)}>View students ({getStudentRecords(group).length})</button>
             </div>
             <div className="flex flex-wrap justify-end gap-[10px] max-[980px]:justify-start">
@@ -344,7 +368,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
         <section className="max-h-[92vh] w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-xl bg-white shadow-[0_26px_68px_rgba(15,23,42,0.24)]">
           <div className="flex items-start justify-between gap-4 p-6">
             <div>
-              <h2 className="m-0 !text-[1.35rem] !font-[900] !text-[#111827]">{selectedGroup.section} Students</h2>
+              <h2 className="m-0 !text-[1.35rem] !font-[900] !text-[#111827]">{selectedGroup.section}{selectedGroup.group ? ` ${selectedGroup.group}` : ""} Students</h2>
             </div>
             <div className="flex items-center gap-3">
               <button className={`min-h-[44px] rounded-lg border px-6 !font-[900] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 ${modalChanged ? "border-[#8A252C]/35 bg-[#fff7d6] !text-[#8A252C] hover:bg-[#ffefad]" : "border-[#e2e8f0] bg-white !text-[#94a3b8]"}`} type="button" disabled={!modalChanged} onClick={() => { setModalRecords(modalOriginalRecords); setStudentSearch(""); }}>Undo</button>
@@ -360,7 +384,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
             {studentSearch.trim() && <div className="max-h-[220px] overflow-y-auto rounded-lg border border-[#e2e8f0] bg-white">
               {studentSearchResults.length > 0 ? studentSearchResults.map((student) => <button key={student.id} type="button" className="block w-full p-5 text-left cursor-pointer hover:bg-[#f8fafc]" onClick={() => addStudent(student)}>
                 <strong className="block !font-[900] !text-[#14213d]">{student.fullName}</strong>
-                <span className="block !font-[800] !text-[#14213d]">Student | {student.schoolId} | {student.sectionInfo || "No section"} | {formatStudentLevel(student)}</span>
+                <span className="block !font-[800] !text-[#14213d]">Student | {student.schoolId} | {student.sectionInfo || "No section"}{student.groupInfo ? ` ${student.groupInfo}` : ""} | {formatStudentLevel(student)}</span>
               </button>) : <div className="p-5 !font-[800] !text-[#64748b]">No database students found.</div>}
             </div>}
             <div className="rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-4 py-3 !text-[0.86rem] !font-[800] !text-[#744b00]">Double-check every matched student before saving. If the file only has a last name or students share the same last name, the importer may leave it under Not In Database; use search to add the exact database student.</div>
@@ -370,10 +394,10 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
               <div className="flex items-center justify-between gap-3"><h3 className="m-0 !text-[1rem] !font-[900] !text-[#111827]">In Database</h3><span className="rounded-full bg-[#e9f8ef] px-3 py-1 !text-[0.76rem] !font-[900] !text-[#03703c]">{matchedModalRecords.length} students</span></div>
               <div className="overflow-x-auto rounded-lg border border-[#e2e8f0]">
                 <table className="w-full min-w-[820px] table-fixed border-collapse">
-                  <colgroup><col className="w-[76px]" /><col /><col className="w-[160px]" /><col className="w-[150px]" /><col className="w-[150px]" /></colgroup>
-                  <thead className="bg-[#f8fafc]"><tr><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">No.</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Student</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Section</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Level</th><th className="px-4 py-4 text-right !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Action</th></tr></thead>
+                  <colgroup><col className="w-[76px]" /><col /><col className="w-[180px]" /><col className="w-[120px]" /><col className="w-[150px]" /><col className="w-[150px]" /></colgroup>
+                  <thead className="bg-[#f8fafc]"><tr><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">No.</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Student</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Section</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Group</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Level</th><th className="px-4 py-4 text-right !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Action</th></tr></thead>
                   <tbody>
-                    {matchedModalRecords.length > 0 ? matchedModalRecords.map((student, index) => <tr key={`matched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={40} /><div><span className="block !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</span>{student.schoolId && <span className="block !text-[0.78rem] !font-[850] !text-[#64748b]">{student.schoolId}</span>}</div></div></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{student.section || selectedGroup.section}</td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{formatLevels(student.levels)}</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>) : <tr><td colSpan={5} className="px-4 py-8 text-center !font-[800] !text-[#64748b]">No database students added.</td></tr>}
+                    {matchedModalRecords.length > 0 ? matchedModalRecords.map((student, index) => <tr key={`matched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={40} /><div><span className="block !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</span>{student.schoolId && <span className="block !text-[0.78rem] !font-[850] !text-[#64748b]">{student.schoolId}</span>}</div></div></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]"><span className="inline-flex items-center gap-2">{selectedGroup.section || "No section"}{hasSectionMismatch(student, selectedGroup) && <SectionMismatchIcon studentSection={student.section} uploadedSection={selectedGroup.section} />}</span></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{selectedGroup.group || student.group || "No group"}</td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{formatLevels(student.levels)}</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>) : <tr><td colSpan={6} className="px-4 py-8 text-center !font-[800] !text-[#64748b]">No database students added.</td></tr>}
                   </tbody>
                 </table>
               </div>

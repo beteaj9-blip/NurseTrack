@@ -20,6 +20,28 @@ export const useClearances = () => useQuery({
   },
 });
 
+export const useClearanceSettings = () => useQuery({
+  queryKey: ['clearance-settings'],
+  queryFn: async () => {
+    const { data } = await apiClient.get('/clearances/settings');
+    return data;
+  },
+});
+
+export const useUpdateClearanceSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { data } = await apiClient.put('/clearances/settings', { enabled });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clearance-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['student-clearance'] });
+    },
+  });
+};
+
 export const useStudentClearance = (studentId?: string) => {
   return useQuery({
     queryKey: ['student-clearance', studentId],
@@ -39,6 +61,7 @@ export const useSubmitClearance = (studentId?: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-clearance', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['clearances'] });
     },
   });
 };

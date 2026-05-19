@@ -46,6 +46,10 @@ public class Schedule {
     @Column(nullable = false)
     private LocalTime endTime;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean canceled = false;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

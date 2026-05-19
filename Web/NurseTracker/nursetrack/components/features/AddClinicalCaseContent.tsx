@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/core/api/axios";
-import { useSubmitCase } from "@/core/api/hooks/useClinicalCases";
+import { useClinicalCase, useSubmitCase, useUpdateClinicalCase } from "@/core/api/hooks/useClinicalCases";
 import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useInstructors } from "@/core/api/hooks/useUsers";
@@ -16,6 +18,12 @@ type CaseCategoryOption = {
   label: string;
 };
 
+function formatScheduleDate(date?: string) {
+  if (!date) return "";
+  const datePart = date.includes("T") ? date.split("T")[0] : date;
+  return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 function getCaseType(category: string, dutyArea: string) {
   const combined = `${category} ${dutyArea}`.toLowerCase();
   if (combined.includes("operating") || combined.includes("major") || combined.includes("minor")) return "OPERATING_ROOM";
@@ -24,6 +32,10 @@ function getCaseType(category: string, dutyArea: string) {
 }
 
 export default function AddClinicalCaseContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editCaseId = searchParams.get("id") ?? "";
+  const isEditMode = Boolean(editCaseId);
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const userId = user?.id != null ? String(user.id) : undefined;
@@ -38,7 +50,9 @@ export default function AddClinicalCaseContent() {
     },
   });
   const submitCase = useSubmitCase();
-  const isSubmitting = submitCase.isPending;
+  const updateCase = useUpdateClinicalCase();
+  const { data: editCase } = useClinicalCase(editCaseId || undefined);
+  const isSubmitting = submitCase.isPending || updateCase.isPending;
   const [selectedScheduleId, setSelectedScheduleId] = useState("");
   const [patientInitials, setPatientInitials] = useState("");
   const [category, setCategory] = useState("");
@@ -48,6 +62,24 @@ export default function AddClinicalCaseContent() {
   const [dutyArea, setDutyArea] = useState("");
   const [studentReflection, setStudentReflection] = useState("");
   const [message, setMessage] = useState("Complete the required case information before submitting.");
+
+  React.useEffect(() => {
+    if (!editCase) return;
+    if (editCase.status !== "PENDING") {
+      setMessage("Only pending clinical cases can be edited.");
+      showToast({ variant: "error", title: "Edit unavailable", message: "Only pending clinical cases can be edited." });
+      router.push("/nursing-student/clinical-cases");
+      return;
+    }
+    setPatientInitials(editCase.patientInitials ?? "");
+    setCategory(editCase.category ?? "");
+    setProcedureDetails(editCase.procedurePerformed ?? editCase.procedureDetails ?? "");
+    setHospital(editCase.hospital ?? "");
+    setInstructorId(editCase.instructorId != null ? String(editCase.instructorId) : "");
+    setDutyArea(editCase.dutyArea ?? editCase.area ?? "");
+    setStudentReflection(editCase.studentReflection ?? "");
+    setMessage("Update the pending case details before resubmitting.");
+  }, [editCase, router, showToast]);
 
   const selectedSchedule = schedules.find((schedule: any) => String(schedule.id) === selectedScheduleId);
   const selectedHospital = hospitals.find((item: any) => item.name === hospital);
@@ -69,7 +101,7 @@ export default function AddClinicalCaseContent() {
       return scheduleDate.getTime() <= today.getTime();
     });
   }, [schedules]);
-  const scheduleOptions = useMemo(() => eligibleSchedules.map((schedule: any) => ({ value: String(schedule.id), label: `${schedule.date} - ${schedule.area}` })), [eligibleSchedules]);
+  const scheduleOptions = useMemo(() => eligibleSchedules.map((schedule: any) => ({ value: String(schedule.id), label: `${formatScheduleDate(schedule.date)} - ${schedule.area}` })), [eligibleSchedules]);
 
   const handleScheduleChange = (value: string) => {
     const schedule = schedules.find((item: any) => String(item.id) === value);
@@ -81,14 +113,14 @@ export default function AddClinicalCaseContent() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!user || !selectedSchedule || !category || !patientInitials || !procedureDetails || !hospital || !instructorId || !dutyArea) {
+    if (!user || (!selectedSchedule && !isEditMode) || !category || !patientInitials || !procedureDetails || !hospital || !instructorId || !dutyArea) {
       setMessage("Complete the required case information before submitting.");
       showToast({ variant: "error", title: "Missing case details", message: "Complete the required case information before submitting." });
       return;
     }
 
     try {
-      await submitCase.mutateAsync({
+      const payload = {
         student: { id: user.id },
         instructor: { id: Number(instructorId) },
         caseType: getCaseType(category, dutyArea),
@@ -96,18 +128,17 @@ export default function AddClinicalCaseContent() {
         category,
         hospital,
         dutyArea,
-        shiftTime: `${selectedSchedule.startTime} - ${selectedSchedule.endTime}`,
-        caseDate: selectedSchedule.date,
+        shiftTime: selectedSchedule ? `${selectedSchedule.startTime} - ${selectedSchedule.endTime}` : editCase?.shiftTime,
+        caseDate: selectedSchedule?.date ?? editCase?.procedureDate ?? editCase?.caseDate,
         diagnosis: category,
         procedureDetails,
         studentReflection,
-      });
-      setMessage("Clinical case submitted for CI validation.");
-      showToast({ variant: "success", title: "Clinical case submitted", message: "Your case was sent for CI validation." });
-      setPatientInitials("");
-      setCategory("");
-      setProcedureDetails("");
-      setStudentReflection("");
+      };
+      if (isEditMode) await updateCase.mutateAsync({ caseId: editCaseId, caseData: payload });
+      else await submitCase.mutateAsync(payload);
+      setMessage(isEditMode ? "Clinical case updated for CI validation." : "Clinical case submitted for CI validation.");
+      showToast({ variant: "success", title: isEditMode ? "Clinical case updated" : "Clinical case submitted", message: "Your case was sent for CI validation." });
+      router.push("/nursing-student/clinical-cases");
     } catch {
       setMessage("Clinical case could not be submitted.");
       showToast({ variant: "error", title: "Submission failed", message: "Clinical case could not be submitted." });
@@ -122,7 +153,7 @@ export default function AddClinicalCaseContent() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <h2 className="text-[1.2rem] font-[800] text-[#111827] m-0">Case Information</h2>
           <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#fff8e1] !text-[#6c4c00] !text-[0.75rem] font-bold">
-            Draft
+            {isEditMode ? "Editing pending case" : "Draft"}
           </span>
         </div>
 
@@ -214,7 +245,7 @@ export default function AddClinicalCaseContent() {
               disabled={isSubmitting}
               className="h-[42px] px-6 rounded-lg bg-[#8A252C] text-white text-[0.92rem] font-bold shadow-sm hover:bg-[#681920] transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Submitting..." : "Submit For CI Validation"}
+              {isSubmitting ? "Submitting..." : isEditMode ? "Save Changes" : "Submit For CI Validation"}
             </button>
           </div>
         </form>

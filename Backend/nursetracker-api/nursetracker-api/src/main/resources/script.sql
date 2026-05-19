@@ -400,6 +400,12 @@ JOIN (
 ) allowed ON allowed.hospital_name = h.name
 WHERE NOT EXISTS (SELECT 1 FROM hospital_wards hw WHERE hw.hospital_id = h.id AND hw.ward_name = allowed.ward_name);
 
+ALTER TABLE schedules MODIFY COLUMN canceled BIT(1) NOT NULL DEFAULT b'0';
+
+INSERT INTO clearance_settings (id, enabled, updated_at)
+SELECT 1, true, NOW()
+WHERE NOT EXISTS (SELECT 1 FROM clearance_settings WHERE id = 1);
+
 INSERT INTO schedules (student_id, instructor_id, hospital, ward, shift_date, start_time, end_time, created_at, updated_at)
 SELECT s.id, i.id, 'CCMC', 'Medical Ward', DATE_SUB(CURDATE(), INTERVAL 1 DAY), '07:00:00', '15:00:00', NOW(), NOW()
 FROM users s

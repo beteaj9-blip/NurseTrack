@@ -5,6 +5,7 @@ import java.util.List;
 public record ScheduleImportGroup(
         String id,
         String section,
+        String group,
         String startDate,
         String endDate,
         List<String> breakDates,

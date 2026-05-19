@@ -1,14 +1,21 @@
 package edu.cit.nursetracker.user;
 
 import lombok.RequiredArgsConstructor;
+import edu.cit.nursetracker.academicterm.AcademicTerm;
+import edu.cit.nursetracker.academicterm.AcademicTermRepository;
 import edu.cit.nursetracker.hospital.Hospital;
 import edu.cit.nursetracker.hospital.HospitalRepository;
 import edu.cit.nursetracker.schedule.Schedule;
 import edu.cit.nursetracker.schedule.ScheduleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
@@ -26,6 +33,9 @@ import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +44,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
     private final HospitalRepository hospitalRepository;
+    private final AcademicTermRepository academicTermRepository;
 
     public User createUser(User user) {
         if (user.getStatus() == null) {
@@ -112,13 +123,179 @@ public class UserService {
 
     public Map<String, Integer> importSectionAssignments(MultipartFile file) {
         try {
-            List<String[]> rows = readRows(file);
-            int scheduleHeaderIndex = findScheduleTemplateHeader(rows);
-            if (scheduleHeaderIndex >= 0) return importScheduleTemplate(rows, scheduleHeaderIndex);
-            return importSimpleSectionAssignments(rows);
+            SectionImportPreview preview = previewSectionAssignments(file);
+            SectionImportResult result = publishSectionAssignments(preview);
+            Map<String, Integer> counters = new LinkedHashMap<>();
+            counters.put("updated", result.updatedStudents());
+            counters.put("skipped", result.skippedStudents());
+            counters.put("studentsMatched", result.matchedStudents());
+            counters.put("studentsSkipped", result.skippedStudents());
+            counters.put("level", result.level() == null ? 0 : result.level());
+            return counters;
         } catch (Exception e) {
             throw new RuntimeException("Unable to import section assignments", e);
         }
+    }
+
+    public SectionImportPreview previewSectionAssignments(MultipartFile file) {
+        try {
+            List<String[]> rows = readRows(file);
+            int classRecordHeaderIndex = findClassRecordHeader(rows);
+            if (classRecordHeaderIndex >= 0) return previewClassRecord(file.getOriginalFilename(), rows, classRecordHeaderIndex);
+            int scheduleHeaderIndex = findScheduleTemplateHeader(rows);
+            if (scheduleHeaderIndex >= 0) return previewScheduleSectionImport(file.getOriginalFilename(), rows, scheduleHeaderIndex);
+            return previewSimpleSectionAssignments(file.getOriginalFilename(), rows);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to preview section assignments", e);
+        }
+    }
+
+    public SectionImportResult publishSectionAssignments(SectionImportPreview preview) {
+        if (preview.schoolYear() != null && !preview.schoolYear().isBlank() && preview.semester() != null && !preview.semester().isBlank()) {
+            activateAcademicTerm(preview.schoolYear(), preview.semester());
+        }
+        int updated = 0;
+        for (SectionImportStudent student : preview.students()) {
+            if (student.schoolId() == null || student.schoolId().isBlank()) continue;
+            Optional<User> user = userRepository.findBySchoolId(student.schoolId());
+            if (user.isEmpty()) continue;
+            User target = user.get();
+            if (preview.section() != null && !preview.section().isBlank()) target.setSectionInfo(preview.section());
+            Integer level = student.level() != null ? student.level() : preview.level();
+            if (level != null) target.setAssignedLevels(new HashSet<>(Set.of(level)));
+            userRepository.save(target);
+            updated++;
+        }
+        return new SectionImportResult(
+                preview.filename(),
+                preview.schoolYear(),
+                preview.semester(),
+                preview.section(),
+                preview.level(),
+                preview.totalStudents(),
+                preview.matchedStudents(),
+                preview.skippedStudents(),
+                updated,
+                preview.students()
+        );
+    }
+
+    private SectionImportPreview previewClassRecord(String filename, List<String[]> rows, int headerIndex) {
+        String[] header = rows.get(headerIndex);
+        int noIndex = findHeader(header, "no", "no.");
+        int nameIndex = findHeader(header, "name of student");
+        int schoolIdIndex = findHeader(header, "student no", "student no.", "school id", "student id");
+        int courseYearIndex = findHeader(header, "course year", "course & year");
+        String termText = findValueAboveLabel(rows, "term school year", "term & school year");
+        String semester = parseSemester(termText);
+        String schoolYear = parseSchoolYear(termText).orElseGet(() -> parseSchoolYear(filename).orElse(""));
+        String section = findValueAboveLabel(rows, "section");
+        List<User> students = userRepository.findByRole(UserRole.STUDENT);
+        List<SectionImportStudent> records = new ArrayList<>();
+        Integer defaultLevel = null;
+        for (int i = headerIndex + 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            String studentNo = valueAt(row, noIndex);
+            String name = valueAt(row, nameIndex);
+            String schoolId = valueAt(row, schoolIdIndex);
+            String courseYear = valueAt(row, courseYearIndex);
+            if (name.isBlank() && schoolId.isBlank()) continue;
+            if (!schoolId.matches(".*\\d.*")) continue;
+            Integer level = parseLevel(courseYear);
+            if (defaultLevel == null && level != null) defaultLevel = level;
+            Optional<User> match = userRepository.findBySchoolId(schoolId);
+            records.add(toSectionImportStudent(studentNo, name, schoolId, courseYear, level, match));
+        }
+        return buildSectionPreview(filename, schoolYear, semester, section, defaultLevel, records);
+    }
+
+    private SectionImportPreview previewSimpleSectionAssignments(String filename, List<String[]> rows) {
+        if (rows.isEmpty()) return buildSectionPreview(filename, "", "", "", null, List.of());
+        String[] headers = rows.get(0);
+        int schoolIdIndex = findHeader(headers, "school id", "student id", "student no", "student no.", "id");
+        int nameIndex = findHeader(headers, "name", "student name", "name of student");
+        int sectionIndex = findHeader(headers, "section", "section info");
+        int levelIndex = findHeader(headers, "year level", "level", "assigned level", "course year", "course & year");
+        List<SectionImportStudent> records = new ArrayList<>();
+        String section = "";
+        Integer defaultLevel = null;
+        for (int i = 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            String schoolId = valueAt(row, schoolIdIndex);
+            String name = valueAt(row, nameIndex);
+            String rowSection = valueAt(row, sectionIndex);
+            String levelValue = valueAt(row, levelIndex);
+            if (schoolId.isBlank() && name.isBlank()) continue;
+            if (section.isBlank() && !rowSection.isBlank()) section = rowSection;
+            Integer level = parseLevel(levelValue.isBlank() ? rowSection : levelValue);
+            if (defaultLevel == null && level != null) defaultLevel = level;
+            Optional<User> match = schoolId.isBlank() ? resolveUserByName(name, userRepository.findByRole(UserRole.STUDENT)) : userRepository.findBySchoolId(schoolId);
+            records.add(toSectionImportStudent(String.valueOf(i), name, schoolId, levelValue, level, match));
+        }
+        return buildSectionPreview(filename, "", "", section, defaultLevel, records);
+    }
+
+    private SectionImportPreview previewScheduleSectionImport(String filename, List<String[]> rows, int headerIndex) {
+        String[] header = rows.get(headerIndex);
+        int sectionIndex = findHeader(header, "section group", "section/group");
+        int studentIndex = findHeader(header, "name of students");
+        Integer level = findImportLevel(rows, headerIndex);
+        String section = "";
+        List<User> students = userRepository.findByRole(UserRole.STUDENT);
+        List<SectionImportStudent> records = new ArrayList<>();
+        for (int i = headerIndex + 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            String rowSection = valueAt(row, sectionIndex);
+            if (!rowSection.isBlank() && section.isBlank()) section = rowSection;
+            String name = stripStudentNumber(valueAt(row, studentIndex));
+            if (name.isBlank()) continue;
+            Optional<User> match = resolveUserByName(name, students);
+            records.add(toSectionImportStudent(String.valueOf(records.size() + 1), name, match.map(User::getSchoolId).orElse(""), "", level, match));
+        }
+        return buildSectionPreview(filename, "", "", section, level, records);
+    }
+
+    private SectionImportPreview buildSectionPreview(String filename, String schoolYear, String semester, String section, Integer level, List<SectionImportStudent> records) {
+        int matched = (int) records.stream().filter(SectionImportStudent::matched).count();
+        return new SectionImportPreview(
+                filename == null ? "" : filename,
+                schoolYear == null ? "" : schoolYear,
+                semester == null ? "" : semester,
+                section == null ? "" : section,
+                level,
+                records.size(),
+                matched,
+                records.size() - matched,
+                records
+        );
+    }
+
+    private SectionImportStudent toSectionImportStudent(String studentNo, String name, String schoolId, String courseYear, Integer level, Optional<User> match) {
+        return new SectionImportStudent(
+                studentNo == null ? "" : studentNo,
+                name == null ? "" : name,
+                schoolId == null ? "" : schoolId,
+                courseYear == null ? "" : courseYear,
+                level,
+                match.isPresent(),
+                match.map(User::getId).orElse(null),
+                match.map(User::getFullName).orElse(""),
+                match.map(user -> user.getSectionInfo() == null ? "" : user.getSectionInfo()).orElse(""),
+                match.map(user -> user.getProfileImageUrl() == null ? "" : user.getProfileImageUrl()).orElse("")
+        );
+    }
+
+    private void activateAcademicTerm(String schoolYear, String semester) {
+        academicTermRepository.findAll().forEach(term -> {
+            if (term.isActive()) {
+                term.setActive(false);
+                academicTermRepository.save(term);
+            }
+        });
+        AcademicTerm term = academicTermRepository.findFirstBySchoolYearIgnoreCaseAndSemesterIgnoreCase(schoolYear, semester)
+                .orElseGet(() -> AcademicTerm.builder().schoolYear(schoolYear).semester(semester).build());
+        term.setActive(true);
+        academicTermRepository.save(term);
     }
 
     private Map<String, Integer> importSimpleSectionAssignments(List<String[]> rows) {
@@ -274,12 +451,104 @@ public class UserService {
     }
 
     private List<String[]> readRows(MultipartFile file) throws Exception {
+        byte[] bytes = file.getBytes();
+        String filename = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+        if (filename.endsWith(".xlsx") || isZip(bytes)) return readXlsxRows(bytes);
         List<String[]> rows = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) rows.add(splitDelimited(line));
         }
         return rows;
+    }
+
+    private boolean isZip(byte[] bytes) {
+        return bytes.length > 3 && bytes[0] == 'P' && bytes[1] == 'K';
+    }
+
+    private List<String[]> readXlsxRows(byte[] bytes) throws Exception {
+        Map<String, byte[]> entries = new java.util.HashMap<>();
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(bytes))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                zip.transferTo(output);
+                entries.put(entry.getName(), output.toByteArray());
+            }
+        }
+        List<String> sharedStrings = parseSharedStrings(entries.get("xl/sharedStrings.xml"));
+        String sheetName = entries.keySet().stream()
+                .filter(name -> name.matches("xl/worksheets/sheet\\d+\\.xml"))
+                .sorted()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Workbook sheet not found."));
+        return parseSheet(entries.get(sheetName), sharedStrings);
+    }
+
+    private List<String> parseSharedStrings(byte[] xml) throws Exception {
+        List<String> values = new ArrayList<>();
+        if (xml == null) return values;
+        Document document = parseXml(xml);
+        NodeList items = document.getElementsByTagName("si");
+        for (int i = 0; i < items.getLength(); i++) {
+            Element item = (Element) items.item(i);
+            NodeList texts = item.getElementsByTagName("t");
+            StringBuilder value = new StringBuilder();
+            for (int j = 0; j < texts.getLength(); j++) value.append(texts.item(j).getTextContent());
+            values.add(value.toString());
+        }
+        return values;
+    }
+
+    private List<String[]> parseSheet(byte[] xml, List<String> sharedStrings) throws Exception {
+        List<String[]> rows = new ArrayList<>();
+        Document document = parseXml(xml);
+        NodeList rowNodes = document.getElementsByTagName("row");
+        for (int i = 0; i < rowNodes.getLength(); i++) {
+            Element row = (Element) rowNodes.item(i);
+            List<String> cells = new ArrayList<>();
+            NodeList cellNodes = row.getElementsByTagName("c");
+            for (int j = 0; j < cellNodes.getLength(); j++) {
+                Element cell = (Element) cellNodes.item(j);
+                int index = columnIndex(cell.getAttribute("r"));
+                while (cells.size() <= index) cells.add("");
+                cells.set(index, cellValue(cell, sharedStrings));
+            }
+            rows.add(cells.toArray(String[]::new));
+        }
+        return rows;
+    }
+
+    private Document parseXml(byte[] xml) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(false);
+        return factory.newDocumentBuilder().parse(new ByteArrayInputStream(xml));
+    }
+
+    private String cellValue(Element cell, List<String> sharedStrings) {
+        String type = cell.getAttribute("t");
+        if ("inlineStr".equals(type)) {
+            NodeList texts = cell.getElementsByTagName("t");
+            return texts.getLength() == 0 ? "" : texts.item(0).getTextContent().trim();
+        }
+        NodeList values = cell.getElementsByTagName("v");
+        if (values.getLength() == 0) return "";
+        String value = values.item(0).getTextContent().trim();
+        if ("s".equals(type)) {
+            int index = Integer.parseInt(value);
+            return index >= 0 && index < sharedStrings.size() ? sharedStrings.get(index).trim() : "";
+        }
+        return value;
+    }
+
+    private int columnIndex(String reference) {
+        int index = 0;
+        for (int i = 0; i < reference.length(); i++) {
+            char ch = reference.charAt(i);
+            if (!Character.isLetter(ch)) break;
+            index = index * 26 + (Character.toUpperCase(ch) - 'A' + 1);
+        }
+        return Math.max(0, index - 1);
     }
 
     private String[] splitDelimited(String line) {
@@ -291,6 +560,15 @@ public class UserService {
 
     private int findScheduleTemplateHeader(List<String[]> rows) {
         return IntStream.range(0, rows.size()).filter(index -> isScheduleHeaderRow(rows.get(index))).findFirst().orElse(-1);
+    }
+
+    private int findClassRecordHeader(List<String[]> rows) {
+        return IntStream.range(0, rows.size()).filter(index -> isClassRecordHeaderRow(rows.get(index))).findFirst().orElse(-1);
+    }
+
+    private boolean isClassRecordHeaderRow(String[] row) {
+        String joined = normalizeKey(String.join(" ", row));
+        return joined.contains("name of student") && joined.contains("student no") && joined.contains("course year");
     }
 
     private boolean isScheduleHeaderRow(String[] row) {
@@ -306,6 +584,31 @@ public class UserService {
                 })
                 .findFirst()
                 .orElse(-1);
+    }
+
+    private String findValueAboveLabel(List<String[]> rows, String... labels) {
+        for (int rowIndex = 1; rowIndex < rows.size(); rowIndex++) {
+            String[] row = rows.get(rowIndex);
+            for (int columnIndex = 0; columnIndex < row.length; columnIndex++) {
+                String normalized = normalizeKey(row[columnIndex]);
+                boolean matches = List.of(labels).stream().map(this::normalizeKey).anyMatch(normalized::equals);
+                if (matches) return valueAt(rows.get(rowIndex - 1), columnIndex);
+            }
+        }
+        return "";
+    }
+
+    private String parseSemester(String value) {
+        String text = value == null ? "" : value.trim();
+        if (text.isBlank()) return "";
+        String firstPart = text.split(",")[0].trim();
+        return firstPart.isBlank() ? text : firstPart;
+    }
+
+    private Optional<String> parseSchoolYear(String value) {
+        Matcher matcher = Pattern.compile("(20\\d{2})\s*[-–—]\s*(20\\d{2})").matcher(value == null ? "" : value);
+        if (!matcher.find()) return Optional.empty();
+        return Optional.of(matcher.group(1) + "-" + matcher.group(2));
     }
 
     private Integer findImportLevel(List<String[]> rows, int headerIndex) {

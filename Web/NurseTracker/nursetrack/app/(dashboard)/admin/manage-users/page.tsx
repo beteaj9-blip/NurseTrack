@@ -18,6 +18,7 @@ type ApiUser = {
   schoolId: string;
   role: string;
   sectionInfo?: string;
+  groupInfo?: string;
   assignedLevels?: number[];
   profileImageUrl?: string;
   status: string;
@@ -30,6 +31,7 @@ type DisplayUser = {
   role: string;
   id: string;
   section: string;
+  group: string;
   status: string;
   initials: string;
   profileImageUrl: string;
@@ -56,6 +58,8 @@ const sectionDefaults = ["BSN 1A", "BSN 1B", "BSN 2A", "BSN 2B", "BSN 3A", "BSN 
 
 const toTitle = (value: string) => value.toLowerCase().replace(/(^|_)(\w)/g, (_, space, letter) => `${space ? " " : ""}${letter.toUpperCase()}`);
 const initials = (name: string) => name.split(" ").filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join("") || "U";
+const passwordInitials = (name: string) => name.split(" ").filter(Boolean).map(part => part[0]?.toUpperCase()).join("") || "U";
+const resetPasswordValue = (user: DisplayUser) => `${passwordInitials(user.name)}#${user.id}`;
 const roleApi = (value: string) => roles.find(role => role.value === value)?.api ?? "STUDENT";
 const roleValue = (value: string) => roles.find(role => role.api === value)?.value ?? value.toLowerCase();
 const roleLabel = (value: string) => roles.find(role => role.api === value)?.label ?? toTitle(value);
@@ -86,6 +90,7 @@ export default function ManageUsersPage() {
     role: roleLabel(user.role),
     id: user.schoolId,
     section: user.sectionInfo ?? "",
+    group: user.groupInfo ?? "",
     status: statusLabel(user.status),
     initials: initials(user.fullName),
     profileImageUrl: user.profileImageUrl ?? "",
@@ -98,7 +103,7 @@ export default function ManageUsersPage() {
     const matchesRole = search ? true : user.roleValue === roleFilter;
     const matchesStatus = statusFilter === "all" || user.status.toLowerCase() === statusFilter;
     const matchesSection = roleFilter !== "student" || sectionFilter === "all" || user.section === sectionFilter;
-    const matchesSearch = !search || [user.name, user.email, user.role, user.id, user.section, user.status].some(val => val.toLowerCase().includes(search.toLowerCase()));
+    const matchesSearch = !search || [user.name, user.email, user.role, user.id, user.section, user.group, user.status].some(val => val.toLowerCase().includes(search.toLowerCase()));
     return matchesRole && matchesStatus && matchesSection && matchesSearch;
   });
 
@@ -120,6 +125,7 @@ export default function ManageUsersPage() {
         role: roleApi(String(form.get("role") ?? "student")),
         schoolId: withoutLetters(String(form.get("schoolId") ?? "")),
         sectionInfo: String(form.get("sectionInfo") ?? ""),
+        groupInfo: String(form.get("groupInfo") ?? ""),
         mobileNumber: withoutLetters(String(form.get("mobileNumber") ?? "")),
         assignedLevels: String(form.get("assignedLevels") ?? "1"),
         password: String(form.get("password") ?? form.get("schoolId") ?? "password"),
@@ -144,6 +150,7 @@ export default function ManageUsersPage() {
           fullName: String(form.get("fullName") ?? ""),
           role: roleApi(String(form.get("role") ?? selectedUserForAction.roleValue)),
           sectionInfo: String(form.get("sectionInfo") ?? ""),
+          groupInfo: String(form.get("groupInfo") ?? ""),
           assignedLevels: String(form.get("assignedLevels") ?? "1"),
         },
       });
@@ -176,9 +183,10 @@ export default function ManageUsersPage() {
     event.preventDefault();
     if (!selectedUserForAction) return;
     try {
-      await resetPassword.mutateAsync({ userId: selectedUserForAction.api.id, password: selectedUserForAction.id });
-      setMessage("Password reset to the user's ID.");
-      showToast({ variant: "success", title: "Password reset", message: "Password was reset to the user's ID." });
+      const nextPassword = resetPasswordValue(selectedUserForAction);
+      await resetPassword.mutateAsync({ userId: selectedUserForAction.api.id, password: nextPassword });
+      setMessage(`Password reset to ${nextPassword}.`);
+      showToast({ variant: "success", title: "Password reset", message: `Password was reset to ${nextPassword}.` });
       closeActionModal();
     } catch {
       showToast({ variant: "error", title: "Reset failed", message: "Password could not be reset." });
@@ -215,7 +223,7 @@ export default function ManageUsersPage() {
                   <div className="grid grid-cols-[minmax(220px,1.15fr)_minmax(180px,0.9fr)_minmax(170px,0.85fr)_minmax(130px,0.7fr)_minmax(120px,0.55fr)] items-center gap-[0.9rem] p-[1rem_1.1rem] bg-white hover:bg-gray-50/50 transition-colors max-[680px]:grid-cols-1 max-[680px]:gap-2" key={user.api.id}>
                     <span className="flex items-center gap-3 min-w-0"><ProfileAvatar name={user.name} imageUrl={user.profileImageUrl} size={42} /><span className="flex flex-col min-w-0"><strong className="!text-[#111827] !text-[0.95rem] !font-bold truncate">{user.name}</strong><small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5 truncate">{user.email}</small></span></span>
                     <span className="!text-[#4c5d7d] !text-[0.88rem] !font-bold">{user.role}</span>
-                    <span className="flex flex-col"><strong className="!text-[#111827] !text-[0.9rem] !font-bold">{user.id}</strong>{user.section && <small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5">{user.section}</small>}</span>
+                    <span className="flex flex-col"><strong className="!text-[#111827] !text-[0.9rem] !font-bold">{user.id}</strong>{user.section && <small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5">{user.section}</small>}{user.group && <small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5">Group: {user.group}</small>}</span>
                     <span><mark className={`inline-flex items-center px-[10px] py-[4px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${user.status === "Active" ? "bg-[#e9f8ef] !text-[#078033]" : user.status === "Pending" ? "bg-[#fff6cc] !text-[#6c4c00]" : "bg-[#fff1f0] !text-[#b42318]"}`}>{user.status}</mark></span>
                     <span className="flex justify-center max-[680px]:justify-start max-[680px]:mt-2"><button className="flex items-center justify-center w-[40px] min-w-[40px] h-[40px] min-h-[40px] border border-[#e2e8f0] bg-white rounded-lg !text-[#64748b] hover:!text-[#111827] hover:bg-[#f8fafc] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#8A252C]/50 cursor-pointer" type="button" aria-label="Open account action" title="Actions" onClick={() => setSelectedUserForAction(user)}><svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg></button></span>
                   </div>
@@ -240,6 +248,7 @@ export default function ManageUsersPage() {
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Role<select className={selectClass} name="role" required>{roles.map(role => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">ID<input className={inputClass} name="schoolId" type="text" inputMode="numeric" placeholder="Student ID or staff ID" onInput={stripLettersFromInput} required /></label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Section<input className={inputClass} name="sectionInfo" type="text" placeholder="BSN 3A or department" /></label>
+                <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Group<input className={inputClass} name="groupInfo" type="text" placeholder="G1" /></label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Assigned levels<input className={inputClass} name="assignedLevels" type="text" defaultValue="1" placeholder="1 or 1,2" /></label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Mobile number<input className={inputClass} name="mobileNumber" type="tel" inputMode="tel" placeholder="Optional" onInput={stripLettersFromInput} /></label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Initial password<input className={inputClass} name="password" type="text" placeholder="Defaults to ID" /></label>
@@ -275,7 +284,7 @@ export default function ManageUsersPage() {
                 <p className="m-0 pt-[1.15rem] px-[1.35rem] pb-0 !text-[#4c5d7d] !text-[0.94rem] !font-bold leading-[1.55]">Choose one clear action for this account.</p>
                 <div className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-[0.85rem] w-auto mx-[1.35rem] my-4 p-[0.9rem] border border-[#dbe3ee] rounded-lg bg-[#f8fafc] overflow-hidden max-[680px]:grid-cols-[auto_minmax(0,1fr)] max-[680px]:gap-y-3">
                   <ProfileAvatar name={selectedUserForAction.name} imageUrl={selectedUserForAction.profileImageUrl} size={44} />
-                  <div className="min-w-0"><strong className="block !text-[#111827] !text-base !font-extrabold leading-tight truncate">{selectedUserForAction.name}</strong><small className="block mt-[0.25rem] !text-[#667085] !text-[0.82rem] !font-extrabold leading-relaxed break-words">{selectedUserForAction.id}{selectedUserForAction.section ? ` - ${selectedUserForAction.section}` : ""} - {selectedUserForAction.email}</small></div>
+                  <div className="min-w-0"><strong className="block !text-[#111827] !text-base !font-extrabold leading-tight truncate">{selectedUserForAction.name}</strong><small className="block mt-[0.25rem] !text-[#667085] !text-[0.82rem] !font-extrabold leading-relaxed break-words">{selectedUserForAction.id}{selectedUserForAction.section ? ` - ${selectedUserForAction.section}` : ""}{selectedUserForAction.group ? ` ${selectedUserForAction.group}` : ""} - {selectedUserForAction.email}</small></div>
                   <mark className={`inline-flex items-center px-[10px] py-[4px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[680px]:col-span-full max-[680px]:w-fit ${selectedUserForAction.status === "Active" ? "bg-[#e9f8ef] !text-[#078033]" : selectedUserForAction.status === "Pending" ? "bg-[#fff6cc] !text-[#6c4c00]" : "bg-[#fff1f0] !text-[#b42318]"}`}>{selectedUserForAction.status}</mark>
                 </div>
                 <div className="grid grid-cols-1 gap-[0.65rem] m-0 px-[1.35rem] pb-[1.15rem]">
@@ -287,7 +296,7 @@ export default function ManageUsersPage() {
 
             {actionStep === "edit" && <form className="flex flex-col min-h-0 overflow-y-auto" onSubmit={handleEditUser}><div className="grid grid-cols-1 gap-4 p-[1.25rem_1.35rem_0]"><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Full name<input className={inputClass} name="fullName" type="text" defaultValue={selectedUserForAction.name} required /></label><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Role<select className={selectClass} name="role" defaultValue={selectedUserForAction.roleValue} required>{roles.map(role => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Section<input className={inputClass} name="sectionInfo" type="text" defaultValue={selectedUserForAction.section} /></label><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Assigned levels<input className={inputClass} name="assignedLevels" type="text" defaultValue={(selectedUserForAction.api.assignedLevels ?? [1]).join(",")} /></label><div className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-[0.85rem] !font-bold border border-[#e2e8f0]" role="status">School email is kept unchanged for account traceability.</div></div><div className="grid grid-cols-2 gap-[0.8rem] m-0 px-[1.35rem] py-[1.1rem] pb-[1.35rem] mt-4 border-t border-[#e5eaf1] bg-white max-[680px]:grid-cols-1 shrink-0"><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#111827] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button" onClick={() => setActionStep("menu")}>Back</button><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-60" type="submit" disabled={updateUser.isPending}>Save Changes</button></div></form>}
             {actionStep === "status" && <form className="flex flex-col min-h-0 overflow-y-auto" onSubmit={handleStatusChange}><div className="grid grid-cols-1 gap-4 p-[1.25rem_1.35rem_0]"><div className="flex flex-col gap-1.5 p-4 rounded-lg bg-[#f8fafc] border border-[#dbe3ee]"><span className="!text-[0.75rem] !font-extrabold !text-[#4c5d7d] uppercase tracking-[0.04em]">Selected User</span><strong className="!text-[1.05rem] !text-[#111827] !font-bold">{selectedUserForAction.name}</strong></div><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">New status<select className={selectClass} name="status" defaultValue={selectedUserForAction.status === "Pending" ? "Active" : selectedUserForAction.status} required><option value="Active">Active</option><option value="Deactivated">Deactivated</option></select></label><div className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-[0.85rem] !font-bold border border-[#e2e8f0]" role="status">Only the account status will be changed.</div></div><div className="grid grid-cols-2 gap-[0.8rem] m-0 px-[1.35rem] py-[1.1rem] pb-[1.35rem] mt-4 border-t border-[#e5eaf1] bg-white max-[680px]:grid-cols-1 shrink-0"><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#111827] !text-[0.95rem] !font-extrabold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button" onClick={() => setActionStep("menu")}>Back</button><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-60" type="submit" disabled={updateUser.isPending}>Save Status</button></div></form>}
-            {actionStep === "reset" && <form className="flex flex-col min-h-0 overflow-y-auto" onSubmit={handlePasswordReset}><p className="m-0 pt-[1.15rem] px-[1.35rem] pb-0 !text-[#4c5d7d] !text-[0.94rem] !font-bold leading-[1.55]">Reset the password for <strong className="!text-[#111827]">{selectedUserForAction.name}</strong> to their ID: <strong className="!text-[#111827]">{selectedUserForAction.id}</strong>.</p><div className="grid grid-cols-2 gap-[0.8rem] m-0 px-[1.35rem] py-[1.1rem] pb-[1.35rem] mt-4 border-t border-[#e5eaf1] bg-[#f8fafc] max-[680px]:grid-cols-1 shrink-0"><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#111827] !text-[0.95rem] !font-extrabold hover:bg-gray-50 transition-colors cursor-pointer" type="button" onClick={() => setActionStep("menu")}>Back</button><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-60" type="submit" disabled={resetPassword.isPending}>Reset Password</button></div></form>}
+            {actionStep === "reset" && <form className="flex flex-col min-h-0 overflow-y-auto" onSubmit={handlePasswordReset}><p className="m-0 pt-[1.15rem] px-[1.35rem] pb-0 !text-[#4c5d7d] !text-[0.94rem] !font-bold leading-[1.55]">Reset the password for <strong className="!text-[#111827]">{selectedUserForAction.name}</strong> to: <strong className="!text-[#111827]">{resetPasswordValue(selectedUserForAction)}</strong>.</p><div className="grid grid-cols-2 gap-[0.8rem] m-0 px-[1.35rem] py-[1.1rem] pb-[1.35rem] mt-4 border-t border-[#e5eaf1] bg-[#f8fafc] max-[680px]:grid-cols-1 shrink-0"><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#111827] !text-[0.95rem] !font-extrabold hover:bg-gray-50 transition-colors cursor-pointer" type="button" onClick={() => setActionStep("menu")}>Back</button><button className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_10px_22px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] hover:shadow-[0_16px_34px_rgba(138,37,44,0.22)] transition-all cursor-pointer disabled:opacity-60" type="submit" disabled={resetPassword.isPending}>Reset Password</button></div></form>}
           </section>
         </div>
       )}

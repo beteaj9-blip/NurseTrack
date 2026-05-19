@@ -6,7 +6,9 @@ import edu.cit.nursetracker.notification.NotificationType;
 import edu.cit.nursetracker.user.User;
 import edu.cit.nursetracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -134,23 +136,34 @@ public class ClinicalCaseService {
                 .orElseThrow(() -> new RuntimeException("Clinical Case not found."));
     }
 
-    public ClinicalCase updateCase(Long id, ClinicalCase updatedCase) {
+    public ClinicalCase updateCase(Long id, ClinicalCase updatedCase, Long currentUserId) {
         ClinicalCase existingCase = getCaseById(id);
         if (existingCase != null) {
+            validateStudentPendingMutation(existingCase, currentUserId, "edit");
             existingCase.setCaseType(updatedCase.getCaseType());
             existingCase.setDiagnosis(updatedCase.getDiagnosis());
             existingCase.setProcedureDetails(updatedCase.getProcedureDetails());
             existingCase.setPatientInitials(updatedCase.getPatientInitials());
-            existingCase.setPatientAge(updatedCase.getPatientAge());
             existingCase.setCategory(updatedCase.getCategory());
-            existingCase.setHospital(updatedCase.getHospital());
-            existingCase.setDutyArea(updatedCase.getDutyArea());
-            existingCase.setShiftTime(updatedCase.getShiftTime());
-            existingCase.setCaseDate(updatedCase.getCaseDate());
             existingCase.setStudentReflection(updatedCase.getStudentReflection());
             existingCase.setStatus(CaseStatus.PENDING);
             return caseRepository.save(existingCase);
         }
         return null;
+    }
+
+    public void deleteCase(Long id, Long currentUserId) {
+        ClinicalCase existingCase = getCaseById(id);
+        validateStudentPendingMutation(existingCase, currentUserId, "delete");
+        caseRepository.delete(existingCase);
+    }
+
+    private void validateStudentPendingMutation(ClinicalCase existingCase, Long currentUserId, String action) {
+        if (!existingCase.getStudent().getId().equals(currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only " + action + " your own clinical cases.");
+        }
+        if (existingCase.getStatus() != CaseStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending clinical cases can be " + action + (action.endsWith("e") ? "d." : "ed."));
+        }
     }
 }

@@ -48,7 +48,10 @@ function groupSchedulesByDuty(records: any[]) {
     }
     groups.set(key, { ...schedule, groupKey: key, students: [schedule] });
   });
-  return Array.from(groups.values());
+  return Array.from(groups.values()).map((group: any) => ({
+    ...group,
+    activeStudents: group.students.filter((student: any) => !student.canceled),
+  }));
 }
 
 export function SchedulesContent({ basePath }: { basePath: string }) {
@@ -153,7 +156,9 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                   const isOtherMonth = cell.month !== "cur";
                   const dateStr = `${cell.month === "prev" ? (calMonth === 0 ? calYear - 1 : calYear) : cell.month === "next" ? (calMonth === 11 ? calYear + 1 : calYear) : calYear}-${String(cell.month === "prev" ? (calMonth === 0 ? 12 : calMonth) : cell.month === "next" ? (calMonth === 11 ? 1 : calMonth + 2) : calMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
                   const daySchedules = scheduleMap[dateStr] ?? [];
-                  const sched = daySchedules[0];
+                  const activeDaySchedules = daySchedules.filter((schedule: any) => schedule.activeStudents?.length > 0);
+                  const sched = activeDaySchedules[0] ?? daySchedules[0];
+                  const isCanceledOnly = daySchedules.length > 0 && activeDaySchedules.length === 0;
                   const isToday = dateStr === todayStr;
 
                   return (
@@ -161,7 +166,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                       key={i} type="button"
                       onClick={sched ? () => router.push(`${basePath}/schedules/day?date=${dateStr}&schedule=${sched.id}`) : undefined}
                       className={`relative flex flex-col min-h-[110px] overflow-hidden border rounded-lg p-3 text-left outline-none max-[980px]:min-h-[90px]
-                        ${sched ? "cursor-pointer border-[#ffcf01]/82 bg-[linear-gradient(145deg,#fff8d9_0%,#fff3bc_58%,#fffdf4_100%)] shadow-[0_12px_30px_rgba(161,92,7,0.1)] transition-all hover:-translate-y-0.5 hover:border-[#8a252c]/34 hover:shadow-[0_16px_34px_rgba(32,33,36,0.11)] before:absolute before:inset-[0_auto_0_0] before:w-1 before:bg-[#ffcf01]" : "cursor-default border-[#e4e7ec]/95 bg-[#fcfcfd] shadow-[0_1px_2px_rgba(32,33,36,0.03)]"}
+                        ${sched ? isCanceledOnly ? "cursor-pointer border-[#fecaca] bg-[#fef2f2] shadow-[0_12px_30px_rgba(185,28,28,0.08)] transition-all hover:-translate-y-0.5 hover:border-[#fca5a5] hover:shadow-[0_16px_34px_rgba(185,28,28,0.1)] before:absolute before:inset-[0_auto_0_0] before:w-1 before:bg-[#ef4444]" : "cursor-pointer border-[#ffcf01]/82 bg-[linear-gradient(145deg,#fff8d9_0%,#fff3bc_58%,#fffdf4_100%)] shadow-[0_12px_30px_rgba(161,92,7,0.1)] transition-all hover:-translate-y-0.5 hover:border-[#8a252c]/34 hover:shadow-[0_16px_34px_rgba(32,33,36,0.11)] before:absolute before:inset-[0_auto_0_0] before:w-1 before:bg-[#ffcf01]" : "cursor-default border-[#e4e7ec]/95 bg-[#fcfcfd] shadow-[0_1px_2px_rgba(32,33,36,0.03)]"}
                         ${isToday && !sched ? "!border-[#8a252c]/50 !bg-[linear-gradient(135deg,#fff8d6_0%,#fafafb_100%)] !shadow-[0_12px_26px_rgba(138,37,44,0.08)]" : ""}
                         ${isOtherMonth && !sched ? "opacity-[0.45]" : ""}
                       `}
@@ -169,8 +174,8 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                       <span className={`inline-flex items-center justify-center w-fit min-w-[28px] min-h-[28px] rounded-lg !text-[0.76rem] !font-[900] uppercase
                         ${isToday ? "!bg-[#8A252C] !text-white" : sched ? "!bg-[#8a252c]/10 !text-[#8a252c]" : "!text-[#475467]"}
                       `}>{cell.day}</span>
-                       {sched && <strong className="block mt-[10px] !text-[#111827] !text-[0.88rem] leading-[1.25] !font-[850]">{daySchedules.length > 1 ? `${daySchedules.length} duties` : sched.area}</strong>}
-                       {sched && <p className="m-[6px_0_0] !text-[0.76rem] leading-[1.4] !text-[#344054] !font-[800]">{daySchedules.length > 1 ? "Multiple duty assignments" : sched.hospital}</p>}
+                       {sched && <strong className="block mt-[10px] !text-[#111827] !text-[0.88rem] leading-[1.25] !font-[850]">{isCanceledOnly ? "Canceled" : activeDaySchedules.length > 1 ? `${activeDaySchedules.length} duties` : sched.area}</strong>}
+                       {sched && <p className="m-[6px_0_0] !text-[0.76rem] leading-[1.4] !text-[#344054] !font-[800]">{isCanceledOnly ? "No active schedule" : activeDaySchedules.length > 1 ? "Multiple duty assignments" : sched.hospital}</p>}
                       {!sched && !isOtherMonth && <p className="m-[10px_0_0] !text-[0.76rem] leading-[1.4] !text-[#94a3b8] !font-[800]">No assigned duty</p>}
                        {isToday && <small className="inline-flex items-center justify-center w-fit mt-auto border border-[#8a252c]/18 rounded-full bg-white/78 !text-[#8a252c] !text-[0.76rem] !font-[900] px-[8px] py-[5px]">Today</small>}
                      </button>
@@ -192,7 +197,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="inline-flex items-center justify-center px-3 py-1 bg-[#fef3c7] !text-[#92400e] !text-[0.75rem] !font-[800] rounded-full whitespace-nowrap">{item.status ?? "Scheduled"}</span>
+                      <span className={`inline-flex items-center justify-center px-3 py-1 !text-[0.75rem] !font-[800] rounded-full whitespace-nowrap ${item.activeStudents?.length === 0 ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#fef3c7] !text-[#92400e]"}`}>{item.activeStudents?.length === 0 ? "Canceled" : item.status ?? "Scheduled"}</span>
                       <button type="button" onClick={() => router.push(`${basePath}/schedules/day?date=${item.date}&schedule=${item.id}`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap">View roster</button>
                     </div>
                   </div>

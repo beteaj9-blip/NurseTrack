@@ -20,6 +20,7 @@ export interface User {
   mobileNumber?: string;
   role: UserRole;
   sectionInfo?: string;
+  groupInfo?: string;
   assignedLevels?: number[];
   profileImageUrl?: string;
   status: UserStatus;

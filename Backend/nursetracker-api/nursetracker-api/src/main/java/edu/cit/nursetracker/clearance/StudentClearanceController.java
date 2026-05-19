@@ -7,12 +7,14 @@ import edu.cit.nursetracker.user.User;
 import edu.cit.nursetracker.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -23,6 +25,7 @@ public class StudentClearanceController {
     private final StudentClearanceRepository clearanceRepository;
     private final UserRepository userRepository;
     private final AcademicTermRepository academicTermRepository;
+    private final ClearanceSettingsRepository settingsRepository;
     private final JwtService jwtService;
 
     @GetMapping
@@ -50,8 +53,23 @@ public class StudentClearanceController {
         return getStudentClearance(jwtService.getUserId(request));
     }
 
+    @GetMapping("/settings")
+    public ResponseEntity<ClearanceSettings> getSettings() {
+        return ResponseEntity.ok(currentSettings());
+    }
+
+    @PutMapping("/settings")
+    public ResponseEntity<ClearanceSettings> updateSettings(@RequestBody Map<String, Boolean> payload) {
+        ClearanceSettings settings = currentSettings();
+        settings.setEnabled(payload.getOrDefault("enabled", settings.isEnabled()));
+        return ResponseEntity.ok(settingsRepository.save(settings));
+    }
+
     @PostMapping("/student/{studentId}/submit")
-    public ResponseEntity<StudentClearance> submitForClearance(@PathVariable Long studentId) {
+    public ResponseEntity<?> submitForClearance(@PathVariable Long studentId) {
+        if (!currentSettings().isEnabled()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Clearance submission is currently disabled."));
+        }
         StudentClearance clearance = clearanceRepository.findFirstByStudentIdOrderByCreatedAtDesc(studentId)
                 .orElseGet(() -> createDefaultClearance(studentId));
         clearance.setStatus(ClearanceStatus.IN_REVIEW);
@@ -60,7 +78,7 @@ public class StudentClearanceController {
     }
 
     @PostMapping("/student/submit")
-    public ResponseEntity<StudentClearance> submitCurrentStudentForClearance(HttpServletRequest request) {
+    public ResponseEntity<?> submitCurrentStudentForClearance(HttpServletRequest request) {
         return submitForClearance(jwtService.getUserId(request));
     }
 
@@ -87,6 +105,11 @@ public class StudentClearanceController {
                 .semester(semester)
                 .status(ClearanceStatus.LOCKED)
                 .build());
+    }
+
+    private ClearanceSettings currentSettings() {
+        return settingsRepository.findFirstByOrderByIdAsc()
+                .orElseGet(() -> settingsRepository.save(ClearanceSettings.builder().enabled(true).build()));
     }
 
     private boolean intersects(Set<Integer> recordLevels, Set<Integer> visibleLevels) {

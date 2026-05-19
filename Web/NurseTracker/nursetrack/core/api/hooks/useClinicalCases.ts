@@ -95,6 +95,32 @@ export const useSubmitCase = () => {
   });
 };
 
+export const useUpdateClinicalCase = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ caseId, caseData }: { caseId: string; caseData: any }) => {
+      const { data } = await apiClient.put(`/cases/${caseId}`, caseData);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['clinical-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['clinical-cases', 'detail', String(data.id)] });
+    },
+  });
+};
+
+export const useDeleteClinicalCase = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (caseId: string) => {
+      await apiClient.delete(`/cases/${caseId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clinical-cases'] });
+    },
+  });
+};
+
 export const useReviewCase = () => {
   const queryClient = useQueryClient();
   return useMutation({

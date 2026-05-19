@@ -1,7 +1,9 @@
 package edu.cit.nursetracker.user;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -27,20 +29,24 @@ public class JwtService {
 
     public Long getUserId(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
-        if (header == null || !header.startsWith("Bearer ")) throw new RuntimeException("Missing authorization token.");
+        if (header == null || !header.startsWith("Bearer ")) throw unauthorized("Missing authorization token.");
         String token = header.substring("Bearer ".length());
         String[] parts = token.split("\\.");
-        if (parts.length != 3 || !sign(parts[0] + "." + parts[1]).equals(parts[2])) throw new RuntimeException("Invalid authorization token.");
+        if (parts.length != 3 || !sign(parts[0] + "." + parts[1]).equals(parts[2])) throw unauthorized("Invalid authorization token.");
         String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
         long exp = Long.parseLong(extract(payload, "exp"));
-        if (Instant.now().getEpochSecond() > exp) throw new RuntimeException("Authorization token expired.");
+        if (Instant.now().getEpochSecond() > exp) throw unauthorized("Authorization token expired.");
         return Long.parseLong(extract(payload, "sub"));
+    }
+
+    private ResponseStatusException unauthorized(String message) {
+        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
     }
 
     private String extract(String payload, String key) {
         String marker = "\"" + key + "\":";
         int start = payload.indexOf(marker);
-        if (start < 0) throw new RuntimeException("Invalid authorization token.");
+        if (start < 0) throw unauthorized("Invalid authorization token.");
         start += marker.length();
         int end = payload.indexOf(',', start);
         if (end < 0) end = payload.indexOf('}', start);

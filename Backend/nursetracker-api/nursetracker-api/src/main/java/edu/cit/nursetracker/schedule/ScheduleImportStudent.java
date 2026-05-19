@@ -7,6 +7,7 @@ public record ScheduleImportStudent(
         boolean matched,
         String schoolId,
         String section,
+        String group,
         Set<Integer> levels,
         String profileImageUrl
 ) {}

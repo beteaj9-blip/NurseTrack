@@ -1,21 +1,39 @@
 import React from "react";
 import Link from "next/link";
 import { useStudentCases } from "@/core/api/hooks/useClinicalCases";
-import { useStudentClearance, useSubmitClearance } from "@/core/api/hooks/useClearance";
+import { useClearanceSettings, useStudentClearance, useSubmitClearance } from "@/core/api/hooks/useClearance";
 import { useActiveAcademicTerm } from "@/core/api/hooks/useAcademicTerms";
 import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
+const CASES_PER_PAGE = 5;
+const caseStatusOptions = [
+  { value: "all", label: "All statuses" },
+  { value: "PENDING", label: "Pending" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "RETURNED", label: "Returned" },
+];
+
+const submittedSortOptions = [
+  { value: "newest", label: "Newest submitted" },
+  { value: "oldest", label: "Oldest submitted" },
+];
+
 function formatDate(date?: string) {
   if (!date) return "";
-  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const datePart = date.includes("T") ? date.split("T")[0] : date;
+  return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function formatTime(time?: string) {
   if (!time) return "";
   return time.replace(/\s*-\s*/g, " - ");
+}
+
+function submittedTimestamp(clinicalCase: any) {
+  return new Date(clinicalCase.createdAt ?? clinicalCase.submittedAt ?? clinicalCase.updatedAt ?? clinicalCase.procedureDate ?? 0).getTime();
 }
 
 function statusClass(status?: string) {
@@ -41,9 +59,32 @@ function isOperatingRoomCase(clinicalCase: any) {
 }
 
 function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; isLoading: boolean }) {
+  const [page, setPage] = React.useState(1);
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [submittedSort, setSubmittedSort] = React.useState("newest");
+  const filteredCases = React.useMemo(() => {
+    return cases
+      .filter((clinicalCase: any) => statusFilter === "all" || clinicalCase.status === statusFilter)
+      .slice()
+      .sort((a: any, b: any) => {
+        const difference = submittedTimestamp(b) - submittedTimestamp(a);
+        return submittedSort === "newest" ? difference : -difference;
+      });
+  }, [cases, statusFilter, submittedSort]);
+  const totalPages = Math.max(1, Math.ceil(filteredCases.length / CASES_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const pageCases = filteredCases.slice((currentPage - 1) * CASES_PER_PAGE, currentPage * CASES_PER_PAGE);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [cases.length, statusFilter, submittedSort, title]);
+
   return (
     <div className="mb-8">
-      <h3 className="text-[#8A252C] text-[1.1rem] font-[800] mb-4 m-0">{title}</h3>
+      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+        <h3 className="text-[#8A252C] text-[1.1rem] font-[800] m-0">{title}</h3>
+        <div className="flex items-center gap-3 flex-wrap"><div className="min-w-[190px]"><InlineSelect value={statusFilter} options={caseStatusOptions} placeholder="All statuses" onChange={setStatusFilter} /></div><div className="min-w-[190px]"><InlineSelect value={submittedSort} options={submittedSortOptions} placeholder="Sort by submitted" onChange={setSubmittedSort} /></div></div>
+      </div>
       <div className="w-full overflow-x-auto border border-[#e2e8f0] rounded-lg">
         <table className="w-full min-w-[980px] text-left border-collapse">
           <thead>
@@ -51,16 +92,17 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
               <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Category</th>
               <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Procedure Performed</th>
               <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Status</th>
-              <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Date</th>
+              <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Case Date</th>
+              <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Date Submitted</th>
               <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Time</th>
               <th className="p-4 text-[#1e293b] text-[0.78rem] font-[900] uppercase tracking-wide">Action</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} className="p-4 text-center font-bold text-gray-500">Loading cases...</td></tr>
-            ) : cases.length > 0 ? (
-              cases.map((clinicalCase: any) => (
+              <tr><td colSpan={7} className="p-4 text-center font-bold text-gray-500">Loading cases...</td></tr>
+            ) : pageCases.length > 0 ? (
+              pageCases.map((clinicalCase: any) => (
                 <tr key={clinicalCase.id} className="border-b border-[#e2e8f0] last:border-b-0 hover:bg-[#fcfcfc] transition-colors">
                   <td className="p-4 text-[#111827] text-[0.9rem] font-[800]">{caseCategoryLabel(clinicalCase.category)}</td>
                   <td className="p-4 text-[#111827] text-[0.9rem] font-[800]">{clinicalCase.procedurePerformed}</td>
@@ -70,6 +112,7 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
                     </span>
                   </td>
                   <td className="p-4 text-[#111827] text-[0.9rem] font-[800]">{formatDate(clinicalCase.procedureDate)}</td>
+                  <td className="p-4 text-[#111827] text-[0.9rem] font-[800]">{formatDate(clinicalCase.createdAt ?? clinicalCase.submittedAt ?? clinicalCase.updatedAt)}</td>
                   <td className="p-4 text-[#111827] text-[0.9rem] font-[800]">{formatTime(clinicalCase.shiftTime)}</td>
                   <td className="p-4">
                     <Link href={`/nursing-student/clinical-cases/detail?id=${clinicalCase.id}`} className="!text-[#8A252C] text-[0.9rem] font-[900] hover:underline">View</Link>
@@ -78,12 +121,17 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="p-4 text-center text-[#64748b] text-[0.9rem] font-semibold">No cases recorded yet.</td>
+                <td colSpan={7} className="p-4 text-center text-[#64748b] text-[0.9rem] font-semibold">No cases recorded yet.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+      {filteredCases.length > CASES_PER_PAGE && <div className="mt-3 flex items-center justify-end gap-3">
+        <button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white !text-[#334155] !text-[0.84rem] !font-[900] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+        <span className="!text-[#64748b] !text-[0.84rem] !font-[900]">Page {currentPage} of {totalPages}</span>
+        <button type="button" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} className="min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white !text-[#334155] !text-[0.84rem] !font-[900] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+      </div>}
     </div>
   );
 }
@@ -94,24 +142,38 @@ export default function StudentClinicalCaseContent() {
   const { data: cases, isLoading } = useStudentCases();
   const { data: activeTerm } = useActiveAcademicTerm();
   const { data: clearance } = useStudentClearance();
+  const { data: clearanceSettings } = useClearanceSettings();
   const submitClearance = useSubmitClearance();
   const pendingCount = cases?.filter((c: any) => c.status === "PENDING")?.length ?? 0;
   const clearanceStatus = clearance?.status ?? "LOCKED";
-  const clearanceLabel = clearanceStatus === "IN_REVIEW" ? "In review" : clearanceStatus === "CLEARED" ? "Cleared" : "Clearance locked";
-  const canSubmitClearance = clearanceStatus === "LOCKED" && pendingCount === 0 && (cases?.length ?? 0) > 0;
+  const clearanceEnabled = clearanceSettings?.enabled !== false;
+  const clearanceLabel = clearanceStatus === "IN_REVIEW" ? "In review" : clearanceStatus === "CLEARED" ? "Cleared" : clearanceEnabled ? "Not submitted" : "Clearance disabled";
+  const canSubmitClearance = clearanceEnabled && clearanceStatus === "LOCKED" && pendingCount === 0 && (cases?.length ?? 0) > 0;
+  const clearanceBlockReason = !clearanceEnabled
+    ? "Clearance submission is currently disabled by the admin."
+    : clearanceStatus === "IN_REVIEW"
+      ? "Your clearance is already submitted and waiting for review."
+      : clearanceStatus === "CLEARED"
+        ? "Your clearance has already been approved."
+        : pendingCount > 0
+          ? `You still have ${pendingCount} pending clinical case${pendingCount === 1 ? "" : "s"}.`
+          : (cases?.length ?? 0) === 0
+            ? "You need at least one clinical case before submitting for clearance."
+            : "You can submit your clearance now.";
   const deliveryRoomCases = (cases ?? []).filter(isDeliveryRoomCase);
   const operatingRoomCases = (cases ?? []).filter(isOperatingRoomCase);
 
   const handleSubmitClearance = async () => {
     if (!canSubmitClearance) {
-      showToast({ variant: "error", title: "Clearance unavailable", message: "Complete all pending cases before submitting for clearance." });
+      showToast({ variant: "error", title: "Clearance unavailable", message: clearanceEnabled ? "Complete all pending cases before submitting for clearance." : "Clearance submission is currently disabled by the admin." });
       return;
     }
     try {
       await submitClearance.mutateAsync();
       showToast({ variant: "success", title: "Clearance submitted", message: "Your cases were submitted for clearance review." });
-    } catch {
-      showToast({ variant: "error", title: "Submission failed", message: "Clearance could not be submitted." });
+    } catch (error: any) {
+      const backendMessage = error?.response?.data?.message || "Clearance could not be submitted.";
+      showToast({ variant: "error", title: "Submission failed", message: String(backendMessage) });
     }
   };
 
@@ -163,7 +225,11 @@ export default function StudentClinicalCaseContent() {
             Semester
             <InlineSelect value={activeTerm?.semester ?? ""} options={activeTerm?.semester ? [{ value: activeTerm.semester, label: activeTerm.semester }] : []} placeholder="Semester" onChange={() => {}} />
           </label>
-          <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
+          <div className="relative group">
+            <button className="relative h-[50px] px-5 pr-10 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
+            {!canSubmitClearance && <span className="absolute right-3 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full bg-[#fff7d6] !text-[#92400e] pointer-events-none"><svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-[2.4]" aria-hidden="true"><path d="M12 3 2.5 20.5h19L12 3Z" /><path d="M12 9v5" strokeLinecap="round" /><path d="M12 17.5h.01" strokeLinecap="round" /></svg></span>}
+            {!canSubmitClearance && <span className="pointer-events-none absolute left-1/2 top-[58px] z-30 hidden w-[280px] -translate-x-1/2 rounded-lg border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-center !text-[0.76rem] !font-[850] leading-[1.35] !text-[#92400e] shadow-[0_14px_28px_rgba(15,23,42,0.14)] group-hover:block">{clearanceBlockReason}</span>}
+          </div>
           <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer" type="button" onClick={() => window.print()}>Print Clearance</button>
         </div>
 
@@ -172,7 +238,7 @@ export default function StudentClinicalCaseContent() {
 
         {/* Footer info */}
         <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-lg p-4">
-          <p className="text-[#64748b] text-[0.85rem] font-[600] m-0">Clearance status: {clearanceLabel}.</p>
+          <p className="text-[#64748b] text-[0.85rem] font-[600] m-0">Clearance status: {clearanceLabel}. {clearanceEnabled ? "Submission is open." : "Submission is currently disabled."}</p>
         </div>
 
       </div>

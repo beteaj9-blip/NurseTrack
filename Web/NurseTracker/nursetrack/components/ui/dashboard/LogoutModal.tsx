@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/core/store/authStore';
 
 interface LogoutModalProps {
   open: boolean;
@@ -10,10 +11,12 @@ interface LogoutModalProps {
 
 export function LogoutModal({ open, onClose }: LogoutModalProps) {
   const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
 
   if (!open) return null;
 
   const handleLogout = () => {
+    logout();
     onClose();
     router.push('/');
   };

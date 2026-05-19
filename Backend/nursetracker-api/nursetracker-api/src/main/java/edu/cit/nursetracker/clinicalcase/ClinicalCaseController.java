@@ -80,9 +80,15 @@ public class ClinicalCaseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ClinicalCase> updateCase(@PathVariable Long id, @RequestBody ClinicalCase clinicalCase) {
-        ClinicalCase updatedCase = caseService.updateCase(id, clinicalCase);
+    public ResponseEntity<ClinicalCase> updateCase(@PathVariable Long id, @RequestBody ClinicalCase clinicalCase, HttpServletRequest request) {
+        ClinicalCase updatedCase = caseService.updateCase(id, clinicalCase, jwtService.getUserId(request));
         return updatedCase != null ? ResponseEntity.ok(updatedCase) : ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCase(@PathVariable Long id, HttpServletRequest request) {
+        caseService.deleteCase(id, jwtService.getUserId(request));
+        return ResponseEntity.noContent().build();
     }
 
     private Map<String, Object> toResponse(ClinicalCase clinicalCase) {

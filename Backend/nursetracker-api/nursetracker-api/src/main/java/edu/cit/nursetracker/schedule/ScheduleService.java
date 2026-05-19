@@ -29,7 +29,10 @@ public class ScheduleService {
     }
 
     public void unassignSchedule(Long scheduleId) {
-        scheduleRepository.deleteById(scheduleId);
+        scheduleRepository.findById(scheduleId).ifPresent(schedule -> {
+            schedule.setCanceled(true);
+            scheduleRepository.save(schedule);
+        });
     }
 
     public Schedule updateSchedule(Long scheduleId, Schedule updatedSchedule) {
@@ -42,6 +45,7 @@ public class ScheduleService {
         schedule.setShiftDate(updatedSchedule.getShiftDate());
         schedule.setStartTime(updatedSchedule.getStartTime());
         schedule.setEndTime(updatedSchedule.getEndTime());
+        if (updatedSchedule.getCanceled() != null) schedule.setCanceled(updatedSchedule.getCanceled());
         return scheduleRepository.save(schedule);
     }
 

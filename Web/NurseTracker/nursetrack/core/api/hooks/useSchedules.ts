@@ -28,6 +28,7 @@ function normalizeSchedule(schedule: any) {
     rawEndTime: schedule.rawEndTime ?? schedule.endTime,
     startTime: formatTime(schedule.startTime),
     endTime: formatTime(schedule.endTime),
+    canceled: schedule.canceled === true || schedule.canceled === 1 || schedule.canceled === '1' || String(schedule.canceled).toLowerCase() === 'true',
   };
 }
 

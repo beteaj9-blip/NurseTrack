@@ -9,5 +9,6 @@ import java.util.Optional;
 @Repository
 public interface AcademicTermRepository extends JpaRepository<AcademicTerm, Long> {
     Optional<AcademicTerm> findFirstByActiveTrueOrderByUpdatedAtDesc();
+    Optional<AcademicTerm> findFirstBySchoolYearIgnoreCaseAndSemesterIgnoreCase(String schoolYear, String semester);
     List<AcademicTerm> findAllByOrderByUpdatedAtDesc();
 }

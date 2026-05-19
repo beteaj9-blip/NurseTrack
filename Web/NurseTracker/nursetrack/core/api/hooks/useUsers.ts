@@ -94,6 +94,32 @@ export const useImportSectionAssignments = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['academic-terms'] });
+    },
+  });
+};
+
+export const usePreviewSectionAssignments = () => {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data } = await apiClient.post('/users/section-import/preview', formData);
+      return data;
+    },
+  });
+};
+
+export const usePublishSectionAssignments = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (preview: any) => {
+      const { data } = await apiClient.post('/users/section-import/publish', preview);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['academic-terms'] });
     },
   });
 };

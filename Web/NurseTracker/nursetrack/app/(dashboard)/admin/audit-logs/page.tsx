@@ -69,6 +69,7 @@ export default function AuditLogsPage() {
   const [activeRange, setActiveRange] = useState("this");
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
+  const [page, setPage] = useState(1);
   const { data = [], isLoading } = useAuditLogs();
   const logs = (data as AuditLog[]).filter(isActionLog);
 
@@ -79,11 +80,18 @@ export default function AuditLogsPage() {
     const matchesSearch = !search || [log.actor, log.actorRole, log.action, affected.name, affected.context, log.category].some(val => val.toLowerCase().includes(search.toLowerCase()));
     return matchesRange && matchesDate && matchesSearch;
   }), [logs, activeRange, search, date]);
+  const perPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / perPage));
+  const pagedLogs = filteredLogs.slice((page - 1) * perPage, page * perPage);
+  React.useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   const clearFilters = () => {
     setActiveRange("this");
     setSearch("");
     setDate("");
+    setPage(1);
   };
 
   const inputClass = "w-full min-h-[50px] px-4 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !text-[0.86rem] !font-[800] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
@@ -97,15 +105,17 @@ export default function AuditLogsPage() {
 
         <div className="grid grid-cols-[214px_minmax(360px,1.15fr)_minmax(270px,0.7fr)_110px] items-end gap-[1rem] mb-[1.35rem] max-[1180px]:grid-cols-2 max-[820px]:grid-cols-1">
           <div className="inline-flex items-center gap-[0.35rem] w-fit p-[0.25rem] border border-[#dbe3ee] rounded-full bg-white shadow-[0_8px_20px_rgba(15,23,42,0.04)] max-[1180px]:w-full max-[1180px]:justify-center" role="group" aria-label="Audit log date range"><button className={`min-h-[38px] px-[1rem] border-0 rounded-full font-inherit !text-[0.82rem] !font-[900] cursor-pointer transition-colors max-[1180px]:flex-1 ${activeRange === "this" ? "bg-[#8a252c] !text-white shadow-[0_8px_16px_rgba(138,37,44,0.12)]" : "bg-transparent !text-[#1e2f4f] hover:bg-[#f8fafc]"}`} type="button" onClick={() => setActiveRange("this")}>This week</button><button className={`min-h-[38px] px-[1rem] border-0 rounded-full font-inherit !text-[0.82rem] !font-[900] cursor-pointer transition-colors max-[1180px]:flex-1 ${activeRange === "last" ? "bg-[#8a252c] !text-white shadow-[0_8px_16px_rgba(138,37,44,0.12)]" : "bg-transparent !text-[#1e2f4f] hover:bg-[#f8fafc]"}`} type="button" onClick={() => setActiveRange("last")}>Last week</button></div>
-          <label className={labelClass} htmlFor="audit-search">Search<input className={inputClass} id="audit-search" type="search" placeholder="Search actor, student, action, or record" value={search} onChange={e => setSearch(e.target.value)} /></label>
-          <label className={labelClass} htmlFor="audit-date">Date<input className={inputClass} id="audit-date" type="date" value={date} onChange={e => setDate(e.target.value)} /></label>
+          <label className={labelClass} htmlFor="audit-search">Search<input className={inputClass} id="audit-search" type="search" placeholder="Search actor, student, action, or record" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></label>
+          <label className={labelClass} htmlFor="audit-date">Date<input className={inputClass} id="audit-date" type="date" value={date} onChange={e => { setDate(e.target.value); setPage(1); }} /></label>
           <button className={ghostBtn} type="button" onClick={clearFilters}>Clear</button>
         </div>
 
         <div className="w-full overflow-hidden border border-[#dbe3ee] rounded-[14px] bg-white">
           <div className="grid grid-cols-[minmax(230px,1fr)_minmax(210px,0.9fr)_minmax(300px,1.15fr)_minmax(240px,0.95fr)] items-center gap-x-[1.25rem] w-full p-[1.05rem_1.25rem] bg-[#f8fafc] border-b border-[#dbe3ee] max-[1180px]:grid-cols-[minmax(180px,1fr)_minmax(160px,0.85fr)_minmax(220px,1fr)_minmax(190px,0.9fr)] max-[820px]:hidden"><span className="!text-[#0b1b3a] !text-[0.78rem] !font-[900] uppercase tracking-[0.045em] whitespace-nowrap min-w-0">Actor</span><span className="!text-[#0b1b3a] !text-[0.78rem] !font-[900] uppercase tracking-[0.045em] whitespace-nowrap min-w-0">Action</span><span className="!text-[#0b1b3a] !text-[0.78rem] !font-[900] uppercase tracking-[0.045em] whitespace-nowrap min-w-0">Affected Record</span><span className="!text-[#0b1b3a] !text-[0.78rem] !font-[900] uppercase tracking-[0.045em] whitespace-nowrap min-w-0 justify-self-start text-left">Time</span></div>
-          {filteredLogs.map(log => { const affected = affectedRecord(log); return <div className="grid grid-cols-[minmax(230px,1fr)_minmax(210px,0.9fr)_minmax(300px,1.15fr)_minmax(240px,0.95fr)] items-center gap-x-[1.25rem] w-full min-h-[72px] p-[0.92rem_1.25rem] border-b border-[#e5eaf1] last:border-b-0 max-[1180px]:grid-cols-[minmax(180px,1fr)_minmax(160px,0.85fr)_minmax(220px,1fr)_minmax(190px,0.9fr)] max-[820px]:grid-cols-1 max-[820px]:gap-y-[0.45rem] max-[820px]:p-[1rem]" key={log.id}><span className="min-w-0"><strong className="block !text-[#020617] !text-[0.86rem] leading-[1.25] !font-[900]">{log.actor}</strong><small className="block mt-[0.2rem] !text-[#1e3a5f] !text-[0.72rem] !font-[800] leading-[1.2]">{formatRole(log.actorRole)}</small></span><span className="min-w-0"><strong className="block !text-[#020617] !text-[0.84rem] leading-[1.25] !font-[900]">{log.action}</strong></span><span className="min-w-0"><strong className="block !text-[#020617] !text-[0.86rem] leading-[1.25] !font-[900]">{affected.name}</strong><small className="block mt-[0.2rem] !text-[#1e3a5f] !text-[0.72rem] !font-[800] leading-[1.2]">{affected.context}</small></span><span className="min-w-0 justify-self-start text-left whitespace-nowrap max-[820px]:whitespace-normal max-[820px]:mt-[0.25rem]"><strong className="block !text-[#020617] !text-[0.84rem] leading-[1.25] !font-[900]">{formatTime(log.occurredAt)}</strong></span></div>; })}
+          {pagedLogs.map(log => { const affected = affectedRecord(log); return <div className="grid grid-cols-[minmax(230px,1fr)_minmax(210px,0.9fr)_minmax(300px,1.15fr)_minmax(240px,0.95fr)] items-center gap-x-[1.25rem] w-full min-h-[72px] p-[0.92rem_1.25rem] border-b border-[#e5eaf1] last:border-b-0 max-[1180px]:grid-cols-[minmax(180px,1fr)_minmax(160px,0.85fr)_minmax(220px,1fr)_minmax(190px,0.9fr)] max-[820px]:grid-cols-1 max-[820px]:gap-y-[0.45rem] max-[820px]:p-[1rem]" key={log.id}><span className="min-w-0"><strong className="block !text-[#020617] !text-[0.86rem] leading-[1.25] !font-[900]">{log.actor}</strong><small className="block mt-[0.2rem] !text-[#1e3a5f] !text-[0.72rem] !font-[800] leading-[1.2]">{formatRole(log.actorRole)}</small></span><span className="min-w-0"><strong className="block !text-[#020617] !text-[0.84rem] leading-[1.25] !font-[900]">{log.action}</strong></span><span className="min-w-0"><strong className="block !text-[#020617] !text-[0.86rem] leading-[1.25] !font-[900]">{affected.name}</strong><small className="block mt-[0.2rem] !text-[#1e3a5f] !text-[0.72rem] !font-[800] leading-[1.2]">{affected.context}</small></span><span className="min-w-0 justify-self-start text-left whitespace-nowrap max-[820px]:whitespace-normal max-[820px]:mt-[0.25rem]"><strong className="block !text-[#020617] !text-[0.84rem] leading-[1.25] !font-[900]">{formatTime(log.occurredAt)}</strong></span></div>; })}
         </div>
+
+        {totalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {page} of {totalPages}</span><button className={ghostBtn} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages}>Next</button></div>}
 
         {filteredLogs.length === 0 && <div className="mt-[1rem] p-[1.1rem_1.25rem] border border-dashed border-[rgba(138,37,44,0.24)] rounded-[12px] bg-[#fffaf0] !text-[#8a252c] !font-[800]">{isLoading ? "Loading audit log entries..." : "No audit log entries match this view. New admin actions will appear here after they are saved."}</div>}
       </section>

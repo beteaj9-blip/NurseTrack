@@ -73,6 +73,7 @@ public class UserController {
         user.setMobileNumber(payload.get("mobileNumber"));
         user.setSchoolId(payload.get("schoolId"));
         user.setSectionInfo(payload.get("sectionInfo"));
+        user.setGroupInfo(payload.get("groupInfo"));
         user.setAssignedLevels(assignedLevelsForRole(role, payload.getOrDefault("assignedLevels", "1")));
         user.setPasswordHash(payload.getOrDefault("password", payload.getOrDefault("schoolId", "password")));
         user.setRole(role);
@@ -93,6 +94,7 @@ public class UserController {
             if (updates.containsKey("mobileNumber")) user.setMobileNumber(updates.get("mobileNumber"));
             if (updates.containsKey("schoolId")) user.setSchoolId(updates.get("schoolId"));
             if (updates.containsKey("sectionInfo")) user.setSectionInfo(updates.get("sectionInfo"));
+            if (updates.containsKey("groupInfo")) user.setGroupInfo(updates.get("groupInfo"));
             if (updates.containsKey("assignedLevels")) user.setAssignedLevels(parseAssignedLevels(updates.get("assignedLevels")));
             if (updates.containsKey("role")) user.setRole(UserRole.valueOf(updates.get("role")));
             if (user.getRole() == UserRole.ADMIN) user.setAssignedLevels(new HashSet<>(Set.of(1, 2, 3, 4)));
@@ -148,6 +150,16 @@ public class UserController {
     @PostMapping("/section-import")
     public ResponseEntity<java.util.Map<String, Integer>> importSectionAssignments(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         return ResponseEntity.ok(userService.importSectionAssignments(file));
+    }
+
+    @PostMapping("/section-import/preview")
+    public ResponseEntity<SectionImportPreview> previewSectionAssignments(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(userService.previewSectionAssignments(file));
+    }
+
+    @PostMapping("/section-import/publish")
+    public ResponseEntity<SectionImportResult> publishSectionAssignments(@RequestBody SectionImportPreview preview) {
+        return ResponseEntity.ok(userService.publishSectionAssignments(preview));
     }
 
     @PutMapping("/me")

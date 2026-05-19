@@ -103,7 +103,8 @@ public class ScheduleImportService {
                     continue;
                 }
                 User target = student.get();
-                target.setSectionInfo(group.section());
+                target.setSectionInfo(importSection(group));
+                target.setGroupInfo(importGroup(group));
                 target.setAssignedLevels(new HashSet<>(Set.of(preview.level())));
                 userRepository.save(target);
                 matched++;
@@ -140,20 +141,22 @@ public class ScheduleImportService {
         TimeRange timeRange = raw.areaParts().stream().map(this::parseTimeRange).filter(Optional::isPresent).map(Optional::get).findFirst().orElse(new TimeRange("", ""));
         String hospitalArea = hospitalArea(raw.areaParts());
         Optional<User> matchedInstructor = resolveUser(String.join(" ", raw.instructorParts()), instructors);
+        SectionGroup sectionGroup = splitSectionGroup(raw.section());
         List<ScheduleImportStudent> studentRecords = raw.students().stream()
                 .map(student -> {
                     String displayName = displayStudentName(student);
                     Optional<User> matchedStudent = resolveUser(displayName, students);
                     return matchedStudent
-                            .map(user -> new ScheduleImportStudent(user.getFullName(), true, user.getSchoolId(), user.getSectionInfo(), user.getAssignedLevels(), user.getProfileImageUrl()))
-                            .orElseGet(() -> new ScheduleImportStudent(displayName, false, null, null, null, null));
+                            .map(user -> new ScheduleImportStudent(user.getFullName(), true, user.getSchoolId(), user.getSectionInfo(), user.getGroupInfo(), user.getAssignedLevels(), user.getProfileImageUrl()))
+                            .orElseGet(() -> new ScheduleImportStudent(displayName, false, null, null, null, null, null));
                 })
                 .toList();
         List<String> studentNames = studentRecords.stream().map(ScheduleImportStudent::name).toList();
         int matchedStudents = (int) studentRecords.stream().filter(ScheduleImportStudent::matched).count();
         return new ScheduleImportGroup(
                 UUID.randomUUID().toString(),
-                raw.section(),
+                sectionGroup.section(),
+                sectionGroup.group(),
                 dateRange.startDate(),
                 dateRange.endDate(),
                 List.of(),
@@ -312,6 +315,29 @@ public class ScheduleImportService {
             index = index * 26 + (Character.toUpperCase(ch) - 'A' + 1);
         }
         return Math.max(0, index - 1);
+    }
+
+    private String importSection(ScheduleImportGroup group) {
+        if (group.section() != null && !group.section().isBlank()) return group.section().trim();
+        return splitSectionGroup(group.group()).section();
+    }
+
+    private String importGroup(ScheduleImportGroup group) {
+        if (group.group() != null && !group.group().isBlank()) return group.group().trim();
+        return splitSectionGroup(group.section()).group();
+    }
+
+    private SectionGroup splitSectionGroup(String value) {
+        String text = value == null ? "" : value.trim().replaceAll("\\s+", " ");
+        if (text.isBlank()) return new SectionGroup("", "");
+        Matcher groupMatcher = Pattern.compile("(?i)\\b(g\\s*\\d+[a-z]?)\\b").matcher(text);
+        String group = "";
+        String section = text;
+        if (groupMatcher.find()) {
+            group = groupMatcher.group(1).replaceAll("\\s+", "").toUpperCase();
+            section = text.replace(groupMatcher.group(0), "").replaceAll("[-–—]", " ").replaceAll("\\s+", " ").trim();
+        }
+        return new SectionGroup(section, group);
     }
 
     private String[] split(String line) {
@@ -477,6 +503,7 @@ public class ScheduleImportService {
     private record DateRange(String startDate, String endDate) {}
     private record TimeRange(String start, String end) {}
     private record Location(Hospital hospital, String ward) {}
+    private record SectionGroup(String section, String group) {}
     private record RawGroup(String section, List<String> dateParts, List<String> areaParts, List<String> instructorParts, List<String> students) {}
     private static class RawBuilder {
         private String section;
