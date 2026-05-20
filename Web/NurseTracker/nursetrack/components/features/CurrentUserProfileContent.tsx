@@ -41,14 +41,14 @@ function formatUpdatedAt(value?: string) {
 export function CurrentUserProfileContent() {
   const authUser = useAuthStore((state) => state.user);
   const login = useAuthStore((state) => state.login);
-  const { data } = useCurrentUser();
+  const { data, isLoading } = useCurrentUser();
   const user = (data ?? authUser) as User | null;
 
   React.useEffect(() => {
     if (data) login(data);
   }, [data, login]);
 
-  if (!user) {
+  if (isLoading || !user) {
     return <main className="p-[clamp(24px,4vw,42px)]"><LoadingState message="Loading profile..." className="rounded-xl border border-[#e2e8f0] bg-white" /></main>;
   }
 

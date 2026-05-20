@@ -38,7 +38,7 @@ export const useAttendance = (studentId?: string) => {
   return useQuery({
     queryKey: ['attendance', studentId],
     queryFn: async () => {
-      const { data } = await apiClient.get('/duties/student');
+      const { data } = await apiClient.get(studentId ? `/duties/student/${studentId}` : '/duties/student');
       return data.map(normalizeDuty);
     },
   });

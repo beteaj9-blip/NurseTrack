@@ -16,9 +16,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // TODO: Implement actual JWT verification logic here once backend is ready.
-  // For Phase 1 mockup, we bypass middleware.
-  // Example future logic:
+  // Auth redirects are handled in the dashboard shell because the JWT is stored client-side.
+  // Example server-side flow if the token is later moved to cookies:
   // const token = request.cookies.get('token')?.value;
   // if (!token) return NextResponse.redirect(new URL('/login', request.url));
   // const payload = decodeJwt(token);

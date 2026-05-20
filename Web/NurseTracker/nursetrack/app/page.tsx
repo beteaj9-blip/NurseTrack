@@ -2,12 +2,13 @@
 
 import React, { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthInfoPanel } from "@/components/ui/AuthInfoPanel";
 import { InputField } from "@/components/ui/InputField";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { apiClient } from "@/core/api/axios";
+import { consumeSessionExpiredFlag } from "@/core/auth/session";
 import { useAuthStore } from "@/core/store/authStore";
 import { User, roleToBasePath } from "@/core/types/user";
 
@@ -29,11 +30,20 @@ function normalizeLoginResponse(raw: unknown): LoginResponse | null {
 
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
 
   const [isLoading, setIsLoading] = useState(false);
   const [formMessage, setFormMessage] = useState("Enter your account details to continue.");
   const [isError, setIsError] = useState(false);
+
+  React.useEffect(() => {
+    if (searchParams.get("session") === "expired" || consumeSessionExpiredFlag()) {
+      setIsError(true);
+      setFormMessage("Your session expired. Please sign in again.");
+      window.history.replaceState(null, "", "/");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

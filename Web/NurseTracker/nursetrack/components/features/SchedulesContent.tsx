@@ -102,9 +102,9 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
   }
 
   return (
-    <main className="p-[clamp(24px,4vw,42px)] content-start grid gap-4 w-full">
+    <main className="min-w-0 overflow-x-hidden p-[clamp(16px,3vw,42px)] content-start grid gap-4 w-full">
       <section className="grid gap-6">
-        <article className="mt-0 p-[1.45rem] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] flex flex-col min-h-[calc(100vh-clamp(48px,8vw,84px))]">
+        <article className="min-w-0 mt-0 p-[clamp(18px,2.5vw,1.45rem)] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] flex flex-col min-h-[calc(100vh-clamp(48px,8vw,84px))]">
           <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-[#e5eaf1] flex-wrap">
             <div>
               <h2 className="m-0 !text-[#111827] !text-[1.25rem] leading-[1.15] !font-bold">
@@ -135,11 +135,11 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                   {MONTHS[calMonth]} {calYear}
                 </strong>
                 <div className="flex items-center gap-2 ml-auto">
-                  <button onClick={prevMonth} className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] transition-colors text-[#475467]">
+                  <button onClick={prevMonth} className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] transition-colors text-[#475467] cursor-pointer">
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><polyline points="15 18 9 12 15 6"/></svg>
                   </button>
-                  <button onClick={() => { setCalYear(today.getFullYear()); setCalMonth(today.getMonth()); }} className="h-[34px] px-3 rounded-lg border border-[#e2e8f0] bg-white !text-[0.8rem] !font-bold text-[#344054] hover:bg-[#f1f5f9] transition-colors">Today</button>
-                  <button onClick={nextMonth} className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] transition-colors text-[#475467]">
+                  <button onClick={() => { setCalYear(today.getFullYear()); setCalMonth(today.getMonth()); }} className="h-[34px] px-3 rounded-lg border border-[#e2e8f0] bg-white !text-[0.8rem] !font-bold text-[#344054] hover:bg-[#f1f5f9] transition-colors cursor-pointer">Today</button>
+                  <button onClick={nextMonth} className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] transition-colors text-[#475467] cursor-pointer">
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 </div>
@@ -149,11 +149,20 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
               </div>
 
               {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-3 p-[14px] border border-[#e4e7ec]/92 rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(249,250,251,0.9)),#f8fafc] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] max-[980px]:grid-cols-2" id="calendar-view">
+              <div className="overflow-x-auto pb-2" id="calendar-view">
+              <div className="grid min-w-[820px] grid-cols-7 gap-3 p-[14px] border border-[#e4e7ec]/92 rounded-lg bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(249,250,251,0.9)),#f8fafc] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
                 {DAYS.map(d => (
-                  <span key={d} className="inline-flex items-center justify-center min-h-[34px] rounded-lg bg-[#8a252c]/5 !text-[#4b5565] !text-[0.72rem] !font-[900] uppercase text-center max-[980px]:hidden">{d}</span>
+                  <span key={d} className="inline-flex items-center justify-center min-h-[34px] rounded-lg bg-[#8a252c]/5 !text-[#4b5565] !text-[0.72rem] !font-[900] uppercase text-center">{d}</span>
                 ))}
-                {cells.map((cell, i) => {
+                {isLoading ? Array.from({ length: 42 }).map((_, index) => (
+                  <div key={`schedule-skeleton-${index}`} className="min-h-[110px] rounded-lg border border-[#e4e7ec]/95 bg-white p-3" aria-hidden="true">
+                    <div className="animate-pulse grid h-full content-start gap-3">
+                      <span className="h-7 w-7 rounded-lg bg-[#e2e8f0]" />
+                      <span className="h-4 w-3/4 rounded-full bg-[#f1f5f9]" />
+                      <span className="h-3 w-1/2 rounded-full bg-[#f1f5f9]" />
+                    </div>
+                  </div>
+                )) : cells.map((cell, i) => {
                   const isOtherMonth = cell.month !== "cur";
                   const dateStr = `${cell.month === "prev" ? (calMonth === 0 ? calYear - 1 : calYear) : cell.month === "next" ? (calMonth === 11 ? calYear + 1 : calYear) : calYear}-${String(cell.month === "prev" ? (calMonth === 0 ? 12 : calMonth) : cell.month === "next" ? (calMonth === 11 ? 1 : calMonth + 2) : calMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
                   const daySchedules = scheduleMap[dateStr] ?? [];
@@ -166,7 +175,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                     <button
                       key={i} type="button"
                       onClick={sched ? () => router.push(`${basePath}/schedules/day?date=${dateStr}&schedule=${sched.id}`) : undefined}
-                      className={`relative flex flex-col min-h-[110px] overflow-hidden border rounded-lg p-3 text-left outline-none max-[980px]:min-h-[90px]
+                      className={`relative flex flex-col min-h-[110px] overflow-hidden border rounded-lg p-3 text-left outline-none
                         ${sched ? isCanceledOnly ? "cursor-pointer border-[#fecaca] bg-[#fef2f2] shadow-[0_12px_30px_rgba(185,28,28,0.08)] transition-all hover:-translate-y-0.5 hover:border-[#fca5a5] hover:shadow-[0_16px_34px_rgba(185,28,28,0.1)] before:absolute before:inset-[0_auto_0_0] before:w-1 before:bg-[#ef4444]" : "cursor-pointer border-[#ffcf01]/82 bg-[linear-gradient(145deg,#fff8d9_0%,#fff3bc_58%,#fffdf4_100%)] shadow-[0_12px_30px_rgba(161,92,7,0.1)] transition-all hover:-translate-y-0.5 hover:border-[#8a252c]/34 hover:shadow-[0_16px_34px_rgba(32,33,36,0.11)] before:absolute before:inset-[0_auto_0_0] before:w-1 before:bg-[#ffcf01]" : "cursor-default border-[#e4e7ec]/95 bg-[#fcfcfd] shadow-[0_1px_2px_rgba(32,33,36,0.03)]"}
                         ${isToday && !sched ? "!border-[#8a252c]/50 !bg-[linear-gradient(135deg,#fff8d6_0%,#fafafb_100%)] !shadow-[0_12px_26px_rgba(138,37,44,0.08)]" : ""}
                         ${isOtherMonth && !sched ? "opacity-[0.45]" : ""}
@@ -182,6 +191,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                      </button>
                   );
                 })}
+              </div>
               </div>
             </>
           ) : (

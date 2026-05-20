@@ -5,6 +5,7 @@ import { apiClient } from "@/core/api/axios";
 import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/ToastProvider";
 
 type Person = {
@@ -20,12 +21,20 @@ type Person = {
 export function ReportsContent() {
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
-  const isChair = user?.role === "CHAIR";
-  const { data: instructorCases = [] } = useInstructorCases();
-  const { data: allCases = [] } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
-  const cases = isChair ? allCases : instructorCases;
+  const hasAllCaseAccess = user?.role === "ADMIN" || user?.role === "CHAIR" || user?.role === "ASSISTANT" || user?.role === "COORDINATOR";
+  const viewerId = user?.role === "CHAIR" && user?.id != null ? String(user.id) : undefined;
+  const { data: instructorCases = [], isLoading: isInstructorCasesLoading } = useInstructorCases(undefined, !hasAllCaseAccess);
+  const { data: allCases = [], isLoading: isAllCasesLoading } = useAllClinicalCases(hasAllCaseAccess, viewerId);
+  const cases = hasAllCaseAccess ? allCases : instructorCases;
+  const isCasesLoading = hasAllCaseAccess ? isAllCasesLoading : isInstructorCasesLoading;
   const [reportScope, setReportScope] = useState("person");
   const [isGenerating, setIsGenerating] = useState(false);
+  const getDefaultReportRange = () => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const startYear = today.getMonth() >= 5 ? currentYear : currentYear - 1;
+    return { start: `${startYear}-06-01`, end: `${startYear + 1}-05-31` };
+  };
   
   const [personSearch, setPersonSearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -35,8 +44,8 @@ export function ReportsContent() {
   const [siteTarget, setSiteTarget] = useState("");
   const [groupTarget, setGroupTarget] = useState("");
   
-  const [startDate, setStartDate] = useState("2025-06-01");
-  const [endDate, setEndDate] = useState("2026-05-31");
+  const [startDate, setStartDate] = useState(() => getDefaultReportRange().start);
+  const [endDate, setEndDate] = useState(() => getDefaultReportRange().end);
   
   const [message, setMessage] = useState({ text: "Select a person, section, clinical site, or group, then generate a general report.", type: "" });
   
@@ -61,9 +70,6 @@ export function ReportsContent() {
   const groups = Array.from(new Set(reportPeople.map((person) => person.group).filter(Boolean))).sort();
   const reportScopeOptions = [
     { value: "person", label: "One student" },
-    { value: "section", label: "Section" },
-    { value: "site", label: "Clinical site" },
-    { value: "group", label: "Group" },
   ];
   const sectionOptions = sections.map((section) => ({ value: section, label: section }));
   const siteOptions = sites.map((site) => ({ value: site, label: site }));
@@ -103,8 +109,9 @@ export function ReportsContent() {
     setSectionTarget("");
     setSiteTarget("");
     setGroupTarget("");
-    setStartDate("2025-06-01");
-    setEndDate("2026-05-31");
+    const defaultRange = getDefaultReportRange();
+    setStartDate(defaultRange.start);
+    setEndDate(defaultRange.end);
     setMessage({ text: "Select a person, section, clinical site, or group, then generate a general report.", type: "" });
   };
 
@@ -147,26 +154,14 @@ export function ReportsContent() {
         }
       }
     } else if (reportScope === "section") {
-      if (!sectionTarget) {
-        setMessage({ text: "Select a section before generating a report.", type: "is-error" });
-        return;
-      }
-      const count = reportPeople.filter((person) => person.section === sectionTarget).length;
-      setMessage({ text: `General report generated for ${sectionTarget} with ${count} matching records.`, type: "is-success" });
+      setMessage({ text: "Section report export is not available yet.", type: "is-error" });
+      showToast({ variant: "error", title: "Report unavailable", message: "Choose one student to generate a report." });
     } else if (reportScope === "site") {
-      if (!siteTarget) {
-        setMessage({ text: "Select a clinical site before generating a report.", type: "is-error" });
-        return;
-      }
-      const count = reportPeople.filter((person) => person.site === siteTarget).length;
-      setMessage({ text: `General report generated for ${siteTarget} with ${count} matching records.`, type: "is-success" });
+      setMessage({ text: "Clinical-site report export is not available yet.", type: "is-error" });
+      showToast({ variant: "error", title: "Report unavailable", message: "Choose one student to generate a report." });
     } else if (reportScope === "group") {
-      if (!groupTarget) {
-        setMessage({ text: "Select a group before generating a report.", type: "is-error" });
-        return;
-      }
-      const count = reportPeople.filter((person) => person.group === groupTarget).length;
-      setMessage({ text: `General report generated for ${groupTarget} with ${count} matching records.`, type: "is-success" });
+      setMessage({ text: "Group report export is not available yet.", type: "is-error" });
+      showToast({ variant: "error", title: "Report unavailable", message: "Choose one student to generate a report." });
     }
     
     setTimeout(() => {
@@ -214,7 +209,9 @@ export function ReportsContent() {
                 />
                 {isDropdownOpen && (
                   <div id="custom-person-dropdown" className="absolute top-[calc(100%+0.5rem)] left-0 right-0 bg-white border border-[#e2e8f0] rounded-lg shadow-[0_18px_40px_rgba(15,23,42,0.12)] max-h-[280px] overflow-y-auto z-[80]">
-                    {filteredPeople.length > 0 ? (
+                    {isCasesLoading ? (
+                      <LoadingState message="Loading report students" className="!p-4" />
+                    ) : filteredPeople.length > 0 ? (
                       filteredPeople.map(person => (
                         <button key={person.id} className="w-full p-[0.9rem_1rem] cursor-pointer border-0 border-b border-[#f1f5f9] bg-white text-left font-inherit transition-colors hover:bg-[#f8fafc] focus:bg-[#f8fafc] focus:outline-none last:border-b-0" type="button" onClick={() => handlePersonSelect(person)}>
                           <strong className="block !text-[#0f172a] !text-[1rem] !font-[800] mb-[0.2rem]">{person.name}</strong>
@@ -300,7 +297,7 @@ export function ReportsContent() {
 
           <div className="flex items-center justify-end gap-[1rem] mt-[1.5rem] pt-[1.5rem] border-t border-[#e2e8f0]">
             <button className={`${ghostBtn} w-auto min-w-[120px]`} type="button" onClick={resetForm}>Reset</button>
-            <button className={`${primaryBtn} w-auto min-w-[180px]`} type="submit" disabled={isGenerating}>{isGenerating ? "Generating..." : "Generate report"}</button>
+            <button className={`${primaryBtn} w-auto min-w-[180px]`} type="submit" disabled={isGenerating || isCasesLoading}>{isGenerating ? "Generating..." : "Generate report"}</button>
           </div>
         </form>
       </section>

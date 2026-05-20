@@ -21,16 +21,16 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
   }, []);
 
   return (
-    <div ref={wrapperRef} className={`relative ${className}`}>
+    <div ref={wrapperRef} className={`relative min-w-0 w-full ${className}`}>
       <button
         type="button"
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
-        className="flex min-h-[42px] w-full items-center justify-between gap-3 rounded-lg border border-[#dbe3ee] bg-white px-3 py-2 text-left !text-[#111827] text-[0.9rem] font-medium shadow-sm transition-all cursor-pointer focus:border-[#FFCF01] focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#64748b]"
+        className="flex min-h-[42px] w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-[#dbe3ee] bg-white px-3 py-2 text-left !text-[#111827] text-[0.9rem] font-medium shadow-sm transition-all cursor-pointer focus:border-[#FFCF01] focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#64748b]"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={selected ? "truncate" : "truncate text-[#64748b]"}>{selected?.label ?? placeholder}</span>
+        <span className={selected ? "min-w-0 truncate" : "min-w-0 truncate text-[#64748b]"}>{selected?.label ?? placeholder}</span>
         <svg className="h-4 w-4 shrink-0 text-[#64748b]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" /></svg>
       </button>
 
@@ -43,7 +43,7 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
               role="option"
               aria-selected={option.value === value}
               onClick={() => { onChange(option.value); setOpen(false); }}
-              className={`block min-h-[36px] w-full px-3 py-2 text-left text-[0.9rem] font-semibold transition-colors cursor-pointer ${option.value === value ? "bg-[#8A252C] !text-white" : "bg-white !text-[#111827] hover:bg-[#f8fafc]"}`}
+              className={`block min-h-[36px] w-full truncate px-3 py-2 text-left text-[0.9rem] font-semibold transition-colors cursor-pointer ${option.value === value ? "bg-[#8A252C] !text-white" : "bg-white !text-[#111827] hover:bg-[#f8fafc]"}`}
             >
               {option.label}
             </button>

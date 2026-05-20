@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useOverallMetrics } from "@/core/api/hooks/useMetrics";
 import { useAllAppeals } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
@@ -56,12 +57,12 @@ export default function ChairDashboard() {
             </div>
 
             <h3 className="m-0 mb-1 !text-[1.12rem] !font-[800] !text-[#111827]">Appeal Recommendations</h3>
-            <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{isAppealsLoading ? "Loading" : pendingAppeals} student appeals are waiting for Chair approval</p>
+            {isAppealsLoading ? <LoadingState message="Loading appeal recommendations" className="mb-5 !p-0" /> : <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{pendingAppeals} student appeals are waiting for Chair approval</p>}
 
             <div className="w-full h-[6px] bg-[#dadde0] rounded-full overflow-hidden mb-4">
               <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: `${Math.min(100, pendingAppeals * 20)}%` }}></div>
             </div>
-            <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{isAppealsLoading ? "..." : pendingAppeals}</strong>
+            {isAppealsLoading ? <span className="block mt-1 h-8 w-16 animate-pulse rounded-lg bg-[#f1f5f9]" aria-hidden="true" /> : <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{pendingAppeals}</strong>}
           </div>
         </article>
 
@@ -90,9 +91,7 @@ export default function ChairDashboard() {
             <div className="w-full h-[6px] bg-[#dadde0] rounded-full overflow-hidden mb-4">
               <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: '72%' }}></div>
             </div>
-            <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">
-              {isLoading ? "..." : metrics?.totalSchedules || 0}
-            </strong>
+            {isLoading ? <span className="block mt-1 h-8 w-16 animate-pulse rounded-lg bg-[#f1f5f9]" aria-hidden="true" /> : <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{metrics?.totalSchedules || 0}</strong>}
           </div>
         </article>
 

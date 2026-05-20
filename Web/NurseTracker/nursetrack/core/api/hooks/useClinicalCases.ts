@@ -23,7 +23,7 @@ export const useStudentCases = (studentId?: string) => {
   return useQuery({
     queryKey: ['clinical-cases', 'student', studentId],
     queryFn: async () => {
-      const { data } = await apiClient.get('/cases/student');
+      const { data } = await apiClient.get(studentId ? `/cases/student/${studentId}` : '/cases/student');
       return data.map(normalizeClinicalCase);
     },
   });
@@ -33,7 +33,7 @@ export const useStudentRequirementProgress = (studentId?: string) => {
   return useQuery({
     queryKey: ['clinical-cases', 'student', studentId, 'requirements'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/cases/student/requirements');
+      const { data } = await apiClient.get(studentId ? `/cases/student/${studentId}/requirements` : '/cases/student/requirements');
       return data;
     },
   });
@@ -61,13 +61,14 @@ export const usePendingCases = (instructorId?: string) => {
   });
 };
 
-export const useInstructorCases = (instructorId?: string) => {
+export const useInstructorCases = (instructorId?: string, enabled = true) => {
   return useQuery({
     queryKey: ['clinical-cases', 'instructor', instructorId],
     queryFn: async () => {
       const { data } = await apiClient.get('/cases/instructor');
       return data.map(normalizeClinicalCase);
     },
+    enabled,
   });
 };
 

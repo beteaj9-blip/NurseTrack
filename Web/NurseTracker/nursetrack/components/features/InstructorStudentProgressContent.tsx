@@ -143,11 +143,11 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
 
         <div className="flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-lg">
           {isLoading ? <LoadingState message="Loading student progress..." /> : filtered.map((student, index) => (
-            <Link key={student.studentId ?? student.schoolId ?? student.name} href={`${basePath}/student-progress/detail?studentId=${student.studentId ?? ""}`} className="grid grid-cols-[42px_44px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[34px_minmax(0,1fr)]">
-              <div className="grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900] max-[680px]:row-span-2">{index + 1}.</div>
+            <Link key={student.studentId ?? student.schoolId ?? student.name} href={`${basePath}/student-progress/detail?studentId=${student.studentId ?? ""}`} className="grid grid-cols-[42px_44px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)_auto] max-[680px]:gap-2.5 max-[680px]:p-3">
+              <div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{index + 1}.</div>
               <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={38} />
-              <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{student.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{student.section} - {student.schoolId || "No student ID"}</small></span>
-              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap max-[680px]:col-start-2 ${statusBadge(student.standing)}`}>{student.standing}</span>
+              <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{student.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{student.section} - {student.schoolId || "No student ID"}</small></span>
+              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap max-[430px]:col-start-3 max-[430px]:mt-1 ${statusBadge(student.standing)}`}>{student.standing}</span>
             </Link>
           ))}
         </div>

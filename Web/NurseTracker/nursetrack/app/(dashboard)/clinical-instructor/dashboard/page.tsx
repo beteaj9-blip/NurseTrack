@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useInstructorAppeals } from "@/core/api/hooks/useStudentAppeals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
@@ -13,9 +14,9 @@ function getLocalDateString(date: Date) {
 
 export default function ClinicalInstructorDashboard() {
   const user = useAuthStore((state) => state.user);
-  const { data: cases = [] } = useInstructorCases();
-  const { data: appeals = [] } = useInstructorAppeals();
-  const { data: schedules = [] } = useSchedules(undefined, user?.role);
+  const { data: cases = [], isLoading: isCasesLoading } = useInstructorCases();
+  const { data: appeals = [], isLoading: isAppealsLoading } = useInstructorAppeals();
+  const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(undefined, user?.role);
   const pendingCases = cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length;
   const pendingAppeals = appeals.filter((appeal: any) => appeal.status === "PENDING").length;
   const today = getLocalDateString(new Date());
@@ -66,12 +67,12 @@ export default function ClinicalInstructorDashboard() {
             </div>
 
             <h3 className="m-0 mb-1 !text-[1.12rem] !font-[800] !text-[#111827]">Case Validations</h3>
-            <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{pendingCases} clinical case submission{pendingCases === 1 ? "" : "s"} need review</p>
+            {isCasesLoading ? <LoadingState message="Loading case validations" className="mb-5 !p-0" /> : <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{pendingCases} clinical case submission{pendingCases === 1 ? "" : "s"} need review</p>}
 
             <div className="w-full h-[6px] bg-[#dadde0] rounded-full overflow-hidden mb-4">
               <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: `${Math.min(pendingCases * 12, 100)}%` }}></div>
             </div>
-            <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{pendingCases}</strong>
+            {isCasesLoading ? <span className="block mt-1 h-8 w-16 animate-pulse rounded-lg bg-[#f1f5f9]" aria-hidden="true" /> : <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{pendingCases}</strong>}
           </div>
         </article>
 
@@ -95,12 +96,12 @@ export default function ClinicalInstructorDashboard() {
             </div>
 
             <h3 className="m-0 mb-1 !text-[1.12rem] !font-[800] !text-[#111827]">Student Appeals</h3>
-            <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{pendingAppeals} concern{pendingAppeals === 1 ? "" : "s"} are waiting for recommendation</p>
+            {isAppealsLoading ? <LoadingState message="Loading student appeals" className="mb-5 !p-0" /> : <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{pendingAppeals} concern{pendingAppeals === 1 ? "" : "s"} are waiting for recommendation</p>}
 
             <div className="w-full h-[6px] bg-[#dadde0] rounded-full overflow-hidden mb-4">
               <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: `${Math.min(pendingAppeals * 20, 100)}%` }}></div>
             </div>
-            <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{pendingAppeals}</strong>
+            {isAppealsLoading ? <span className="block mt-1 h-8 w-16 animate-pulse rounded-lg bg-[#f1f5f9]" aria-hidden="true" /> : <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{pendingAppeals}</strong>}
           </div>
         </article>
 
@@ -114,11 +115,11 @@ export default function ClinicalInstructorDashboard() {
               <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#e9f8ef] !text-[#03703c] !text-[0.76rem] !font-[800] whitespace-nowrap">Today</span>
             </div>
             <h3 className="m-0 mb-1 !text-[1.12rem] !font-[800] !text-[#111827]">Assigned Schedules</h3>
-            <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{activeSchedules} schedule{activeSchedules === 1 ? "" : "s"} assigned today</p>
+            {isSchedulesLoading ? <LoadingState message="Loading assigned schedules" className="mb-5 !p-0" /> : <p className="m-0 mb-5 !text-[0.85rem] font-bold !text-[#64748b]">{activeSchedules} schedule{activeSchedules === 1 ? "" : "s"} assigned today</p>}
             <div className="w-full h-[6px] bg-[#dadde0] rounded-full overflow-hidden mb-4">
               <div className="h-full bg-gradient-to-r from-[#8a252c] to-[#ffc107] rounded-full" style={{ width: `${Math.min(activeSchedules * 34, 100)}%` }}></div>
             </div>
-            <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{activeSchedules}</strong>
+            {isSchedulesLoading ? <span className="block mt-1 h-8 w-16 animate-pulse rounded-lg bg-[#f1f5f9]" aria-hidden="true" /> : <strong className="block !text-[1.75rem] !font-[900] !text-[#8a252c] leading-none mt-1">{activeSchedules}</strong>}
           </div>
         </article>
 

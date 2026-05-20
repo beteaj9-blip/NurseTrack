@@ -208,7 +208,7 @@ export default function StudentClinicalCaseContent() {
           <div className="flex items-center gap-4">
             <ProfileAvatar name={user?.fullName || "Nursing Student"} imageUrl={user?.profileImageUrl} size={48} />
             <div>
-              <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 mb-1">{user?.fullName ?? 'Loading...'}</h3>
+              <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 mb-1">{user?.fullName ?? "Nursing Student"}</h3>
               <p className="text-[#64748b] text-[0.9rem] font-semibold m-0">{user?.sectionInfo ?? ''} — Student ID {user?.schoolId ?? ''}</p>
             </div>
           </div>

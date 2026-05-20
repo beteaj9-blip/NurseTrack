@@ -25,7 +25,7 @@ export const useInstructorExtensionDays = (instructorId?: string, studentId?: st
 export const useStudentExtensionDays = (studentId?: string) => useQuery({
   queryKey: ['extension-days', 'student', studentId],
   queryFn: async () => {
-    const { data } = await apiClient.get('/extension-days/student');
+    const { data } = await apiClient.get(studentId ? `/extension-days/student/${studentId}` : '/extension-days/student');
     return data.map(normalizeExtensionDay);
   },
 });

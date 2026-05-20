@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useIsFetching, useIsMutating } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/dashboard/Sidebar";
 import { Topbar } from "@/components/ui/dashboard/Topbar";
 import { usePathname, useRouter } from "next/navigation";
 import { roleNavConfigs } from "@/core/config/navConfig";
+import { getTokenExpiresAt, isTokenExpired, markSessionExpired } from "@/core/auth/session";
 import { useAuthStore } from "@/core/store/authStore";
 import { User, UserRole } from "@/core/types/user";
 
@@ -40,11 +40,6 @@ export default function DashboardLayout({
   const role = pathname.split("/")[1];
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [routeAnimating, setRouteAnimating] = useState(true);
-  const activeFetches = useIsFetching({
-    predicate: (query) => query.queryKey[0] !== "notifications",
-  });
-  const activeMutations = useIsMutating();
-  const [showNetworkLoading, setShowNetworkLoading] = useState(false);
 
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
@@ -54,6 +49,12 @@ export default function DashboardLayout({
 
   // Auth guard — only redirect AFTER Zustand has finished loading from localStorage
   useEffect(() => {
+    if (hasHydrated && token && isTokenExpired(token, 15)) {
+      markSessionExpired();
+      logout();
+      router.replace("/?session=expired");
+      return;
+    }
     if (hasHydrated && (!isAuthenticated || !user || !token)) {
       logout();
       router.replace("/");
@@ -61,16 +62,22 @@ export default function DashboardLayout({
   }, [hasHydrated, isAuthenticated, user, token, logout, router]);
 
   useEffect(() => {
-    setRouteAnimating(true);
-  }, [pathname]);
+    if (!hasHydrated || !token) return;
+    const expiresAt = getTokenExpiresAt(token);
+    if (!expiresAt) return;
+
+    const timeout = window.setTimeout(() => {
+      markSessionExpired();
+      logout();
+      router.replace("/?session=expired");
+    }, Math.max(expiresAt - Date.now(), 0));
+
+    return () => window.clearTimeout(timeout);
+  }, [hasHydrated, token, logout, router]);
 
   useEffect(() => {
-    if (activeFetches + activeMutations > 0) {
-      const timeout = window.setTimeout(() => setShowNetworkLoading(true), 180);
-      return () => window.clearTimeout(timeout);
-    }
-    setShowNetworkLoading(false);
-  }, [activeFetches, activeMutations]);
+    setRouteAnimating(true);
+  }, [pathname]);
 
   // Show nothing until hydration is complete (prevents flash redirect)
   if (!hasHydrated) return null;
@@ -172,10 +179,6 @@ export default function DashboardLayout({
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           backHref={backHref}
         />
-        {showNetworkLoading && <div className="pointer-events-none fixed right-5 top-[92px] z-[9997] flex items-center gap-3 rounded-full border border-[#e2e8f0] bg-white px-4 py-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)]">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#e2e8f0] border-t-[#8A252C]" aria-hidden="true" />
-          <span className="!text-[#334155] !text-[0.82rem] !font-[900]">Loading data...</span>
-        </div>}
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <div
             key={pathname}

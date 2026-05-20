@@ -3,6 +3,7 @@
 import React from 'react';
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useMarkNotificationUnread, useNotifications } from '@/core/api/hooks/useNotifications';
 import { useAuthStore } from '@/core/store/authStore';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { useToast } from '@/components/ui/ToastProvider';
 
 function isUnread(notification: any) {
@@ -19,7 +20,7 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const user = useAuthStore((state) => state.user);
-  const { data: apiNotifications = [], refetch } = useNotifications(undefined, true);
+  const { data: apiNotifications = [], isLoading, refetch } = useNotifications(undefined, true);
   const markRead = useMarkNotificationRead();
   const markUnread = useMarkNotificationUnread();
   const markAllRead = useMarkAllNotificationsRead();
@@ -85,7 +86,9 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
 
         {/* Notifications List */}
         <div className="flex flex-col gap-4 mb-6">
-          {notifications.length > 0 ? (
+          {isLoading ? (
+            <LoadingState message="Loading notifications..." className="rounded-lg border border-[#e2e8f0] bg-white" />
+          ) : notifications.length > 0 ? (
             pagedNotifications.map((notification: any) => {
               const unread = isUnread(notification);
 
@@ -127,11 +130,11 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
           )}
         </div>
 
-        {totalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] mb-4 border border-[#e2e8f0] rounded-lg bg-[#f8fafc]"><button className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:bg-[#f8fafc] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {page} of {totalPages}</span><button className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:bg-[#f8fafc] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages}>Next</button></div>}
+        {!isLoading && totalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] mb-4 border border-[#e2e8f0] rounded-lg bg-[#f8fafc]"><button className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:bg-[#f8fafc] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {page} of {totalPages}</span><button className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:bg-[#f8fafc] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages}>Next</button></div>}
 
         {/* Footer */}
         <div className="border-t border-[#e5eaf1] pt-4 mt-2">
-          <p className="text-[#64748b] text-[0.85rem] m-0">Showing {notifications.length} notification{notifications.length === 1 ? "" : "s"}.</p>
+          <p className="text-[#64748b] text-[0.85rem] m-0">{isLoading ? "" : `Showing ${notifications.length} notification${notifications.length === 1 ? "" : "s"}.`}</p>
         </div>
 
       </div>

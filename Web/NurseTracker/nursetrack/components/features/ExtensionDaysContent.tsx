@@ -83,11 +83,11 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
           {paged.map((s, i) => {
             const c = s.statusClass === "status-pending" ? "bg-[#fff8e1] !text-[#6c4c00]" : s.statusClass === "status-verified" ? "bg-[#e9f8ef] !text-[#03703c]" : s.statusClass === "status-rejected" ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#f1f5f9] !text-[#475569]";
             return (
-              <Link key={s.studentId ?? s.id} href={`${basePath}/extension-days/detail?studentId=${s.studentId}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] hover:translate-x-[2px] transition-all cursor-pointer no-underline text-inherit last:border-b-0" role="link" tabIndex={0}>
-                <div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
+              <Link key={s.studentId ?? s.id} href={`${basePath}/extension-days/detail?studentId=${s.studentId}`} className="grid grid-cols-[42px_38px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] hover:translate-x-[2px] transition-all cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)_auto] max-[680px]:gap-2.5 max-[680px]:p-3" role="link" tabIndex={0}>
+                <div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
                 <ProfileAvatar name={s.name} imageUrl={s.profileImageUrl} size={34} />
-                <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{s.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{s.section} - {s.id}</small></span>
-                <mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${c}`}>{s.status}</mark>
+                <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{s.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{s.section} - {s.id}</small></span>
+                <mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[430px]:col-start-3 max-[430px]:mt-1 ${c}`}>{s.status}</mark>
               </Link>
             );
           })}

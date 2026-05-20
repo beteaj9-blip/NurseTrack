@@ -24,6 +24,18 @@ export const useCurrentUser = () => {
   });
 };
 
+export const useUserById = (userId?: string) => {
+  return useQuery({
+    queryKey: ['users', 'detail', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await apiClient.get(`/users/${userId}`);
+      return data;
+    },
+    enabled: !!userId,
+  });
+};
+
 export const useInstructors = (viewerId?: string) => {
   return useQuery({
     queryKey: ['users', 'instructors', viewerId],

@@ -5,7 +5,9 @@ import React from "react";
 import { useAttendance } from "@/core/api/hooks/useAttendance";
 import { useStudentCases, useStudentRequirementProgress } from "@/core/api/hooks/useClinicalCases";
 import { useStudentExtensionDays } from "@/core/api/hooks/useExtensionDays";
+import { useCurrentUser } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 type RequirementItem = {
@@ -51,7 +53,7 @@ function buildDutyEntries(records: any[]) {
     return {
       day: formatDutyDay(record.dutyDate),
       date: formatDutyDate(record.dutyDate),
-      area: record.area ?? record.ward ?? "Assigned Area",
+      area: record.area ?? record.ward ?? "No duty area recorded",
       hours,
       overtime: Math.max(hours - 8, 0),
     };
@@ -60,26 +62,17 @@ function buildDutyEntries(records: any[]) {
 
 function getPendingItemsHref(basePath: string) {
   if (basePath === "/nursing-student") return `${basePath}/clinical-cases`;
-  if (basePath === "/enrollment-team") return `${basePath}/student-progress/detail?student=maria-cruz`;
-  return `${basePath}/clinical-cases/selection?student=maria-cruz`;
+  return `${basePath}/student-progress`;
 }
 
 export function StudentProgressContent({ basePath }: { basePath: string }) {
-  const user = useAuthStore((state) => state.user);
-  const { data: cases = [] } = useStudentCases();
-  const { data: requirements = [] } = useStudentRequirementProgress() as { data: RequirementGroup[] };
-  const { data: dutyRecords = [] } = useAttendance();
-  const { data: extensionDays = [] } = useStudentExtensionDays();
-
-  const student = {
-    name: user?.fullName ?? "Nursing Student",
-    profileImageUrl: user?.profileImageUrl ?? "",
-    id: user?.schoolId ?? "",
-    section: user?.sectionInfo ?? "Nursing Student",
-    status: "In progress",
-    extensionDays: extensionDays.filter((record: any) => record.status === "ACTIVE").reduce((sum: number, record: any) => sum + Number(record.days ?? 0), 0),
-    pending: cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length + dutyRecords.filter((record: any) => record.status === "PENDING").length,
-  };
+  const storedUser = useAuthStore((state) => state.user);
+  const { data: currentUser, isLoading: isCurrentUserLoading } = useCurrentUser();
+  const user = currentUser ?? storedUser;
+  const { data: cases = [], isLoading: isCasesLoading } = useStudentCases();
+  const { data: requirements = [], isLoading: isRequirementsLoading } = useStudentRequirementProgress() as { data: RequirementGroup[]; isLoading: boolean };
+  const { data: dutyRecords = [], isLoading: isDutyLoading } = useAttendance();
+  const { data: extensionDays = [], isLoading: isExtensionDaysLoading } = useStudentExtensionDays();
 
   const approvedCaseDates = new Set(cases.filter((clinicalCase: any) => clinicalCase.status === "APPROVED").map(getRecordDate).filter(Boolean));
   const approvedDutyRecords = dutyRecords.filter((record: any) => approvedCaseDates.has(getRecordDate(record)));
@@ -88,40 +81,53 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
   const totalOvertime = dutyEntries.reduce((sum, entry) => sum + entry.overtime, 0);
   const completedCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.completed, 0), 0);
   const totalRequiredCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.total, 0), 0);
+  const activeExtensionDays = extensionDays.filter((record: any) => record.status === "ACTIVE").reduce((sum: number, record: any) => sum + Number(record.days ?? 0), 0);
+  const pendingItems = cases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length + dutyRecords.filter((record: any) => record.status === "PENDING").length;
+  const isStudentLoading = isCurrentUserLoading && (!user?.fullName || !user?.schoolId);
+  const isProgressLoading = isCasesLoading || isRequirementsLoading || isDutyLoading || isExtensionDaysLoading;
+  const studentStatus = pendingItems > 0 ? "Needs action" : totalRequiredCases > 0 && completedCases >= totalRequiredCases ? "Completed" : "In progress";
+  const studentName = user?.fullName ?? "";
+  const studentId = user?.schoolId ?? "";
+  const studentSection = user?.sectionInfo ?? "";
 
   return (
     <main className="min-w-0 overflow-x-hidden p-[clamp(16px,3vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="flex items-center justify-between gap-[28px] p-[clamp(20px,3vw,34px)] border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] mb-[18px] max-[820px]:flex-col max-[820px]:items-start">
-        <div className="flex items-center gap-[16px] min-w-0">
-          <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={68} />
-          <div>
-            <h2 className="m-0 mb-[8px] !text-[#111827] !text-[clamp(1.55rem,3vw,2.15rem)] !font-bold">{student.name}</h2>
-            <p className="m-0 !text-[#64748b] !font-[600] leading-[1.55]">{student.section} - Student ID {student.id}</p>
+        {isStudentLoading ? <LoadingState message="Loading student profile" className="w-full !p-0" /> : <>
+          <div className="flex items-center gap-[16px] min-w-0">
+            <ProfileAvatar name={studentName} imageUrl={user?.profileImageUrl ?? ""} size={68} />
+            <div>
+              <h2 className="m-0 mb-[8px] !text-[#111827] !text-[clamp(1.55rem,3vw,2.15rem)] !font-bold">{studentName || "Profile name unavailable"}</h2>
+              <p className="m-0 !text-[#64748b] !font-[600] leading-[1.55]">{studentSection || "No section assigned"}{studentId ? ` - Student ID ${studentId}` : ""}</p>
+            </div>
           </div>
-        </div>
-        <span className="inline-flex items-center justify-start w-max max-w-full min-h-[28px] px-[10px] py-[6px] rounded-full bg-[#fff8e1] !text-[#6c4c00] !text-[0.76rem] !font-extrabold whitespace-nowrap">
-          {student.status}
-        </span>
+          <span className="inline-flex items-center justify-start w-max max-w-full min-h-[28px] px-[10px] py-[6px] rounded-full bg-[#fff8e1] !text-[#6c4c00] !text-[0.76rem] !font-extrabold whitespace-nowrap">
+            {studentStatus}
+          </span>
+        </>}
       </section>
 
       <section className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-[18px] mb-[18px]" aria-label="Student progress summary">
         <SummaryCard
           icon="calendar"
-          status="Open"
+          status={activeExtensionDays > 0 ? "Open" : "Clear"}
           title="Extension Days"
-          description={`${student.extensionDays} extension days recorded`}
+          description={isExtensionDaysLoading ? "Checking extension days" : `${activeExtensionDays} extension days recorded`}
+          isLoading={isExtensionDaysLoading}
         />
         <SummaryCard
           icon="cases"
-          status="In progress"
+          status={totalRequiredCases > 0 && completedCases >= totalRequiredCases ? "Completed" : "In progress"}
           title="Clinical Cases"
-          description={`${completedCases} of ${totalRequiredCases} cases completed`}
+          description={isRequirementsLoading ? "Checking clinical cases" : `${completedCases} of ${totalRequiredCases} cases completed`}
+          isLoading={isRequirementsLoading}
         />
         <SummaryCard
           icon="alert"
-          status="Open"
+          status={pendingItems > 0 ? "Open" : "Clear"}
           title="Pending Items"
-          description={`${student.pending} records need student or instructor action`}
+          description={isCasesLoading || isDutyLoading ? "Checking pending items" : `${pendingItems} records need student or instructor action`}
+          isLoading={isCasesLoading || isDutyLoading}
         />
       </section>
 
@@ -137,7 +143,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
             </Link>
           </div>
 
-          <div className="grid gap-[18px]">
+          {isRequirementsLoading ? <LoadingState message="Loading requirement progress" className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="grid gap-[18px]">
             {requirements.map((group) => (
               <section key={group.label} aria-label={`${group.label} requirements`}>
                 <div className="flex items-baseline justify-between gap-[12px] border-b border-[#e2e8f0] px-[2px] pb-[8px] mb-[10px] max-[640px]:items-start max-[640px]:flex-col">
@@ -172,7 +178,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
                 </div>
               </section>
             ))}
-          </div>
+          </div>}
         </article>
 
         <article className="min-w-0 border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[clamp(18px,2.5vw,24px)] overflow-hidden">
@@ -180,6 +186,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
             <h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Weekly Duty Record</h2>
           </div>
 
+          {isProgressLoading ? <LoadingState message="Loading weekly duty record" className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <>
           <div
             className="flex items-center justify-between gap-[14px] border border-[rgba(138,37,44,0.14)] rounded-[8px] mb-[14px] p-[16px] max-[640px]:flex-col max-[640px]:items-start"
             style={{ background: "linear-gradient(135deg, rgba(255,207,1,0.22), rgba(138,37,44,0.04) 62%), #ffffff" }}
@@ -236,27 +243,28 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
           </div>
 
           <div className="mt-[14px] p-[12px_16px] border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] !text-[#475569] !text-[0.9rem] !font-[700] leading-[1.5]" role="status" aria-live="polite">
-            Showing {student.name}&apos;s weekly duty attendance and overtime status.
+            Showing {studentName || "this student's"} weekly duty attendance and overtime status.
           </div>
+          </>}
         </article>
       </div>
     </main>
   );
 }
 
-function SummaryCard({ icon, status, title, description }: { icon: "calendar" | "cases" | "alert"; status: string; title: string; description: string }) {
+function SummaryCard({ icon, status, title, description, isLoading = false }: { icon: "calendar" | "cases" | "alert"; status: string; title: string; description: string; isLoading?: boolean }) {
   return (
     <article className="relative overflow-hidden border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[24px] after:content-[''] after:absolute after:inset-[auto_-32px_-54px_auto] after:w-[126px] after:h-[126px] after:rounded-full after:bg-[rgba(138,37,44,0.06)] after:pointer-events-none">
       <div className="flex justify-between items-start gap-[22px]">
         <span className="w-[42px] min-w-[42px] h-[42px] rounded-[8px] bg-[rgba(138,37,44,0.08)] !text-[#8A252C] inline-flex items-center justify-center" aria-label={title}>
           <SummaryIcon icon={icon} />
         </span>
-        <span className="inline-flex items-center justify-start w-max max-w-full min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">
+        {isLoading ? <span className="h-7 w-20 animate-pulse rounded-full bg-[#f1f5f9]" aria-hidden="true" /> : <span className="inline-flex items-center justify-start w-max max-w-full min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">
           {status}
-        </span>
+        </span>}
       </div>
       <h3 className="mt-[18px] mb-[6px] !text-[1.05rem] !text-[#111827] !font-bold">{title}</h3>
-      <p className="mb-[16px] !text-[#64748b] !text-[0.9rem] !font-[700]">{description}</p>
+      {isLoading ? <span className="block mb-[16px] h-4 w-2/3 animate-pulse rounded-full bg-[#f1f5f9]" aria-hidden="true" /> : <p className="mb-[16px] !text-[#64748b] !text-[0.9rem] !font-[700]">{description}</p>}
     </article>
   );
 }
