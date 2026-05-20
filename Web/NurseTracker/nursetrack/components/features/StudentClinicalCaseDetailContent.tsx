@@ -202,11 +202,11 @@ export function StudentClinicalCaseDetailContent() {
         <h2 className="m-0 mb-4 !text-[#111827] !text-[1.25rem] !font-[900]">Clinical Case Status</h2>
         <div className="flex items-center justify-between gap-4 p-4 mb-3 border border-[#e2e8f0] rounded-lg bg-[#f8fafc]">
           <span className={`inline-flex items-center px-3 py-1 rounded-full !text-[0.78rem] !font-[900] ${statusClass(clinicalCase.status)}`}>{statusLabel(clinicalCase.status)}</span>
-          <strong className="!text-[#111827] !text-[0.9rem] !font-[900]">{clinicalCase.status === "APPROVED" ? "Validated" : "Awaiting CI validation"}</strong>
+          <strong className="!text-[#111827] !text-[0.9rem] !font-[900]">{clinicalCase.status === "APPROVED" ? "Validated" : "Awaiting Clinical Instructor validation"}</strong>
         </div>
         <DetailBox label="Recommended Reviewer" value={clinicalCase.instructorName || "Clinical Instructor"} />
         <div className="mt-3 border border-[#e2e8f0] rounded-lg bg-[#f8fafc] p-4">
-          <span className="block mb-2 !text-[#8A252C] !text-[0.72rem] !font-[900] uppercase">Instructor Comments</span>
+          <span className="block mb-2 !text-[#8A252C] !text-[0.72rem] !font-[900] uppercase">Clinical Instructor Comments</span>
           <p className="m-0 !text-[#111827] !text-[0.92rem] !font-[800] leading-relaxed">{clinicalCase.instructorFeedback || "This case is queued for CI validation."}</p>
         </div>
       </section>

@@ -1,6 +1,7 @@
 package edu.cit.nursetracker.clinicalcase;
 
 import lombok.RequiredArgsConstructor;
+import edu.cit.nursetracker.adminaccess.AdminAccessPermissionService;
 import edu.cit.nursetracker.user.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ public class ClinicalCaseController {
     private final ClinicalCaseService caseService;
     private final ClinicalCaseCategoryOptionRepository categoryRepository;
     private final JwtService jwtService;
+    private final AdminAccessPermissionService accessPermissionService;
 
     @PostMapping
     public ResponseEntity<ClinicalCase> submitCase(@RequestBody ClinicalCase clinicalCase) {
@@ -69,7 +71,11 @@ public class ClinicalCaseController {
     public ResponseEntity<Map<String, Object>> validateCase(
             @PathVariable Long id,
             @RequestParam CaseStatus status,
-            @RequestParam(required = false) String feedback) {
+            @RequestParam(required = false) String feedback,
+            HttpServletRequest request) {
+        if (!caseService.canValidateCase(id, jwtService.getUserId(request), accessPermissionService)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(toResponse(caseService.validateCase(id, status, feedback)));
     }
 

@@ -139,6 +139,11 @@ export default function DashboardLayout({
   if (pathname.includes("/schedules/maker")) displayTitle = "Schedule Maker";
   if (pathname.includes("/schedules/day")) displayTitle = "Day Schedules";
   if (pathname.includes("/notifications")) displayTitle = "Notifications";
+  if (pathname.includes("/about")) {
+    displayTitle = "About NurseTrack";
+    titleKicker = "SYSTEM INFO";
+    backHref = undefined;
+  }
 
   if (pathname.includes("/profile/edit")) {
     displayTitle = "Edit Profile";
@@ -154,7 +159,7 @@ export default function DashboardLayout({
 
   // Real user data from auth store
   const userName = user.fullName;
-  const userContext = user.sectionInfo || roleDisplay?.label || role;
+  const userContext = roleDisplay?.label || role;
   const avatarInitials = getInitials(user.fullName);
 
   return (

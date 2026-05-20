@@ -23,4 +23,12 @@ public class AdminAccessPermissionService {
         permission.setEnabled(enabled);
         return repository.save(permission);
     }
+
+    public boolean canEdit(UserRole role, String permissionKey) {
+        if (role == UserRole.ADMIN || role == UserRole.CHAIR || role == UserRole.INSTRUCTOR) return true;
+        if (role != UserRole.ASSISTANT && role != UserRole.COORDINATOR) return false;
+        return repository.findByRoleAndPermissionKey(role, permissionKey)
+                .map(AdminAccessPermission::isEnabled)
+                .orElse(false);
+    }
 }

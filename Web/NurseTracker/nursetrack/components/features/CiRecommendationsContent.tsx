@@ -31,7 +31,7 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
   const statusOptions = [{ value: "all", label: "All statuses" }, { value: "PENDING", label: "Pending review" }, { value: "ACCEPTED", label: "Accepted" }, { value: "RETURNED", label: "Rejected" }];
   const filtered = (appeals as any[]).filter((appeal: any) => {
     const q = search.toLowerCase();
-    return (!search || appeal.studentName.toLowerCase().includes(q) || appeal.schoolId.toLowerCase().includes(q) || appeal.sectionInfo.toLowerCase().includes(q) || appeal.title.toLowerCase().includes(q))
+    return (!search || String(appeal.studentName ?? "").toLowerCase().includes(q) || String(appeal.schoolId ?? "").toLowerCase().includes(q) || String(appeal.sectionInfo ?? "").toLowerCase().includes(q) || String(appeal.title ?? "").toLowerCase().includes(q))
       && (sectionFilter === "all" || appeal.sectionInfo === sectionFilter)
       && (statusFilter === "all" || appeal.status === statusFilter);
   });
@@ -55,11 +55,11 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
         </div>
         <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
           {paged.map((appeal: any, i: number) => (
-            <Link key={appeal.id} href={`${basePath}/ci-recommendations/detail?id=${appeal.id}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0" tabIndex={0}>
-              <div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
+            <Link key={appeal.id} href={`${basePath}/ci-recommendations/detail?id=${appeal.id}`} className="grid w-full grid-cols-[32px_34px_minmax(0,1fr)_auto] items-center gap-[1rem] p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[520px]:grid-cols-[32px_34px_minmax(0,1fr)] max-[520px]:gap-3 max-[520px]:p-3" tabIndex={0}>
+              <div className="grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
               <ProfileAvatar name={appeal.studentName} imageUrl={appeal.studentProfileImageUrl} size={34} />
-              <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#0f172a] !text-[1rem] !font-[850] leading-[1.25]">{appeal.studentName}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{appeal.sectionInfo} - {appeal.schoolId}</small><small className="!text-[#475569] !text-[0.875rem] !font-[600] mt-[2px]">{appeal.title}</small></span>
-              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(appeal.status)}`}>{appeal.status === "RETURNED" ? "REJECTED" : appeal.status}</span>
+              <span className="min-w-0 flex flex-col gap-[0.125rem]"><strong className="truncate !text-[#0f172a] !text-[1rem] !font-[850] leading-[1.25] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.studentName}</strong><small className="truncate !text-[#64748b] !text-[0.875rem] !font-[700] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.sectionInfo || "No section"} - {appeal.schoolId || "No student ID"}</small><small className="truncate !text-[#475569] !text-[0.875rem] !font-[600] mt-[2px] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.title || "Student appeal"}</small></span>
+              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(appeal.status)} max-[520px]:col-start-3 max-[520px]:mt-1`}>{appeal.status === "RETURNED" ? "REJECTED" : appeal.status}</span>
             </Link>
           ))}
         </div>

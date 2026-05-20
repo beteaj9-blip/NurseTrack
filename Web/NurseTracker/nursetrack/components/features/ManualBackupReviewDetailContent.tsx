@@ -105,7 +105,7 @@ export function ManualBackupReviewDetailContent({ basePath = "/chair" }: { baseP
           <Info label="Shift Time" value={timeRange(record)} />
           <Info label="Encoded By" value={record.instructorName || "Clinical Instructor"} />
           <Info label="Review Status" value={reviewStatusText(record.status)} />
-          <div className="col-span-full rounded-lg border border-[#dbe3ee] bg-[#f8fafc] p-[1rem_1.15rem] min-h-[96px]"><small className="block mb-[0.55rem] !text-[#64748b] !text-[0.75rem] !font-[900] uppercase">Instructor Note</small><strong className="block !text-[#111827] !text-[0.92rem] !font-[800] leading-[1.5]">{record.instructorFeedback || "No instructor note provided."}</strong></div>
+          <div className="col-span-full rounded-lg border border-[#dbe3ee] bg-[#f8fafc] p-[1rem_1.15rem] min-h-[96px]"><small className="block mb-[0.55rem] !text-[#64748b] !text-[0.75rem] !font-[900] uppercase">Clinical Instructor Note</small><strong className="block !text-[#111827] !text-[0.92rem] !font-[800] leading-[1.5]">{record.instructorFeedback || "No clinical instructor note provided."}</strong></div>
         </div>
 
         <div className="mt-[2.5rem] border border-[#dbe3ee] rounded-lg overflow-hidden bg-white">

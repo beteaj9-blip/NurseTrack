@@ -404,6 +404,19 @@ INSERT INTO clearance_settings (id, enabled, updated_at)
 SELECT 1, true, NOW()
 WHERE NOT EXISTS (SELECT 1 FROM clearance_settings WHERE id = 1);
 
+INSERT INTO system_info (id, version, last_updated, name, organization, release_version, release_date, status_message, updated_at)
+SELECT 1, '1.0', '2026-04-28', 'NurseTrack', 'CIT-U Nursing', 'Version 1.0', '2026-04-28', 'System information is up to date.', NOW()
+WHERE NOT EXISTS (SELECT 1 FROM system_info WHERE id = 1);
+
+UPDATE system_info
+SET name = COALESCE(name, 'NurseTrack'),
+    organization = COALESCE(organization, 'CIT-U Nursing'),
+    release_version = COALESCE(release_version, CONCAT('Version ', version)),
+    release_date = COALESCE(release_date, last_updated),
+    status_message = COALESCE(status_message, 'System information is up to date.'),
+    updated_at = COALESCE(updated_at, NOW())
+WHERE id = 1;
+
 INSERT INTO schedules (student_id, instructor_id, hospital, ward, shift_date, start_time, end_time, created_at, updated_at)
 SELECT s.id, i.id, 'CCMC', 'Medical Ward', DATE_SUB(CURDATE(), INTERVAL 1 DAY), '07:00:00', '15:00:00', NOW(), NOW()
 FROM users s

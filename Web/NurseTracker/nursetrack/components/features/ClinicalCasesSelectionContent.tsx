@@ -37,27 +37,25 @@ function isOperatingRoomCase(clinicalCase: any) {
 
 function CaseSection({ title, subtitle, records, basePath }: { title: string; subtitle: string; records: any[]; basePath: string }) {
   return (
-    <section className="grid gap-[10px] mt-[16px]" aria-label={`${subtitle} records`}>
+    <section className="grid min-w-0 gap-[10px] mt-[16px]" aria-label={`${subtitle} records`}>
       <div className="flex items-center justify-between gap-[12px] mt-[4px] max-[680px]:flex-col max-[680px]:items-start">
         <h3 className="m-0 !text-[#8A252C] !text-[1.05rem] !font-[800]">{title}</h3>
         <span className="!text-[#475569] !text-[0.85rem] !font-[800]">{subtitle}</span>
       </div>
-      <div className="border border-[#e2e8f0] rounded-lg overflow-x-auto overflow-y-hidden">
-        <div className="min-w-[920px]">
-        <div className="grid grid-cols-[minmax(180px,1.2fr)_minmax(300px,2.2fr)_minmax(120px,0.9fr)_minmax(120px,0.9fr)_minmax(96px,0.6fr)_minmax(88px,0.5fr)] items-center gap-[1.5rem] p-[1rem_1.5rem] bg-[#f8fafc] !text-[#4c5d7d] !text-[0.75rem] !font-[700] uppercase rounded-t-lg border-b border-[#e2e8f0]">
+      <div className="overflow-hidden rounded-lg border border-[#e2e8f0]">
+        <div className="grid grid-cols-[minmax(92px,0.85fr)_minmax(180px,2.25fr)_minmax(88px,0.8fr)_minmax(86px,0.75fr)_minmax(74px,0.6fr)_minmax(58px,0.45fr)] items-center gap-3 bg-[#f8fafc] px-4 py-3 !text-[#4c5d7d] !text-[0.72rem] !font-[900] uppercase max-[760px]:hidden">
           <span>Category</span><span>Procedure Performed</span><span>Status</span><span>Date</span><span>Time</span><span>Action</span>
         </div>
         {records.map((record) => (
-          <div key={record.id} className="grid grid-cols-[minmax(180px,1.2fr)_minmax(300px,2.2fr)_minmax(120px,0.9fr)_minmax(120px,0.9fr)_minmax(96px,0.6fr)_minmax(88px,0.5fr)] items-center gap-[1.5rem] p-[1rem_1.5rem] border-b border-[#e2e8f0] last:border-b-0 bg-white">
-            <span className="!text-[#111827] !text-[0.86rem] !font-[700] leading-[1.4]">{caseCategoryLabel(record.category)}</span>
-            <span><strong className="!font-[700] !text-[0.86rem] leading-[1.4] !text-[#111827]">{record.procedurePerformed}</strong></span>
-            <span><span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(record.status)}`}>{record.status}</span></span>
-            <span><strong className="!font-[700] !text-[0.86rem] leading-[1.4] !text-[#111827]">{formatDate(record.caseDate)}</strong></span>
-            <span><strong className="!font-[700] !text-[0.86rem] leading-[1.4] !text-[#111827]">{record.shiftTime}</strong></span>
-            <span><Link className="!text-[#8A252C] !font-[700] !text-[0.86rem] cursor-pointer no-underline hover:underline" href={`${basePath}/clinical-cases/validation?caseId=${record.id}`}>Open</Link></span>
+          <div key={record.id} className="grid grid-cols-[minmax(92px,0.85fr)_minmax(180px,2.25fr)_minmax(88px,0.8fr)_minmax(86px,0.75fr)_minmax(74px,0.6fr)_minmax(58px,0.45fr)] items-center gap-3 border-t border-[#e2e8f0] bg-white px-4 py-4 max-[760px]:grid-cols-[minmax(0,1fr)_auto] max-[760px]:gap-2 max-[760px]:py-3 first:border-t-0 min-[761px]:first:border-t">
+            <span className="!text-[#111827] !text-[0.9rem] !font-[900] leading-[1.35] max-[760px]:col-span-2">{caseCategoryLabel(record.category)}</span>
+            <span className="min-w-0 !font-[850] !text-[0.88rem] leading-[1.4] !text-[#111827] max-[760px]:col-span-2">{record.procedurePerformed || record.procedureDetails || record.diagnosis || "Clinical case"}</span>
+            <span><span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[900] whitespace-nowrap ${statusClass(record.status)}`}>{record.status}</span></span>
+            <span className="!font-[900] !text-[0.86rem] leading-[1.25] !text-[#111827] max-[760px]:text-right">{formatDate(record.caseDate)}</span>
+            <span className="!font-[900] !text-[0.86rem] leading-[1.25] !text-[#111827] max-[760px]:hidden">{record.shiftTime}</span>
+            <span className="max-[760px]:justify-self-end"><Link className="!text-[#8A252C] !font-[900] !text-[0.86rem] cursor-pointer no-underline hover:underline" href={`${basePath}/clinical-cases/validation?caseId=${record.id}`}>Open</Link></span>
           </div>
         ))}
-        </div>
       </div>
     </section>
   );
@@ -67,11 +65,12 @@ export function ClinicalCasesSelectionContent({ basePath }: { basePath: string; 
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId");
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const isAllCaseScope = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
-  const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
-  const cases = isChair ? allCases : instructorCases;
-  const isLoading = isChair ? isAllLoading : isInstructorLoading;
+  const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isAllCaseScope, scopedViewerId);
+  const cases = isAllCaseScope ? allCases : instructorCases;
+  const isLoading = isAllCaseScope ? isAllLoading : isInstructorLoading;
   const studentCases = cases.filter((clinicalCase: any) => String(clinicalCase.studentId) === String(studentId));
   const firstCase = studentCases[0];
   const pendingCount = studentCases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length;

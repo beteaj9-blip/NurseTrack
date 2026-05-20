@@ -75,18 +75,18 @@ export function LiveAttendanceContent() {
             <div className="p-8 text-center rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.9rem] !font-bold">No schedule for today.</div>
           ) : (
             <>
-              <div className="flex flex-col w-full border border-[#e2e8f0] rounded-lg overflow-x-auto bg-white" role="table">
-                <div className="min-w-[900px] grid grid-cols-[44px_1.25fr_1.4fr_0.65fr_0.8fr_0.65fr] items-center p-[18px] gap-[18px] bg-[#f8fafc] !text-[#344054] !text-[0.78rem] !font-[800] uppercase border-b border-[#e2e8f0]" role="row">
+              <div className="flex w-full min-w-0 flex-col overflow-hidden rounded-lg border border-[#e2e8f0] bg-white" role="table">
+                <div className="grid grid-cols-[44px_minmax(150px,1.2fr)_minmax(160px,1.35fr)_minmax(76px,0.6fr)_minmax(86px,0.7fr)_minmax(92px,0.65fr)] items-center gap-3 bg-[#f8fafc] p-4 !text-[#344054] !text-[0.72rem] !font-[900] uppercase border-b border-[#e2e8f0] max-[760px]:hidden" role="row">
                   {['No.','Student','Duty Location','Time-In','Connection','Status'].map(h => <span key={h} role="columnheader">{h}</span>)}
                 </div>
                 {filtered.map((item: any, i: number) => (
-                  <div className="min-w-[900px] grid grid-cols-[44px_1.25fr_1.4fr_0.65fr_0.8fr_0.65fr] items-center p-[18px] gap-[18px] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] last:border-b-0" role="row" key={item.id}>
+                  <div className="grid grid-cols-[44px_minmax(150px,1.2fr)_minmax(160px,1.35fr)_minmax(76px,0.6fr)_minmax(86px,0.7fr)_minmax(92px,0.65fr)] items-center gap-3 border-b border-[#e2e8f0] bg-white p-4 hover:bg-[#f8fafc] last:border-b-0 max-[760px]:grid-cols-[32px_minmax(0,1fr)_auto] max-[760px]:gap-3 max-[760px]:p-3" role="row" key={item.id}>
                     <span role="cell" className="w-[32px] h-[32px] rounded-full border border-[#8a252c]/16 bg-[#f8fafc] grid place-items-center !text-[#8A252C] !text-[0.82rem] !font-[900]">{i+1}.</span>
-                    <span role="cell" className="flex items-center gap-[10px]"><ProfileAvatar name={item.name} imageUrl={item.profileImageUrl} size={42} /><div><strong className="block !text-[#111827] !text-[0.88rem]">{item.name}</strong><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">{item.section}</small></div></span>
-                    <span role="cell"><strong className="block !text-[#111827] !text-[0.88rem]">{item.site}</strong><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">{item.area}</small><small className="block !text-[#64748b] !text-[0.74rem] !font-[800]">CI: {item.ci}</small></span>
-                    <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800]">{item.time}</span>
-                    <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800]">{item.liveMin}</span>
-                    <span role="cell"><span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${item.status === "Not connected" ? "bg-[#f1f5f9] !text-[#475569]" : "bg-[#e9f8ef] !text-[#03703c]"}`}>{item.status}</span></span>
+                    <span role="cell" className="flex min-w-0 items-center gap-[10px]"><ProfileAvatar name={item.name} imageUrl={item.profileImageUrl} size={42} /><div className="min-w-0"><strong className="block truncate !text-[#111827] !text-[0.88rem] !font-[900] max-[760px]:whitespace-normal max-[760px]:break-words">{item.name}</strong><small className="block truncate !text-[#64748b] !text-[0.74rem] !font-[800] max-[760px]:whitespace-normal max-[760px]:break-words">{item.section}</small></div></span>
+                    <span role="cell" className="min-w-0 max-[760px]:col-start-2 max-[760px]:col-span-2"><strong className="block truncate !text-[#111827] !text-[0.88rem] max-[760px]:whitespace-normal max-[760px]:break-words">{item.site}</strong><small className="block truncate !text-[#64748b] !text-[0.74rem] !font-[800] max-[760px]:whitespace-normal max-[760px]:break-words">{item.area}</small><small className="block truncate !text-[#64748b] !text-[0.74rem] !font-[800] max-[760px]:whitespace-normal max-[760px]:break-words">CI: {item.ci}</small></span>
+                    <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800] max-[760px]:col-start-2">{item.time}</span>
+                    <span role="cell" className="!text-[#111827] !text-[0.86rem] !font-[800] max-[760px]:text-right">{item.liveMin}</span>
+                    <span role="cell" className="max-[760px]:col-start-3 max-[760px]:row-start-1 max-[760px]:justify-self-end"><span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${item.status === "Not connected" ? "bg-[#f1f5f9] !text-[#475569]" : "bg-[#e9f8ef] !text-[#03703c]"}`}>{item.status}</span></span>
                   </div>
                 ))}
               </div>

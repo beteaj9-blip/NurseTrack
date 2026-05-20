@@ -13,7 +13,7 @@ const CiRecommendationsIcon = <><path d="M4 5h16v11H8l-4 4V5Z" /><path d="M8 9h8
 const OvertimeDetailsIcon = <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>;
 const ReportsIcon = <><path d="M4 19V5" /><path d="M4 19h16" /><rect x="7" y="11" width="2.5" height="5" /><rect x="11.25" y="8" width="2.5" height="8" /><rect x="15.5" y="6" width="2.5" height="10" /></>;
 const ManageUsersIcon = <><circle cx="9" cy="8" r="3" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="10" r="2.5" /><path d="M14.5 19a4.5 4.5 0 0 1 6.5-4" /></>;
-const AssistantAccessIcon = <><circle cx="9" cy="8" r="3" /><path d="M3.5 19a5.5 5.5 0 0 1 9.4-3.9" /><circle cx="17" cy="17" r="3" /><path d="M17 14v-2" /><path d="M17 22v-2" /><path d="M20 17h2" /><path d="M12 17h2" /></>;
+const ManageAccessIcon = <><circle cx="9" cy="8" r="3" /><path d="M3.5 19a5.5 5.5 0 0 1 9.4-3.9" /><circle cx="17" cy="17" r="3" /><path d="M17 14v-2" /><path d="M17 22v-2" /><path d="M20 17h2" /><path d="M12 17h2" /></>;
 const SectionImportIcon = <><path d="M5 4h10l4 4v12H5z" /><path d="M15 4v5h5" /><path d="M8 14h8" /><path d="M8 17h5" /><path d="M10 11h4" /><path d="M12 9v4" /></>;
 const HospitalsIcon = <><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" /><path d="M16 8h2a2 2 0 0 1 2 2v11" /><path d="M8 7h4" /><path d="M8 11h4" /><path d="M8 15h4" /><path d="M3 21h18" /></>;
 
@@ -21,7 +21,7 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
   admin: [
     { label: "Dashboard", href: "/admin/dashboard", icon: DashboardIcon },
     { label: "Manage Users", href: "/admin/manage-users", icon: ManageUsersIcon },
-    { label: "Assistant Access", href: "/admin/assistant-access", icon: AssistantAccessIcon },
+    { label: "Manage Access", href: "/admin/manage-access", icon: ManageAccessIcon },
     { label: "Section Import", href: "/admin/section-import", icon: SectionImportIcon },
     { label: "Hospitals / Duty Areas", href: "/admin/hospitals", icon: HospitalsIcon },
     { label: "Schedules", href: "/admin/schedules", icon: SchedulesIcon },

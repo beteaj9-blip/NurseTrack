@@ -1,8 +1,5 @@
-"use client";
-
-import React from "react";
 import NotificationsContent from "@/components/features/NotificationsContent";
 
-export default function NotificationsPage() {
+export default function Page() {
   return <NotificationsContent />;
 }

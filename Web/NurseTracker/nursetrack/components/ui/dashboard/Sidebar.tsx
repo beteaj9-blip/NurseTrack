@@ -32,6 +32,7 @@ const LogoutIcon = (
 
 export function Sidebar({ role, userName, userContext, avatarInitials, avatarImageUrl, navItems, isOpen = false, onClose, onLogout }: SidebarProps) {
   const roleSlug = navItems[0]?.href?.split('/')[1] || '';
+  const aboutHref = roleSlug ? `/${roleSlug}/about` : '/';
 
   return (
     <aside
@@ -39,7 +40,7 @@ export function Sidebar({ role, userName, userContext, avatarInitials, avatarIma
       aria-label="Primary navigation"
     >
       {/* Brand */}
-      <Link className="flex items-center gap-3 text-inherit no-underline transition-transform duration-160 ease-in hover:translate-x-[2px] focus-visible:translate-x-[2px]" href="/" aria-label="About NurseTrack">
+      <Link className="flex items-center gap-3 text-inherit no-underline transition-transform duration-160 ease-in hover:translate-x-[2px] focus-visible:translate-x-[2px]" href={aboutHref} aria-label="About NurseTrack">
         <Image
           className="w-[52px] h-[52px] rounded-full bg-white p-1 object-contain"
           src="/assets/cit-u-logo.png"

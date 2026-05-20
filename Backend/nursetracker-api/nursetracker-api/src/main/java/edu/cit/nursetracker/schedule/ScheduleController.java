@@ -1,8 +1,13 @@
 package edu.cit.nursetracker.schedule;
 
 import lombok.RequiredArgsConstructor;
+import edu.cit.nursetracker.adminaccess.AdminAccessPermissionService;
 import edu.cit.nursetracker.user.JwtService;
+import edu.cit.nursetracker.user.User;
+import edu.cit.nursetracker.user.UserRepository;
+import edu.cit.nursetracker.user.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +22,12 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
     private final ScheduleImportService scheduleImportService;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final AdminAccessPermissionService accessPermissionService;
 
     @PostMapping
-    public ResponseEntity<Schedule> assignSchedule(@RequestBody Schedule schedule) {
+    public ResponseEntity<Schedule> assignSchedule(@RequestBody Schedule schedule, HttpServletRequest request) {
+        if (!canEditSchedules(request)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         return ResponseEntity.ok(scheduleService.assignSchedule(schedule));
     }
 
@@ -29,7 +37,8 @@ public class ScheduleController {
     }
 
     @PostMapping("/import/publish")
-    public ResponseEntity<ScheduleImportResult> publishScheduleImport(@RequestBody ScheduleImportPreview preview) {
+    public ResponseEntity<ScheduleImportResult> publishScheduleImport(@RequestBody ScheduleImportPreview preview, HttpServletRequest request) {
+        if (!canEditSchedules(request)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         return ResponseEntity.ok(scheduleImportService.publish(preview));
     }
 
@@ -54,18 +63,31 @@ public class ScheduleController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> unassignSchedule(@PathVariable Long id) {
+    public ResponseEntity<Void> unassignSchedule(@PathVariable Long id, HttpServletRequest request) {
+        if (!canEditSchedules(request)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         scheduleService.unassignSchedule(id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Schedule> updateSchedule(@PathVariable Long id, @RequestBody Schedule schedule) {
+    public ResponseEntity<Schedule> updateSchedule(@PathVariable Long id, @RequestBody Schedule schedule, HttpServletRequest request) {
+        if (!canEditSchedules(request)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         return ResponseEntity.ok(scheduleService.updateSchedule(id, schedule));
     }
 
     @GetMapping("/all")
     public ResponseEntity<List<Schedule>> getAllSchedules(HttpServletRequest request) {
         return ResponseEntity.ok(scheduleService.getSchedulesForViewer(jwtService.getUserId(request)));
+    }
+
+    private boolean canEditSchedules(HttpServletRequest request) {
+        Long userId = jwtService.getUserId(request);
+        User viewer = userRepository.findById(userId).orElse(null);
+        if (viewer == null) return false;
+        if (viewer.getRole() == UserRole.ADMIN || viewer.getRole() == UserRole.CHAIR) return true;
+        if (viewer.getRole() == UserRole.COORDINATOR) {
+            return accessPermissionService.canEdit(viewer.getRole(), "scheduleMaker");
+        }
+        return false;
     }
 }

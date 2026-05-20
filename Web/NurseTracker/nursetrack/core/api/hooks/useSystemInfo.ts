@@ -1,18 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 
-export type SystemInfo = {
-  id: number;
-  version: string;
-  lastUpdated: string;
-};
-
-export const useSystemInfo = () => {
-  return useQuery({
-    queryKey: ['system-info'],
-    queryFn: async () => {
-      const { data } = await apiClient.get<SystemInfo>('/system/info');
-      return data;
-    },
-  });
-};
+export const useAboutInfo = () => useQuery({
+  queryKey: ['system-info', 'about'],
+  queryFn: async () => {
+    const { data } = await apiClient.get('/system/about');
+    return data;
+  },
+});

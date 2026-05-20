@@ -21,12 +21,13 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
   const caseId = searchParams.get("caseId") ?? undefined;
   const user = useAuthStore((state) => state.user);
   const { canEdit } = useCanEditFeature("clinicalCases");
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const isAllCaseScope = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: detailCase, isLoading: isDetailLoading } = useClinicalCase(caseId);
   const { data: instructorCases = [], isLoading: isInstructorListLoading } = useInstructorCases();
-  const { data: allCases = [], isLoading: isAllListLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
-  const listCases = isChair ? allCases : instructorCases;
-  const isListLoading = isChair ? isAllListLoading : isInstructorListLoading;
+  const { data: allCases = [], isLoading: isAllListLoading } = useAllClinicalCases(isAllCaseScope, scopedViewerId);
+  const listCases = isAllCaseScope ? allCases : instructorCases;
+  const isListLoading = isAllCaseScope ? isAllListLoading : isInstructorListLoading;
   const listCase = (listCases as any[]).find((clinicalCase: any) => String(clinicalCase.id) === String(caseId));
   const clinicalCase = detailCase ?? listCase;
   const reviewCase = useReviewCase();
@@ -80,7 +81,7 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
             <Detail label="Category" value={clinicalCase.category} />
             <Detail label="Procedure performed" value={clinicalCase.procedurePerformed} />
             <Detail label="Name of hospital" value={clinicalCase.hospital} />
-            <Detail label="Supervising clinical instructor" value={clinicalCase.instructorName} />
+            <Detail label="Supervising Clinical Instructor" value={clinicalCase.instructorName} />
             <Detail label="Duty area" value={clinicalCase.dutyArea} />
             <Detail label="Submitted date" value={formatDate(clinicalCase.createdAt?.slice(0, 10))} />
             <Detail label="Status" value={clinicalCase.status} />
@@ -89,7 +90,7 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
         </article>
         <aside>
           <article className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem] w-full mt-0">
-            <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.15rem] leading-[1.2] !font-[800] tracking-[-0.03em]">Instructor Action</h2></div>
+            <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.15rem] leading-[1.2] !font-[800] tracking-[-0.03em]">Clinical Instructor Action</h2></div>
             <div className="flex flex-col gap-[12px]">
               <label className="flex flex-col gap-1.5 m-0 !text-[0.875rem] !font-[800] !text-[#344054]" htmlFor="validation-comment">Comment (Required for rejection)<textarea className="w-full p-[0.75rem] border border-[#e2e8f0] rounded-[0.5rem] mt-[0.5rem] font-inherit resize-y bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="validation-comment" rows={5} placeholder="Add a comment or feedback for the student" value={comment} onChange={(event) => setComment(event.target.value)} /></label>
               <div className="flex items-center gap-[0.75rem] p-[1rem] rounded-[8px] !text-[#1e293b] !font-[500] bg-[#f8fafc] border border-[#e2e8f0]" role="status" aria-live="polite">Review the case details, then make an approval decision.</div>

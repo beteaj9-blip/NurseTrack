@@ -3,6 +3,7 @@ package edu.cit.nursetracker.clinicalcase;
 import edu.cit.nursetracker.notification.Notification;
 import edu.cit.nursetracker.notification.NotificationService;
 import edu.cit.nursetracker.notification.NotificationType;
+import edu.cit.nursetracker.adminaccess.AdminAccessPermissionService;
 import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -118,6 +119,15 @@ public class ClinicalCaseService {
                 .actionUrl("/nursing-student/clinical-cases")
                 .build());
         return saved;
+    }
+
+    public boolean canValidateCase(Long caseId, Long viewerId, AdminAccessPermissionService accessPermissionService) {
+        ClinicalCase clinicalCase = caseRepository.findById(caseId).orElse(null);
+        if (clinicalCase == null) return false;
+        return userRepository.findById(viewerId)
+                .filter(viewer -> AccessScope.canViewRecord(viewer, clinicalCase.getStudent(), clinicalCase.getInstructor()))
+                .filter(viewer -> accessPermissionService.canEdit(viewer.getRole(), "clinicalCases"))
+                .isPresent();
     }
 
     public ClinicalCase getCaseById(Long id) {

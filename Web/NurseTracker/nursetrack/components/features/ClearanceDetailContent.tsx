@@ -164,5 +164,28 @@ function CaseSection({ title, subtitle, records, basePath }: { title: string; su
   }, [totalPages]);
   const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   if (records.length === 0) return null;
-  return <section aria-label={subtitle}><div className="flex items-baseline justify-between gap-4 mb-3"><h3 className="m-0 !text-[#8A252C] !text-[1.05rem] !font-[900]">{title}</h3><span className="!text-[#475569] !text-[0.86rem] !font-[900]">{subtitle}</span></div><div className="rounded-lg border border-[#e2e8f0] overflow-x-auto"><table className="w-full min-w-[980px] border-collapse text-left"><thead><tr className="bg-[#f8fafc] border-b border-[#e2e8f0] !text-[#17233c] !text-[0.76rem] !font-[900] uppercase"><th className="p-4">Category</th><th className="p-4">Procedure Performed</th><th className="p-4">Status</th><th className="p-4">Date</th><th className="p-4">Time</th><th className="p-4">Action</th></tr></thead><tbody>{paged.map((record) => <tr key={record.id} className="border-b border-[#e2e8f0] last:border-0"><td className="p-4 !text-[#111827] !font-[900]">{caseCategoryLabel(record.category)}</td><td className="p-4 !text-[#111827] !font-[900]">{record.procedurePerformed || record.procedureDetails || record.diagnosis || "Clinical case"}</td><td className="p-4"><span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] ${caseStatusClass(record.status)}`}>{caseStatusLabel(record.status)}</span></td><td className="p-4 !text-[#111827] !font-[900]">{formatDate(record.caseDate ?? record.procedureDate)}</td><td className="p-4 !text-[#111827] !font-[900]">{formatTime(record.createdAt, record.shiftTime)}</td><td className="p-4"><Link href={`${basePath}/clinical-cases/validation?caseId=${record.id}`} className="!text-[#8A252C] !font-[900] no-underline hover:underline cursor-pointer">Open</Link></td></tr>)}</tbody></table></div>{totalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] gap-2 border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b] whitespace-nowrap"><span className="hidden sm:inline">Page </span>{page} of {totalPages}</span><button className={ghostBtn} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages}>Next</button></div>}</section>;
+  return (
+    <section aria-label={subtitle} className="min-w-0">
+      <div className="mb-3 flex items-baseline justify-between gap-4 max-[640px]:flex-col max-[640px]:items-start max-[640px]:gap-1">
+        <h3 className="m-0 !text-[#8A252C] !text-[1.05rem] !font-[900]">{title}</h3>
+        <span className="!text-[#475569] !text-[0.86rem] !font-[900]">{subtitle}</span>
+      </div>
+      <div className={`overflow-hidden rounded-lg border border-[#e2e8f0] ${totalPages > 1 ? "rounded-b-none" : ""}`}>
+        <div className="grid grid-cols-[minmax(92px,0.85fr)_minmax(180px,2.25fr)_minmax(88px,0.8fr)_minmax(86px,0.75fr)_minmax(74px,0.6fr)_minmax(58px,0.45fr)] items-center gap-3 bg-[#f8fafc] px-4 py-3 !text-[#17233c] !text-[0.72rem] !font-[900] uppercase max-[760px]:hidden">
+          <span>Category</span><span>Procedure Performed</span><span>Status</span><span>Date</span><span>Time</span><span>Action</span>
+        </div>
+        {paged.map((record) => (
+          <div key={record.id} className="grid grid-cols-[minmax(92px,0.85fr)_minmax(180px,2.25fr)_minmax(88px,0.8fr)_minmax(86px,0.75fr)_minmax(74px,0.6fr)_minmax(58px,0.45fr)] items-center gap-3 border-t border-[#e2e8f0] bg-white px-4 py-4 max-[760px]:grid-cols-[minmax(0,1fr)_auto] max-[760px]:gap-2 max-[760px]:py-3">
+            <span className="!text-[#111827] !text-[0.9rem] !font-[900] leading-[1.35] max-[760px]:col-span-2">{caseCategoryLabel(record.category)}</span>
+            <span className="min-w-0 !text-[#111827] !text-[0.88rem] !font-[850] leading-[1.4] max-[760px]:col-span-2">{record.procedurePerformed || record.procedureDetails || record.diagnosis || "Clinical case"}</span>
+            <span><span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] ${caseStatusClass(record.status)}`}>{caseStatusLabel(record.status)}</span></span>
+            <span className="!text-[#111827] !text-[0.86rem] !font-[900] leading-[1.25] max-[760px]:text-right">{formatDate(record.caseDate ?? record.procedureDate)}</span>
+            <span className="!text-[#111827] !text-[0.86rem] !font-[900] leading-[1.25] max-[760px]:hidden">{formatTime(record.createdAt, record.shiftTime)}</span>
+            <span className="max-[760px]:justify-self-end"><Link href={`${basePath}/clinical-cases/validation?caseId=${record.id}`} className="!text-[#8A252C] !font-[900] no-underline hover:underline cursor-pointer">Open</Link></span>
+          </div>
+        ))}
+      </div>
+      {totalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] gap-2 border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b] whitespace-nowrap"><span className="hidden sm:inline">Page </span>{page} of {totalPages}</span><button className={ghostBtn} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page === totalPages}>Next</button></div>}
+    </section>
+  );
 }

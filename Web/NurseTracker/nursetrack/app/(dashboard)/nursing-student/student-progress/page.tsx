@@ -1,6 +1,5 @@
-"use client";
 import { StudentProgressContent } from "@/components/features/StudentProgressContent";
 
-export default function StudentProgressPage() {
+export default function Page() {
   return <StudentProgressContent basePath="/nursing-student" />;
 }

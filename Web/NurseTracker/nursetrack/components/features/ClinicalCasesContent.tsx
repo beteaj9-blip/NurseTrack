@@ -9,11 +9,12 @@ import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const user = useAuthStore((state) => state.user);
-    const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+    const isAllCaseScope = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+    const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
     const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
-    const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
-    const cases = isChair ? allCases : instructorCases;
-    const isLoading = isChair ? isAllLoading : isInstructorLoading;
+    const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isAllCaseScope, scopedViewerId);
+    const cases = isAllCaseScope ? allCases : instructorCases;
+    const isLoading = isAllCaseScope ? isAllLoading : isInstructorLoading;
     const [search, setSearch] = useState("");
     const [sectionFilter, setSectionFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
@@ -24,7 +25,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
         if (!key) return acc;
         const current = acc[key] ?? {
             studentId: clinicalCase.studentId,
-            id: clinicalCase.studentSchoolId,
+            id: clinicalCase.studentSchoolId || "Not provided",
             name: clinicalCase.studentName || "Nursing Student",
             profileImageUrl: clinicalCase.studentProfileImageUrl,
             section: clinicalCase.studentSection || "Nursing Student",
@@ -39,7 +40,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section) => ({ value: section, label: section }))];
     const filtered = students.filter(s => {
         const q = search.toLowerCase();
-        return (!search || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.section.toLowerCase().includes(q))
+        return (!search || String(s.name).toLowerCase().includes(q) || String(s.id).toLowerCase().includes(q) || String(s.section).toLowerCase().includes(q))
             && (sectionFilter === "all" || s.section === sectionFilter);
     });
     const totalPages = Math.ceil(filtered.length / PER_PAGE);
@@ -60,12 +61,11 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
                 </div>
                 <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
                     {paged.map((s, i) => (
-                        <Link key={s.studentId ?? s.id} href={`${basePath}/clinical-cases/selection?studentId=${s.studentId}`} className="relative pl-[72px] flex items-center gap-[1.25rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0" tabIndex={0}>
-                            <div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
-                            <div className="absolute left-[24px] top-1/2 -translate-y-1/2 grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
+                        <Link key={s.studentId ?? s.id} href={`${basePath}/clinical-cases/selection?studentId=${s.studentId}`} className="grid w-full grid-cols-[32px_34px_minmax(0,1fr)_auto] items-center gap-[1rem] p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[520px]:grid-cols-[32px_34px_minmax(0,1fr)] max-[520px]:gap-3 max-[520px]:p-3" tabIndex={0}>
+                            <div className="grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
                             <ProfileAvatar name={s.name} imageUrl={s.profileImageUrl} size={34} />
-                            <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{s.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700]">{s.section} - Student ID {s.id}</small></span>
-                            <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{s.pending} pending</span>
+                            <span className="min-w-0 flex flex-col gap-[0.125rem]"><strong className="truncate !text-[#111827] !text-[1rem] !font-[850] leading-[1.25] max-[520px]:whitespace-normal max-[520px]:break-words">{s.name}</strong><small className="truncate !text-[#64748b] !text-[0.875rem] !font-[700] max-[520px]:whitespace-normal max-[520px]:break-words">{s.section} - Student ID {s.id}</small></span>
+                            <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00] max-[520px]:col-start-3 max-[520px]:mt-1">{s.pending} pending</span>
                         </Link>
                     ))}
                 </div>

@@ -86,7 +86,7 @@ export function StudentProgressDetailContent({ basePath }: { basePath: string; s
   }
 
   return (
-    <main className="min-w-0 overflow-x-hidden p-[clamp(16px,3vw,42px)] min-h-[calc(100vh-64px)]">
+    <main className="min-w-0 overflow-x-hidden p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="flex items-center justify-between gap-[28px] p-[clamp(20px,3vw,34px)] border border-[#e2e8f0] rounded-[8px] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] mb-[18px] max-[820px]:flex-col max-[820px]:items-start">
         {isStudentLoading ? <LoadingState message="Loading student profile" className="w-full !p-0" /> : <><div className="flex items-center gap-[16px] min-w-0"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={68} /><div className="min-w-0"><h2 className="m-0 mb-[8px] !text-[#111827] !text-[clamp(1.55rem,3vw,2.15rem)] !font-bold break-words">{student.name || "Profile name unavailable"}</h2><p className="m-0 !text-[#64748b] !font-[600] leading-[1.55] break-words">{student.section || "No section assigned"}{student.id ? ` - Student ID ${student.id}` : ""}</p></div></div>
         <span className="inline-flex items-center justify-start w-max max-w-full min-h-[28px] px-[10px] py-[6px] rounded-full bg-[#fff8e1] !text-[#6c4c00] !text-[0.76rem] !font-extrabold whitespace-nowrap">{status}</span></>}
@@ -95,7 +95,7 @@ export function StudentProgressDetailContent({ basePath }: { basePath: string; s
       <section className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-[18px] mb-[18px]" aria-label="Student progress summary">
         <SummaryCard icon="calendar" status={activeExtensionDayTotal > 0 ? "Open" : "Clear"} title="Extension Days" description={`${activeExtensionDayTotal} extension days recorded`} isLoading={isExtensionDaysLoading} />
         <SummaryCard icon="cases" status={totalRequiredCases > 0 && completedCases >= totalRequiredCases ? "Completed" : "In progress"} title="Clinical Cases" description={`${completedCases} of ${totalRequiredCases} case(s) completed`} isLoading={isRequirementsLoading} />
-        <SummaryCard icon="alert" status={pending > 0 ? "Open" : "Clear"} title="Pending Items" description={`${pending} record(s) need student or instructor action`} isLoading={isCasesLoading || isDutyLoading} />
+        <SummaryCard icon="alert" status={pending > 0 ? "Open" : "Clear"} title="Pending Items" description={`${pending} record(s) need student or clinical instructor action`} isLoading={isCasesLoading || isDutyLoading} />
       </section>
 
       <div className="grid min-w-0 grid-cols-1 min-[1400px]:grid-cols-2 gap-[18px] items-start">

@@ -45,7 +45,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
   const [recordToCancel, setRecordToCancel] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [daysCount, setDaysCount] = useState("1");
-  const [basis, setBasis] = useState("Excused absence");
+  const [basis, setBasis] = useState("");
   const [reason, setReason] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
   const historyPerPage = 5;
@@ -85,7 +85,6 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
   const labelClass = "flex flex-col gap-[0.55rem] m-0 !text-sm !font-bold !text-[#344054]";
   const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   const daysOptions = [1, 2, 3, 4, 5, 6, 7, 8, 10, 15].map((days) => ({ value: String(days), label: `${days} extension day${days > 1 ? "s" : ""}` }));
-  const basisOptions = ["Excused absence", "Unexcused absence", "Tardiness", "Performance deficiency", "Clinical requirement completion", "Instructor assessment"].map((item) => ({ value: item, label: item }));
 
   useEffect(() => {
     setHistoryPage((page) => Math.min(page, historyTotalPages));
@@ -93,7 +92,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
 
   const resetForm = () => {
     setDaysCount("1");
-    setBasis("Excused absence");
+    setBasis("");
     setReason("");
     setEditingId(null);
   };
@@ -104,8 +103,8 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
       showToast({ variant: "error", title: "Action unavailable", message: "Extension-day changes are not enabled for your role." });
       return;
     }
-    if (!studentId || !instructorId || !reason.trim()) return;
-    const payload = { studentId: Number(studentId), instructorId: Number(instructorId), days: Number(daysCount), basis, reason: reason.trim() };
+    if (!studentId || !instructorId || !basis.trim() || !reason.trim()) return;
+    const payload = { studentId: Number(studentId), instructorId: Number(instructorId), days: Number(daysCount), basis: basis.trim(), reason: reason.trim() };
     try {
       if (editingId) {
         await updateExtension.mutateAsync({ id: editingId, ...payload });
@@ -164,8 +163,8 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
           {editingId && <div className="mb-[1rem] rounded-lg border border-[#facc15] bg-[#fff8e1] px-4 py-3 !text-[#6c4c00] !font-[800]">You are editing an existing extension-day record. Save changes or cancel editing before adding a new record.</div>}
           <form className="grid grid-cols-2 gap-[1rem_1.1rem] items-start max-[980px]:grid-cols-1" onSubmit={submitExtension}>
             <label className={labelClass} htmlFor="extension-days-count">Extension days to add<InlineSelect value={daysCount} options={daysOptions} placeholder="Select extension days" onChange={setDaysCount} /></label>
-            <label className={labelClass} htmlFor="extension-basis">Basis<InlineSelect value={basis} options={basisOptions} placeholder="Select basis" onChange={setBasis} /></label>
-            <label className={`${labelClass} col-span-full`} htmlFor="extension-reason">Reason / remarks<textarea className={`${inputClass} min-h-[8.5rem] resize-y`} id="extension-reason" rows={5} placeholder="Type the reason, documentation note, or instructor remarks here" required value={reason} onChange={(event) => setReason(event.target.value)} /></label>
+            <label className={labelClass} htmlFor="extension-basis">Basis<input className={inputClass} id="extension-basis" type="text" placeholder="Type the basis for extension days" required value={basis} onChange={(event) => setBasis(event.target.value)} /></label>
+            <label className={`${labelClass} col-span-full`} htmlFor="extension-reason">Reason / remarks<textarea className={`${inputClass} min-h-[8.5rem] resize-y`} id="extension-reason" rows={5} placeholder="Type the reason, documentation note, or clinical instructor remarks here" required value={reason} onChange={(event) => setReason(event.target.value)} /></label>
             <div className="col-span-full flex justify-end items-center gap-[0.85rem] pt-[0.2rem] max-[980px]:flex-col max-[980px]:items-stretch"><button className="inline-flex items-center justify-center min-h-[48px] min-w-[7rem] px-[1.25rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] transition-all cursor-pointer disabled:opacity-60" type="button" disabled={isSaving} onClick={resetForm}>{editingId ? "Cancel editing" : "Clear"}</button><button className="inline-flex items-center justify-center min-h-[48px] min-w-[13.5rem] px-[1.5rem] rounded-[8px] bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_8px_16px_-4px_rgba(138,37,44,0.4)] hover:bg-[#6d1d23] transition-all cursor-pointer disabled:opacity-60" disabled={!canEdit || isSaving} type="submit">{isSaving ? "Saving..." : editingId ? "Save Changes" : "Add Extension Days"}</button></div>
           </form>
         </section>

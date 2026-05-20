@@ -126,7 +126,7 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
           icon="alert"
           status={pendingItems > 0 ? "Open" : "Clear"}
           title="Pending Items"
-          description={isCasesLoading || isDutyLoading ? "Checking pending items" : `${pendingItems} record(s) need student or instructor action`}
+          description={isCasesLoading || isDutyLoading ? "Checking pending items" : `${pendingItems} record(s) need student or clinical instructor action`}
           isLoading={isCasesLoading || isDutyLoading}
         />
       </section>

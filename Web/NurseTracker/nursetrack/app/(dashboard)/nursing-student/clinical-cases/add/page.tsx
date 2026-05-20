@@ -1,8 +1,5 @@
-"use client";
-
-import React from "react";
 import AddClinicalCaseContent from "@/components/features/AddClinicalCaseContent";
 
-export default function AddClinicalCasePage() {
+export default function Page() {
   return <AddClinicalCaseContent />;
 }

@@ -78,7 +78,7 @@ export default function Register() {
       <AuthInfoPanel
         headline="Create an account for organized clinical tracking."
         description="Set up secure access for duty records, case logs, schedules, approvals, and progress updates."
-        highlights={["Secure access", "Student records", "Instructor review", "Progress updates"]}
+        highlights={["Secure access", "Student records", "Clinical Instructor review", "Progress updates"]}
       />
 
       <section className="flex flex-col items-center justify-center min-h-screen bg-white p-[clamp(28px,4vw,48px)] overflow-y-auto animate-[panelInRight_720ms_ease_both]" aria-label="Registration">

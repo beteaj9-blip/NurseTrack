@@ -9,6 +9,9 @@ export const useAdminAccessPermissions = (role: string, enabled = true) => {
       return data;
     },
     enabled: enabled && Boolean(role),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 

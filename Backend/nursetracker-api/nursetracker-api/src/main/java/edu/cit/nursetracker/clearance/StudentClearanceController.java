@@ -2,6 +2,7 @@ package edu.cit.nursetracker.clearance;
 
 import edu.cit.nursetracker.academicterm.AcademicTerm;
 import edu.cit.nursetracker.academicterm.AcademicTermRepository;
+import edu.cit.nursetracker.adminaccess.AdminAccessPermissionService;
 import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.JwtService;
 import edu.cit.nursetracker.user.User;
@@ -27,6 +28,7 @@ public class StudentClearanceController {
     private final AcademicTermRepository academicTermRepository;
     private final ClearanceSettingsRepository settingsRepository;
     private final JwtService jwtService;
+    private final AdminAccessPermissionService accessPermissionService;
 
     @GetMapping
     public ResponseEntity<List<StudentClearance>> getAllClearances(HttpServletRequest request) {
@@ -84,9 +86,13 @@ public class StudentClearanceController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<StudentClearance> updateClearanceStatus(@PathVariable Long id, @RequestParam ClearanceStatus status) {
+    public ResponseEntity<StudentClearance> updateClearanceStatus(@PathVariable Long id, @RequestParam ClearanceStatus status, HttpServletRequest request) {
         StudentClearance clearance = clearanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Clearance record not found."));
+        User viewer = userRepository.findById(jwtService.getUserId(request)).orElse(null);
+        if (viewer == null || !AccessScope.canViewRecord(viewer, clearance.getStudent(), null) || !accessPermissionService.canEdit(viewer.getRole(), "clearance")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         clearance.setStatus(status);
         if (status == ClearanceStatus.IN_REVIEW && clearance.getSubmittedAt() == null) {
             clearance.setSubmittedAt(LocalDateTime.now());

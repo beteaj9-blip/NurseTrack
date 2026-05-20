@@ -328,9 +328,9 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           <InlineSelect value={clinicalSite} options={hospitalOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
         </label>
 
-        {/* Instructor note */}
+        {/* Clinical instructor note */}
         <label className={labelCls + " mt-4"} htmlFor="instructor-note">
-          Instructor note
+          Clinical Instructor note
           <textarea
             id="instructor-note"
             rows={4}

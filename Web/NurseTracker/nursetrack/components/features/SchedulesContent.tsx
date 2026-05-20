@@ -62,6 +62,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
   const { canEdit: canEditSchedules } = useCanEditFeature("scheduleMaker");
   const canEdit = (basePath === "/admin" || basePath === "/chair") || ((basePath === "/coordinator" || basePath === "/assistant") && canEditSchedules);
   const usesChairScheduleView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const showViewToggle = !usesChairScheduleView || (basePath === "/coordinator" && !canEditSchedules);
 
   const today = new Date();
   const [calYear, setCalYear] = React.useState(today.getFullYear());
@@ -115,7 +116,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
             </div>
 
             <div className="flex items-center gap-4 flex-wrap ml-auto">
-              {!usesChairScheduleView && <div className="flex items-center gap-2">
+              {showViewToggle && <div className="flex items-center gap-2">
                 <button onClick={() => setViewMode("calendar")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border ${viewMode === "calendar" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>Calendar</button>
                 <button onClick={() => setViewMode("list")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border ${viewMode === "list" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>List</button>
               </div>}

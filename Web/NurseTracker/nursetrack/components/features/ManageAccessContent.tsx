@@ -142,7 +142,7 @@ function PermissionCards({ role, title, badge }: { role: "ASSISTANT" | "COORDINA
   );
 }
 
-export default function AssistantAccessPage() {
+export function ManageAccessContent() {
   const { data: userData = [], isLoading } = useUsers();
   const updateUser = useAdminUpdateUser();
   const { showToast } = useToast();

@@ -79,8 +79,9 @@ export function Topbar({ titleKicker, title, onMenuClick, backHref }: TopbarProp
             </svg>
           </Link>
 
-          <button type="button" className="inline-flex items-center justify-center min-h-[38px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#344054] !text-[0.84rem] !font-[800] no-underline cursor-pointer hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:!text-[#0f172a] hover:shadow-sm hover:-translate-y-px transition-all max-[760px]:min-h-[38px] max-[760px]:px-2 max-[760px]:rounded-md max-[760px]:!text-[0.72rem]" onClick={() => setShowLogout(true)}>
-            Logout
+          <button type="button" className="inline-flex items-center justify-center min-h-[38px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#344054] !text-[0.84rem] !font-[800] no-underline cursor-pointer hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:!text-[#0f172a] hover:shadow-sm hover:-translate-y-px transition-all max-[760px]:w-[38px] max-[760px]:min-w-[38px] max-[760px]:min-h-[38px] max-[760px]:px-0 max-[760px]:rounded-md" onClick={() => setShowLogout(true)} aria-label="Logout" title="Logout">
+            <span className="max-[760px]:hidden">Logout</span>
+            <svg className="hidden w-5 h-5 fill-none stroke-current stroke-2 max-[760px]:block" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></svg>
           </button>
         </div>
       </header>
