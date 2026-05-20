@@ -27,6 +27,8 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
   const [search, setSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PER_PAGE = 10;
   const sections = Array.from(new Set((clearances as any[]).map((c) => c.studentSection).filter(Boolean))).sort();
   const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section: any) => ({ value: section, label: section }))];
   const statusOptions = [{ value: "all", label: "All statuses" }, { value: "LOCKED", label: "Not submitted" }, { value: "IN_REVIEW", label: "Submitted" }, { value: "CLEARED", label: "Approved" }];
@@ -37,9 +39,16 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
       && (sectionFilter === "all" || c.studentSection === sectionFilter)
       && (statusFilter === "all" || c.status === statusFilter);
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
   const inputCls = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
   const labelCls = "flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]";
+  const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   const clearanceEnabled = settings?.enabled !== false;
+
+  React.useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
 
   const handleToggleClearance = async () => {
     try {
@@ -59,13 +68,20 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
           <div className="flex items-center gap-3 flex-wrap">{basePath === "/admin" && <button type="button" disabled={updateSettings.isPending} onClick={handleToggleClearance} className={`inline-flex items-center justify-center min-h-[42px] px-4 rounded-lg !text-[0.86rem] !font-[900] cursor-pointer disabled:opacity-60 ${clearanceEnabled ? "bg-white border border-[#fca5a5] !text-[#b91c1c] hover:bg-[#fef2f2]" : "bg-[#8A252C] border border-[#8A252C] !text-white hover:bg-[#6d1d23]"}`}>{clearanceEnabled ? "Disable clearance" : "Enable clearance"}</button>}<span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span></div>
         </div>
         <div className="grid gap-[1rem] mb-[1rem] grid-cols-3 max-[980px]:grid-cols-1">
-          <label className={labelCls} htmlFor="cl-search">Search<input className={inputCls} id="cl-search" type="search" placeholder="Search name, student ID, section, or status" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
-          <label className={labelCls} htmlFor="cl-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={setSectionFilter} /></label>
-          <label className={labelCls} htmlFor="cl-status">Clearance<InlineSelect value={statusFilter} options={statusOptions} placeholder="All statuses" onChange={setStatusFilter} /></label>
+          <label className={labelCls} htmlFor="cl-search">Search<input className={inputCls} id="cl-search" type="search" placeholder="Search name, student ID, section, or status" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
+          <label className={labelCls} htmlFor="cl-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
+          <label className={labelCls} htmlFor="cl-status">Clearance<InlineSelect value={statusFilter} options={statusOptions} placeholder="All statuses" onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }} /></label>
         </div>
-        <div className="flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-lg">
-          {filtered.map((c: any, i: number) => <Link key={c.id} href={`${basePath}/clearance/detail?studentId=${c.studentId}`} className="grid grid-cols-[42px_38px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)_auto] max-[680px]:gap-2.5 max-[680px]:p-3"><div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{i + 1}.</div><ProfileAvatar name={c.studentName} imageUrl={c.studentProfileImageUrl} size={34} /><span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{c.studentName}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{c.studentSection} - {c.studentSchoolId}</small></span><mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[430px]:col-start-3 max-[430px]:mt-1 ${statusClass(c.status)}`}>{statusLabel(c.status)}</mark></Link>)}
+        <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
+          {paged.map((c: any, i: number) => <Link key={c.id} href={`${basePath}/clearance/detail?studentId=${c.studentId}`} className="grid grid-cols-[42px_38px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)_auto] max-[680px]:gap-2.5 max-[680px]:p-3"><div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div><ProfileAvatar name={c.studentName} imageUrl={c.studentProfileImageUrl} size={34} /><span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{c.studentName}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{c.studentSection} - {c.studentSchoolId}</small></span><mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[430px]:col-start-3 max-[430px]:mt-1 ${statusClass(c.status)}`}>{statusLabel(c.status)}</mark></Link>)}
         </div>
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center p-[1rem_1.5rem] gap-2 border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]">
+            <button className={ghostBtn} onClick={() => setCurrentPage(page => Math.max(1, page - 1))} disabled={currentPage === 1}>Previous</button>
+            <span className="!text-[0.875rem] !font-[600] !text-[#64748b] whitespace-nowrap"><span className="hidden sm:inline">Page </span>{currentPage} of {totalPages}</span>
+            <button className={ghostBtn} onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages}>Next</button>
+          </div>
+        )}
         {filtered.length === 0 && (isLoading ? <LoadingState message="Loading clearance records..." className="mt-[1rem] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <p className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[700] text-center">No clearance records found.</p>)}
       </section>
     </main>

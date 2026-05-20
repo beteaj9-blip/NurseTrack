@@ -67,6 +67,21 @@ function toTimeInput(timeLabel: string) {
   return `${String(hour).padStart(2, "0")}:${minute}`;
 }
 
+function formatScheduleDate(date?: string) {
+  if (!date) return "Schedule date";
+  const datePart = date.includes("T") ? date.split("T")[0] : date;
+  return new Date(`${datePart}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function getScheduleGroupKey(schedule: any) {
+  return [schedule.date, schedule.hospital, schedule.area, schedule.startTime, schedule.endTime].map((value) => value ?? "").join("|");
+}
+
+function appendOption(options: { value: string; label: string }[], value?: string, label?: string) {
+  if (!value || options.some((option) => option.value === value)) return options;
+  return [...options, { value, label: label || value }];
+}
+
 export function CiManualAttendanceContent({ basePath, isEditMode = false }: { basePath: string; isEditMode?: boolean }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -86,21 +101,71 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
   const [instructorNote, setInstructorNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [hasLoadedEditRecord, setHasLoadedEditRecord] = useState(false);
+  const [selectedScheduleKey, setSelectedScheduleKey] = useState("");
 
   const selectedHospital = (hospitals as any[]).find((hospital: any) => hospital.name === clinicalSite);
   const allDutyAreas = useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
   const dutyAreas = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
-  const hospitalOptions = useMemo(() => (hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), [hospitals]);
-  const dutyAreaOptions = useMemo(() => dutyAreas.map((area: string) => ({ value: area, label: area })), [dutyAreas]);
+  const scheduleGroups = useMemo(() => {
+    const groups = new Map<string, any>();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    (schedules as any[]).forEach((schedule: any) => {
+      if (!schedule.date) return;
+      const scheduleDate = new Date(`${schedule.date}T00:00:00`);
+      if (scheduleDate.getTime() > today.getTime()) return;
+      const key = getScheduleGroupKey(schedule);
+      const current = groups.get(key);
+      const student = {
+        id: String(schedule.studentId ?? schedule.studentSchoolId ?? schedule.studentName),
+        userId: schedule.studentId,
+        profileImageUrl: schedule.studentProfileImageUrl,
+        name: schedule.studentName || "Nursing Student",
+        section: schedule.studentSection || "Nursing Student",
+        studentId: schedule.studentSchoolId || "",
+        status: "Present",
+        checkIn: toTimeInput(schedule.rawStartTime ?? schedule.startTime ?? shiftStart),
+        checkOut: toTimeInput(schedule.rawEndTime ?? schedule.endTime ?? shiftEnd),
+      };
+      if (current) {
+        if (!current.students.some((item: AddedStudent) => item.id === student.id)) current.students.push(student);
+        return;
+      }
+      groups.set(key, {
+        key,
+        date: schedule.date,
+        hospital: schedule.hospital || "",
+        area: schedule.area || "",
+        startTime: schedule.startTime || "",
+        endTime: schedule.endTime || "",
+        rawStartTime: schedule.rawStartTime,
+        rawEndTime: schedule.rawEndTime,
+        students: [student],
+      });
+    });
+    return Array.from(groups.values()).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [schedules, shiftEnd, shiftStart]);
+  const selectedSchedule = scheduleGroups.find((schedule: any) => schedule.key === selectedScheduleKey);
+  const scheduleOptions = useMemo(() => scheduleGroups.map((schedule: any) => ({ value: schedule.key, label: `${formatScheduleDate(schedule.date)} - ${schedule.area || schedule.hospital} (${schedule.startTime} - ${schedule.endTime})` })), [scheduleGroups]);
+  const hospitalOptions = useMemo(() => appendOption((hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), clinicalSite), [hospitals, clinicalSite]);
+  const dutyAreaOptions = useMemo(() => appendOption(dutyAreas.map((area: string) => ({ value: area, label: area })), dutyArea), [dutyAreas, dutyArea]);
   const statusOptions = useMemo(() => ["Present", "Absent", "Late", "Excused"].map((status) => ({ value: status, label: status })), []);
 
   React.useEffect(() => {
-    if (!clinicalSite && (hospitals as any[]).length > 0) setClinicalSite((hospitals as any[])[0].name ?? "");
-  }, [clinicalSite, hospitals]);
+    if (!selectedScheduleKey && scheduleGroups.length > 0) setSelectedScheduleKey(scheduleGroups[0].key);
+    if (selectedScheduleKey && scheduleGroups.length > 0 && !scheduleGroups.some((schedule: any) => schedule.key === selectedScheduleKey)) setSelectedScheduleKey(scheduleGroups[0].key);
+  }, [scheduleGroups, selectedScheduleKey]);
 
   React.useEffect(() => {
-    if ((!dutyArea || !dutyAreas.includes(dutyArea)) && dutyAreas.length > 0) setDutyArea(dutyAreas[0]);
-  }, [dutyArea, dutyAreas]);
+    if (!selectedSchedule || isEditMode) return;
+    setDutyDate(selectedSchedule.date);
+    setClinicalSite(selectedSchedule.hospital);
+    setDutyArea(selectedSchedule.area);
+    setShiftStart(toTimeInput(selectedSchedule.rawStartTime ?? selectedSchedule.startTime));
+    setShiftEnd(toTimeInput(selectedSchedule.rawEndTime ?? selectedSchedule.endTime));
+    setAddedStudents([]);
+    setSearchStudent("");
+  }, [isEditMode, selectedSchedule?.key, selectedSchedule?.date, selectedSchedule?.hospital, selectedSchedule?.area, selectedSchedule?.rawStartTime, selectedSchedule?.rawEndTime, selectedSchedule?.startTime, selectedSchedule?.endTime]);
 
   React.useEffect(() => {
     if (!isEditMode || hasLoadedEditRecord) return;
@@ -115,6 +180,12 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
       (record.area ?? record.ward) === (primary.area ?? primary.ward) &&
       record.instructorFeedback === primary.instructorFeedback
     );
+    const matchingSchedule = scheduleGroups.find((schedule: any) =>
+      schedule.date === primary.dutyDate &&
+      schedule.hospital === primary.hospital &&
+      schedule.area === (primary.area ?? primary.ward)
+    );
+    if (matchingSchedule) setSelectedScheduleKey(matchingSchedule.key);
     setDutyDate(primary.dutyDate ?? new Date().toISOString().slice(0, 10));
     setClinicalSite(primary.hospital ?? "");
     setDutyArea(primary.area ?? primary.ward ?? "");
@@ -132,29 +203,27 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
       checkOut: record.timeOutLabel ? toTimeInput(record.timeOutLabel) : shiftEnd,
     })));
     setHasLoadedEditRecord(true);
-  }, [isEditMode, hasLoadedEditRecord, attendanceRecords, shiftEnd, shiftStart]);
+  }, [isEditMode, hasLoadedEditRecord, attendanceRecords, scheduleGroups, shiftEnd, shiftStart]);
 
-  const assignedStudents = Object.values((schedules as any[]).reduce((acc: Record<string, AddedStudent>, schedule: any) => {
-    const key = String(schedule.studentId ?? schedule.studentSchoolId ?? schedule.studentName);
-    if (!key || acc[key]) return acc;
-    acc[key] = {
-      id: key,
-      userId: schedule.studentId,
-      profileImageUrl: schedule.studentProfileImageUrl,
-      name: schedule.studentName || "Nursing Student",
-      section: schedule.studentSection || "Nursing Student",
-      studentId: schedule.studentSchoolId || "",
-      status: "Present",
-      checkIn: shiftStart,
-      checkOut: shiftEnd,
-    };
-    return acc;
-  }, {}));
+  const assignedStudents = (selectedSchedule?.students ?? []) as AddedStudent[];
 
   const studentResults = assignedStudents.filter((student: AddedStudent) => {
     const q = searchStudent.toLowerCase();
-    return searchStudent && !addedStudents.some((added) => added.id === student.id) && (`${student.name} ${student.studentId} ${student.section}`).toLowerCase().includes(q);
+    return selectedSchedule && searchStudent && !addedStudents.some((added) => added.id === student.id) && (`${student.name} ${student.studentId} ${student.section}`).toLowerCase().includes(q);
   });
+
+  const handleScheduleChange = (value: string) => {
+    const schedule = scheduleGroups.find((item: any) => item.key === value);
+    setSelectedScheduleKey(value);
+    if (!schedule) return;
+    setDutyDate(schedule.date);
+    setClinicalSite(schedule.hospital);
+    setDutyArea(schedule.area);
+    setShiftStart(toTimeInput(schedule.rawStartTime ?? schedule.startTime));
+    setShiftEnd(toTimeInput(schedule.rawEndTime ?? schedule.endTime));
+    setAddedStudents([]);
+    setSearchStudent("");
+  };
 
   const removeStudent = (id: string) => setAddedStudents(s => s.filter(st => st.id !== id));
   const addStudent = (student: AddedStudent) => {
@@ -167,6 +236,10 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
   };
 
   const submitManualAttendance = async () => {
+    if (!selectedScheduleKey) {
+      showToast({ variant: "error", title: "No schedule selected", message: "Select a duty date before encoding manual attendance." });
+      return;
+    }
     if (!user || addedStudents.length === 0) {
       showToast({ variant: "error", title: "No students selected", message: "Add at least one student before sending manual attendance." });
       return;
@@ -227,32 +300,32 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           {/* Duty date */}
           <label className={labelCls} htmlFor="duty-date">
             Duty date
-            <input id="duty-date" type="date" className={inputCls} value={dutyDate} onChange={(event) => setDutyDate(event.target.value)} />
+            <InlineSelect value={selectedScheduleKey} options={scheduleOptions} placeholder="Select duty date" onChange={handleScheduleChange} />
           </label>
 
           {/* Duty area */}
           <label className={labelCls} htmlFor="duty-area">
             Duty area
-            <InlineSelect value={dutyArea} options={dutyAreaOptions} placeholder="Select duty area" onChange={setDutyArea} />
+            <InlineSelect value={dutyArea} options={dutyAreaOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
           </label>
 
           {/* Shift start */}
           <label className={labelCls} htmlFor="shift-start">
             Shift start
-            <input id="shift-start" type="time" className={inputCls} value={shiftStart} onChange={(event) => setShiftStart(event.target.value)} />
+            <input id="shift-start" type="time" className={`${inputCls} cursor-not-allowed !bg-[#f8fafc] !text-[#64748b]`} value={shiftStart} disabled />
           </label>
 
           {/* Shift end */}
           <label className={labelCls} htmlFor="shift-end">
             Shift end
-            <input id="shift-end" type="time" className={inputCls} value={shiftEnd} onChange={(event) => setShiftEnd(event.target.value)} />
+            <input id="shift-end" type="time" className={`${inputCls} cursor-not-allowed !bg-[#f8fafc] !text-[#64748b]`} value={shiftEnd} disabled />
           </label>
         </div>
 
         {/* Clinical site */}
         <label className={labelCls + " mt-4"} htmlFor="clinical-site">
           Clinical site
-          <InlineSelect value={clinicalSite} options={hospitalOptions} placeholder="Select clinical site" onChange={setClinicalSite} />
+          <InlineSelect value={clinicalSite} options={hospitalOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
         </label>
 
         {/* Instructor note */}
@@ -312,9 +385,10 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           <input
             id="search-student"
             type="search"
-            placeholder="Search name, ID, section, or site"
-            className={inputCls}
+            placeholder={selectedSchedule ? "Search students assigned to the selected duty date" : "Select a duty date first"}
+            className={`${inputCls} disabled:cursor-not-allowed disabled:!bg-[#f8fafc] disabled:!text-[#64748b]`}
             value={searchStudent}
+            disabled={!selectedSchedule}
             onChange={e => setSearchStudent(e.target.value)}
           />
         </label>
@@ -327,14 +401,14 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
                 <span><strong className="block !text-[#111827] !text-[0.9rem] !font-[800]">{student.name}</strong><small className="block !text-[#64748b] !text-[0.8rem] !font-[600]">{student.section} - {student.studentId}</small></span>
                 <span className="!text-[#8A252C] !text-[0.82rem] !font-[900]">Add</span>
               </button>
-            )) : <div className="flex items-center justify-center min-h-[48px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.85rem] !font-[600]">No assigned students match the search.</div>}
+            )) : <div className="flex items-center justify-center min-h-[48px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.85rem] !font-[600]">No students from this selected schedule match the search.</div>}
           </div>
         )}
 
         {/* Empty state when no students added and not searching */}
         {addedStudents.length === 0 && searchStudent.length === 0 && (
           <div className="mt-4 flex items-center justify-center min-h-[48px] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.85rem] !font-[600]">
-            Search and add students to encode attendance.
+            {selectedSchedule ? "Search and add students from the selected schedule." : "Select a duty date before adding students."}
           </div>
         )}
 

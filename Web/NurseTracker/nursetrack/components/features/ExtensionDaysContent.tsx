@@ -62,11 +62,14 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
       && (sectionFilter === "all" || s.section === sectionFilter)
       && (statusFilter === "all" || s.status === statusFilter);
   });
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
   const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   const inputCls = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
   const labelCls = "flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]";
+  React.useEffect(() => {
+    setCurrentPage(page => Math.min(page, totalPages));
+  }, [totalPages]);
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem]">
