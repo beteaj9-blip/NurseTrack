@@ -101,6 +101,8 @@ const resetPasswordValue = (user: DisplayUser) =>
   `${passwordInitials(user.name)}#${user.id}`;
 const roleApi = (value: string) =>
   roles.find((role) => role.value === value)?.api ?? "STUDENT";
+const assignedLevelsForRole = (role: string, value: FormDataEntryValue | null) =>
+  roleApi(role) === "COORDINATOR" ? "1,2,3,4" : roleApi(role) === "INSTRUCTOR" ? String(value ?? "1").split(",")[0]?.trim() || "1" : String(value ?? "1");
 const roleValue = (value: string) =>
   roles.find((role) => role.api === value)?.value ?? value.toLowerCase();
 const roleLabel = (value: string) =>
@@ -113,7 +115,7 @@ const statusApi = (value: string) =>
   )?.api || "ACTIVE";
 
 export default function ManageUsersPage() {
-  const [roleFilter, setRoleFilter] = useState("student");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sectionFilter, setSectionFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -165,10 +167,13 @@ export default function ManageUsersPage() {
       ).sort(),
     [users],
   );
-  const roleFilterOptions = roles.map((role) => ({
-    value: role.value,
-    label: role.label.replace("Clinical ", ""),
-  }));
+  const roleFilterOptions = [
+    { value: "all", label: "All roles" },
+    ...roles.map((role) => ({
+      value: role.value,
+      label: role.label.replace("Clinical ", ""),
+    })),
+  ];
   const roleOptions = roles.map((role) => ({
     value: role.value,
     label: role.label,
@@ -179,13 +184,10 @@ export default function ManageUsersPage() {
   ];
 
   const filteredUsers = users.filter((user) => {
-    const matchesRole = search ? true : user.roleValue === roleFilter;
+    const matchesRole = search || roleFilter === "all" ? true : user.roleValue === roleFilter;
     const matchesStatus =
       statusFilter === "all" || user.status.toLowerCase() === statusFilter;
-    const matchesSection =
-      roleFilter !== "student" ||
-      sectionFilter === "all" ||
-      user.section === sectionFilter;
+    const matchesSection = sectionFilter === "all" || user.section === sectionFilter;
     const matchesSearch =
       !search ||
       [
@@ -220,7 +222,7 @@ export default function ManageUsersPage() {
         sectionInfo: String(form.get("sectionInfo") ?? ""),
         groupInfo: String(form.get("groupInfo") ?? ""),
         mobileNumber: withoutLetters(String(form.get("mobileNumber") ?? "")),
-        assignedLevels: String(form.get("assignedLevels") ?? "1"),
+        assignedLevels: assignedLevelsForRole(String(form.get("role") ?? "student"), form.get("assignedLevels")),
         password: String(
           form.get("password") ?? form.get("schoolId") ?? "password",
         ),
@@ -257,7 +259,7 @@ export default function ManageUsersPage() {
           ),
           sectionInfo: String(form.get("sectionInfo") ?? ""),
           groupInfo: String(form.get("groupInfo") ?? ""),
-          assignedLevels: String(form.get("assignedLevels") ?? "1"),
+          assignedLevels: assignedLevelsForRole(String(form.get("role") ?? selectedUserForAction.roleValue), form.get("assignedLevels")),
         },
       });
       setMessage("User details updated.");
@@ -359,7 +361,7 @@ export default function ManageUsersPage() {
             </div>
 
             <div
-              className={`grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-[0.85rem] mb-4 p-[0.95rem] border border-[#e5eaf1] rounded-lg bg-[#f8fafc] ${roleFilter !== "student" ? "is-non-student-role" : ""}`}
+              className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-[0.85rem] mb-4 p-[0.95rem] border border-[#e5eaf1] rounded-lg bg-[#f8fafc]"
             >
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
                 Role
@@ -382,9 +384,7 @@ export default function ManageUsersPage() {
                   onChange={setStatusFilter}
                 />
               </label>
-              <label
-                className={`flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054] ${roleFilter !== "student" ? "hidden" : ""}`}
-              >
+              <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
                 Section
                 <InlineSelect
                   value={sectionFilter}
@@ -617,7 +617,9 @@ export default function ManageUsersPage() {
                     className={inputClass}
                     name="assignedLevels"
                     type="text"
-                    defaultValue="1"
+                    key={newUserRole}
+                    defaultValue={newUserRole === "coordinator" ? "1,2,3,4" : "1"}
+                    readOnly={newUserRole === "coordinator"}
                     placeholder="1 or 1,2"
                   />
                 </label>
@@ -834,9 +836,11 @@ export default function ManageUsersPage() {
                       className={inputClass}
                       name="assignedLevels"
                       type="text"
+                      key={editRole}
                       defaultValue={(
-                        selectedUserForAction.api.assignedLevels ?? [1]
+                        editRole === "coordinator" ? [1, 2, 3, 4] : editRole === "instructor" ? [selectedUserForAction.api.assignedLevels?.[0] ?? 1] : selectedUserForAction.api.assignedLevels ?? [1]
                       ).join(",")}
+                      readOnly={editRole === "coordinator"}
                     />
                   </label>
                   <div

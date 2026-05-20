@@ -57,7 +57,7 @@ export function ManualBackupReviewContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
   const instructorId = searchParams.get("instructorId");
   const scopedInstructorId = basePath === "/clinical-instructor" ? (user?.id != null ? String(user.id) : undefined) : undefined;
-  const { data: allAttendance = [], isLoading: isAllLoading } = useAllAttendance(true, basePath === "/chair" && user?.id != null ? String(user.id) : undefined);
+  const { data: allAttendance = [], isLoading: isAllLoading } = useAllAttendance(true, (basePath === "/chair" || basePath === "/coordinator") && user?.id != null ? String(user.id) : undefined);
   const { data: instructorAttendance = [], isLoading: isInstructorLoading } = useInstructorAttendance(scopedInstructorId);
   const attendance = scopedInstructorId ? instructorAttendance : allAttendance;
   const isLoading = scopedInstructorId ? isInstructorLoading : isAllLoading;

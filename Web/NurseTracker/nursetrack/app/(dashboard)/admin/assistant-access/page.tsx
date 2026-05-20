@@ -73,12 +73,36 @@ function LevelAssignments({ title, badge, users, isLoading, onLevelChange }: { t
 }
 
 function PermissionCards({ role, title, badge }: { role: "ASSISTANT" | "COORDINATOR"; title: string; badge: string }) {
-  const { data = [], isLoading } = useAdminAccessPermissions(role);
+  const { data, isLoading } = useAdminAccessPermissions(role);
   const updatePermission = useUpdateAdminAccessPermission();
   const { showToast } = useToast();
-  const permissions = data as Permission[];
-  const enabledByKey = Object.fromEntries(permissions.map((permission) => [permission.permissionKey, permission.enabled]));
+  const permissions = (data ?? []) as Permission[];
   const items = role === "COORDINATOR" ? coordinatorPermissionItems : assistantPermissionItems;
+  const roleLabel = role === "COORDINATOR" ? "Coordinator" : "Assistant";
+  const serverEnabledByKey = React.useMemo(() => Object.fromEntries(permissions.map((permission) => [permission.permissionKey, permission.enabled])), [permissions]);
+  const [optimisticByKey, setOptimisticByKey] = React.useState<Record<string, boolean>>({});
+  const [savingByKey, setSavingByKey] = React.useState<Record<string, boolean>>({});
+
+  const setAccess = (item: { id: string; title: string }, enabled: boolean) => {
+    const previous = item.id in optimisticByKey ? optimisticByKey[item.id] : Boolean(serverEnabledByKey[item.id]);
+    setOptimisticByKey((current) => ({ ...current, [item.id]: enabled }));
+    setSavingByKey((current) => ({ ...current, [item.id]: true }));
+    updatePermission.mutate(
+      { role, permissionKey: item.id, enabled },
+      {
+        onSuccess: () => showToast({
+          variant: "success",
+          title: `${roleLabel} access ${enabled ? "enabled" : "disabled"}`,
+          message: enabled ? `${item.title} access was given to ${roleLabel}.` : `${item.title} access was removed from ${roleLabel}.`,
+        }),
+        onError: () => {
+          setOptimisticByKey((current) => ({ ...current, [item.id]: previous }));
+          showToast({ variant: "error", title: "Update failed", message: `${item.title} access could not be saved for ${roleLabel}.` });
+        },
+        onSettled: () => setSavingByKey((current) => ({ ...current, [item.id]: false })),
+      }
+    );
+  };
 
   return (
     <section className="mt-0 grid min-w-0 gap-4 rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
@@ -91,30 +115,27 @@ function PermissionCards({ role, title, badge }: { role: "ASSISTANT" | "COORDINA
         {isLoading ? (
           <LoadingState message={`Loading ${title.toLowerCase()}`} className="col-span-full" />
         ) : (
-          items.map((item) => (
-            <div className="grid min-h-[112px] grid-cols-[1fr_auto] items-center gap-4 rounded-[0.75rem] border border-[#e2e8f0] bg-white p-[1.05rem_1.1rem] shadow-[0_10px_24px_rgba(15,23,42,0.04)] max-[560px]:grid-cols-1" key={item.id}>
+          items.map((item) => {
+            const isSaving = Boolean(savingByKey[item.id]);
+            const isEnabled = item.id in optimisticByKey ? optimisticByKey[item.id] : Boolean(serverEnabledByKey[item.id]);
+            return <div className="grid min-h-[112px] grid-cols-[1fr_auto] items-center gap-4 rounded-[0.75rem] border border-[#e2e8f0] bg-white p-[1.05rem_1.1rem] shadow-[0_10px_24px_rgba(15,23,42,0.04)] max-[560px]:grid-cols-1" key={item.id}>
               <div className="min-w-0">
                 <h3 className="m-0 !text-[#111827] !text-base !font-[850] leading-[1.25]">{item.title}</h3>
                 <p className="mb-0 mt-[0.32rem] !text-[#475569] !text-[0.85rem] !font-[750] leading-[1.45]">{item.desc}</p>
               </div>
-              <label className="relative inline-flex h-[32px] w-[58px] shrink-0 cursor-pointer items-center" htmlFor={`${role}-${item.id}`} aria-label={`Toggle ${role} ${item.title} access`}>
+              <label className={`relative inline-flex h-[32px] w-[58px] shrink-0 items-center ${isSaving ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`} htmlFor={`${role}-${item.id}`} aria-label={`Toggle ${role} ${item.title} access`}>
                 <input
                   className="peer pointer-events-none absolute opacity-0"
                   id={`${role}-${item.id}`}
                   type="checkbox"
-                  checked={Boolean(enabledByKey[item.id])}
-                  onChange={(event) => updatePermission.mutate(
-                    { role, permissionKey: item.id, enabled: event.target.checked },
-                    {
-                      onSuccess: () => showToast({ variant: "success", title: "Permission updated", message: `${item.title} was ${event.target.checked ? "enabled" : "disabled"}.` }),
-                      onError: () => showToast({ variant: "error", title: "Update failed", message: "Permission change could not be saved." }),
-                    }
-                  )}
+                  disabled={isSaving}
+                  checked={isEnabled}
+                  onChange={(event) => setAccess(item, event.target.checked)}
                 />
                 <span className="absolute inset-0 rounded-full border border-[#cbd5e1] bg-[#e2e8f0] transition-colors before:absolute before:left-[2px] before:top-[2px] before:h-[26px] before:w-[26px] before:rounded-full before:bg-white before:shadow-[0_6px_14px_rgba(15,23,42,0.18)] before:transition-transform before:content-[''] peer-checked:border-[#8a252c] peer-checked:bg-[#8a252c] peer-checked:before:translate-x-[26px] peer-focus-visible:outline peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-[#8a252c]/25" />
               </label>
             </div>
-          ))
+          })
         )}
       </div>
     </section>
@@ -145,7 +166,7 @@ export default function AssistantAccessPage() {
       <LevelAssignments title="Assistant Level Assignments" badge="Level access" users={assistants} isLoading={isLoading} onLevelChange={updateLevel} />
       <PermissionCards role="ASSISTANT" title="Assistant Edit Permissions" badge="Assistant controls" />
       <PermissionCards role="COORDINATOR" title="Coordinator Edit Permissions" badge="Coordinator controls" />
-      <div className="flex min-h-[48px] items-center rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 !text-[0.85rem] !font-bold !text-[#4c5d7d]" role="status" aria-live="polite">Level assignments and edit permissions control assistant access.</div>
+      <div className="flex min-h-[48px] items-center rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 !text-[0.85rem] !font-bold !text-[#4c5d7d]" role="status" aria-live="polite">Level assignments and edit permissions control assistant and coordinator access.</div>
     </main>
   );
 }

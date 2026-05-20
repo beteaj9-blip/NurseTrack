@@ -56,11 +56,12 @@ export function StudentAppealDetailContent() {
   const searchParams = useSearchParams();
   const appealId = searchParams.get("id") ?? undefined;
   const user = useAuthStore((state) => state.user);
+  const userId = user?.id != null ? String(user.id) : undefined;
   const { data: appeal } = useStudentAppeal(appealId);
   const { data: appealTypes = [] } = useAppealTypes();
   const { data: hospitals = [] } = useHospitals();
-  const { data: instructors = [] } = useInstructors();
-  const updateAppeal = useUpdateStudentAppeal(user?.id != null ? String(user.id) : undefined);
+  const { data: instructors = [] } = useInstructors(userId);
+  const updateAppeal = useUpdateStudentAppeal(userId);
   const uploadAppealFile = useUploadAppealFile();
   const [isEditing, setIsEditing] = React.useState(false);
   const [message, setMessage] = React.useState("");

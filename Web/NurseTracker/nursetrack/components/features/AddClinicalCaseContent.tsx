@@ -41,7 +41,7 @@ export default function AddClinicalCaseContent() {
   const userId = user?.id != null ? String(user.id) : undefined;
   const { data: schedules = [] } = useSchedules(undefined, user?.role);
   const { data: hospitals = [] } = useHospitals();
-  const { data: instructors = [] } = useInstructors();
+  const { data: instructors = [] } = useInstructors(userId);
   const { data: categories = [] } = useQuery<CaseCategoryOption[]>({
     queryKey: ["clinical-case-categories"],
     queryFn: async () => {

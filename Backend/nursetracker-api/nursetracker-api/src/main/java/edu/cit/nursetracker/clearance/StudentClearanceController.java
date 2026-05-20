@@ -2,9 +2,11 @@ package edu.cit.nursetracker.clearance;
 
 import edu.cit.nursetracker.academicterm.AcademicTerm;
 import edu.cit.nursetracker.academicterm.AcademicTermRepository;
+import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.JwtService;
 import edu.cit.nursetracker.user.User;
 import edu.cit.nursetracker.user.UserRepository;
+import edu.cit.nursetracker.user.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,10 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/clearances")
@@ -33,11 +33,12 @@ public class StudentClearanceController {
         Long viewerId = jwtService.getUserId(request);
         User viewer = userRepository.findById(viewerId).orElse(null);
         if (viewer == null) return ResponseEntity.ok(List.of());
-        if (viewer.getRole() == edu.cit.nursetracker.user.UserRole.ADMIN) return ResponseEntity.ok(clearanceRepository.findAll());
-        Set<Integer> visibleLevels = viewer.getAssignedLevels();
-        if (visibleLevels == null || visibleLevels.isEmpty()) return ResponseEntity.ok(List.of());
-        return ResponseEntity.ok(clearanceRepository.findAll().stream()
-                .filter(clearance -> intersects(clearance.getStudent().getAssignedLevels(), visibleLevels))
+        List<StudentClearance> studentClearances = clearanceRepository.findAll().stream()
+                .filter(this::isStudentClearance)
+                .toList();
+        if (AccessScope.canViewAll(viewer)) return ResponseEntity.ok(studentClearances);
+        return ResponseEntity.ok(studentClearances.stream()
+                .filter(clearance -> AccessScope.canViewRecord(viewer, clearance.getStudent(), null))
                 .toList());
     }
 
@@ -96,6 +97,9 @@ public class StudentClearanceController {
     private StudentClearance createDefaultClearance(Long studentId) {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found."));
+        if (student.getRole() != UserRole.STUDENT) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Clearance records are only available for students.");
+        }
         AcademicTerm activeTerm = academicTermRepository.findFirstByActiveTrueOrderByUpdatedAtDesc().orElse(null);
         String schoolYear = activeTerm == null ? "" : activeTerm.getSchoolYear();
         String semester = activeTerm == null ? "" : activeTerm.getSemester();
@@ -107,15 +111,13 @@ public class StudentClearanceController {
                 .build());
     }
 
+    private boolean isStudentClearance(StudentClearance clearance) {
+        return clearance.getStudent() != null && clearance.getStudent().getRole() == UserRole.STUDENT;
+    }
+
     private ClearanceSettings currentSettings() {
         return settingsRepository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> settingsRepository.save(ClearanceSettings.builder().enabled(true).build()));
     }
 
-    private boolean intersects(Set<Integer> recordLevels, Set<Integer> visibleLevels) {
-        if (recordLevels == null || recordLevels.isEmpty()) return false;
-        Set<Integer> overlap = new HashSet<>(recordLevels);
-        overlap.retainAll(visibleLevels);
-        return !overlap.isEmpty();
-    }
 }

@@ -66,7 +66,7 @@ export function StudentAppealsContent() {
   const isSubmitting = createAppeal.isPending || updateAppeal.isPending;
   const isUploading = uploadAppealFile.isPending;
   const { data: hospitals = [] } = useHospitals();
-  const { data: instructors = [] } = useInstructors();
+  const { data: instructors = [] } = useInstructors(userId);
   const { data: schedules = [] } = useSchedules(undefined, user?.role);
   const { data: appealTypes = [] } = useAppealTypes();
   const [form, setForm] = useState(emptyForm);

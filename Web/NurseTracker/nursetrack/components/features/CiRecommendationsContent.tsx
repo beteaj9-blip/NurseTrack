@@ -16,7 +16,7 @@ function statusClass(status?: string) {
 
 export function CiRecommendationsContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair";
+  const isChair = basePath === "/chair" || basePath === "/coordinator";
   const { data: instructorAppeals = [], isLoading: isInstructorLoading } = useInstructorAppeals();
   const { data: allAppeals = [], isLoading: isAllLoading } = useAllAppeals(isChair, isChair && user?.id != null ? String(user.id) : undefined);
   const appeals = isChair ? allAppeals : instructorAppeals;

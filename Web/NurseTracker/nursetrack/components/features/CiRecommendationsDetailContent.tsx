@@ -6,6 +6,7 @@ import { useStudentAppeal, useUpdateAppealStatus } from "@/core/api/hooks/useStu
 import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useCanEditFeature } from "@/core/auth/permissions";
 
 function formatDate(date?: string) {
   if (!date) return "";
@@ -41,13 +42,14 @@ export function CiRecommendationsDetailContent({ basePath }: { basePath: string;
   const searchParams = useSearchParams();
   const appealId = searchParams.get("id") ?? undefined;
   const user = useAuthStore((state) => state.user);
+  const { canEdit } = useCanEditFeature("ciRecommendations");
   const { data: appeal, isLoading } = useStudentAppeal(appealId);
   const updateStatus = useUpdateAppealStatus(user?.id != null ? String(user.id) : undefined);
   const [remarks, setRemarks] = useState("");
   const [isEditingRecommendation, setIsEditingRecommendation] = useState(false);
   const isSaving = updateStatus.isPending;
   const isFinalStatus = appeal?.status === "ACCEPTED" || appeal?.status === "RETURNED";
-  const canEditRecommendation = !isFinalStatus || isEditingRecommendation;
+  const canEditRecommendation = canEdit && (!isFinalStatus || isEditingRecommendation);
 
   React.useEffect(() => {
     setRemarks(appeal?.instructorRemarks ?? "");
@@ -55,6 +57,10 @@ export function CiRecommendationsDetailContent({ basePath }: { basePath: string;
   }, [appeal?.id, appeal?.instructorRemarks, appeal?.status]);
 
   const submitStatus = async (status: "ACCEPTED" | "RETURNED") => {
+    if (!canEdit) {
+      showToast({ variant: "error", title: "Action unavailable", message: "Recommendation decisions are not enabled for your role." });
+      return;
+    }
     if (!appealId) return;
     try {
       await updateStatus.mutateAsync({ appealId, status, instructorRemarks: remarks.trim() });
@@ -90,7 +96,7 @@ export function CiRecommendationsDetailContent({ basePath }: { basePath: string;
             <div className="bg-[#f8fafc] p-[1.25rem] rounded-[8px] border-l-[4px] border-[#facc15]"><small className="block !text-[0.7rem] !font-[800] !text-[#64748b] uppercase mb-[6px] tracking-[0.05em]">Supporting Files</small>{appeal.supportingFiles ? <a href={appeal.supportingFiles} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 max-w-full rounded-md border border-[#e2e8f0] bg-white px-3 py-2 text-[#344054] text-[0.85rem] font-bold no-underline hover:border-[#cbd5e1] hover:bg-[#f8fafc] transition-colors"><span>File</span><span className="truncate">{getFileName(appeal.supportingFiles)}</span><span className="text-[#8A252C]">Open</span></a> : <strong className="!text-[0.95rem] !text-[#334155] !font-[800]">No supporting files attached.</strong>}</div>
             <div className="bg-[#f8fafc] p-[1.25rem] rounded-[8px] border-l-[4px] border-[#facc15]"><small className="block !text-[0.7rem] !font-[800] !text-[#64748b] uppercase mb-[6px] tracking-[0.05em]">CI Recommendation</small>{canEditRecommendation ? <textarea value={remarks} onChange={(event) => setRemarks(event.target.value)} rows={4} className="w-full p-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white resize-y" placeholder={appeal.instructorRemarks || "Add recommendation remarks for this appeal"} /> : <strong className="!text-[0.95rem] !text-[#334155] !font-[800]">{appeal.instructorRemarks || "No recommendation remarks provided."}</strong>}</div>
           </div>
-          {isFinalStatus && !isEditingRecommendation && <div className="flex justify-end gap-[1rem] mt-[1.5rem]"><button type="button" onClick={() => setIsEditingRecommendation(true)} className="bg-white border border-[#e2e8f0] p-[0.75rem_1.75rem] rounded-[8px] !font-[800] !text-[#475569] !text-[0.95rem] cursor-pointer hover:border-[#cbd5e1] hover:!text-[#334155] transition-colors">Edit</button></div>}
+          {canEdit && isFinalStatus && !isEditingRecommendation && <div className="flex justify-end gap-[1rem] mt-[1.5rem]"><button type="button" onClick={() => setIsEditingRecommendation(true)} className="bg-white border border-[#e2e8f0] p-[0.75rem_1.75rem] rounded-[8px] !font-[800] !text-[#475569] !text-[0.95rem] cursor-pointer hover:border-[#cbd5e1] hover:!text-[#334155] transition-colors">Edit</button></div>}
           {canEditRecommendation && <div className="flex justify-end gap-[1rem] mt-[1.5rem]">
             {isEditingRecommendation && <button type="button" disabled={isSaving} onClick={() => { setRemarks(appeal.instructorRemarks ?? ""); setIsEditingRecommendation(false); }} className="bg-white border border-[#e2e8f0] p-[0.75rem_1.75rem] rounded-[8px] !font-[800] !text-[#475569] !text-[0.95rem] cursor-pointer hover:border-[#cbd5e1] hover:!text-[#334155] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Cancel</button>}
             <button type="button" disabled={isSaving} onClick={() => submitStatus("RETURNED")} className="bg-white border border-[#e2e8f0] p-[0.75rem_1.75rem] rounded-[8px] !font-[800] !text-[#475569] !text-[0.95rem] cursor-pointer hover:border-[#cbd5e1] hover:!text-[#334155] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">{isSaving ? "Saving..." : "Mark as Rejected"}</button>

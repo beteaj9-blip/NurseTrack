@@ -9,6 +9,7 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useCanEditFeature } from "@/core/auth/permissions";
 
 function formatDate(value?: string) {
   if (!value) return "Not dated";
@@ -27,7 +28,8 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
   const studentId = typeof searchParams.studentId === "string" ? searchParams.studentId : undefined;
   const user = useAuthStore((state) => state.user);
   const { showToast } = useToast();
-  const isChair = basePath === "/chair";
+  const { canEdit } = useCanEditFeature("extensionDays");
+  const isChair = basePath === "/chair" || basePath === "/coordinator";
   const isAdmin = basePath === "/admin";
   const isAllSection = isAdmin || isChair;
   const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
@@ -98,6 +100,10 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
 
   const submitExtension = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!canEdit) {
+      showToast({ variant: "error", title: "Action unavailable", message: "Extension-day changes are not enabled for your role." });
+      return;
+    }
     if (!studentId || !instructorId || !reason.trim()) return;
     const payload = { studentId: Number(studentId), instructorId: Number(instructorId), days: Number(daysCount), basis, reason: reason.trim() };
     try {
@@ -115,6 +121,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
   };
 
   const editRecord = (record: any) => {
+    if (!canEdit) return;
     if (record.source !== "extension") return;
     setDaysCount(String(record.days));
     setBasis(record.basis);
@@ -123,6 +130,10 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
   };
 
   const cancelRecord = async () => {
+    if (!canEdit) {
+      showToast({ variant: "error", title: "Action unavailable", message: "Extension-day changes are not enabled for your role." });
+      return;
+    }
     if (!recordToCancel) return;
     try {
       await cancelExtension.mutateAsync(recordToCancel);
@@ -155,7 +166,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
             <label className={labelClass} htmlFor="extension-days-count">Extension days to add<InlineSelect value={daysCount} options={daysOptions} placeholder="Select extension days" onChange={setDaysCount} /></label>
             <label className={labelClass} htmlFor="extension-basis">Basis<InlineSelect value={basis} options={basisOptions} placeholder="Select basis" onChange={setBasis} /></label>
             <label className={`${labelClass} col-span-full`} htmlFor="extension-reason">Reason / remarks<textarea className={`${inputClass} min-h-[8.5rem] resize-y`} id="extension-reason" rows={5} placeholder="Type the reason, documentation note, or instructor remarks here" required value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-            <div className="col-span-full flex justify-end items-center gap-[0.85rem] pt-[0.2rem] max-[980px]:flex-col max-[980px]:items-stretch"><button className="inline-flex items-center justify-center min-h-[48px] min-w-[7rem] px-[1.25rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] transition-all cursor-pointer disabled:opacity-60" type="button" disabled={isSaving} onClick={resetForm}>{editingId ? "Cancel editing" : "Clear"}</button><button className="inline-flex items-center justify-center min-h-[48px] min-w-[13.5rem] px-[1.5rem] rounded-[8px] bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_8px_16px_-4px_rgba(138,37,44,0.4)] hover:bg-[#6d1d23] transition-all cursor-pointer disabled:opacity-60" disabled={isSaving} type="submit">{isSaving ? "Saving..." : editingId ? "Save Changes" : "Add Extension Days"}</button></div>
+            <div className="col-span-full flex justify-end items-center gap-[0.85rem] pt-[0.2rem] max-[980px]:flex-col max-[980px]:items-stretch"><button className="inline-flex items-center justify-center min-h-[48px] min-w-[7rem] px-[1.25rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] transition-all cursor-pointer disabled:opacity-60" type="button" disabled={isSaving} onClick={resetForm}>{editingId ? "Cancel editing" : "Clear"}</button><button className="inline-flex items-center justify-center min-h-[48px] min-w-[13.5rem] px-[1.5rem] rounded-[8px] bg-[#8A252C] !text-white !text-[0.95rem] !font-extrabold shadow-[0_8px_16px_-4px_rgba(138,37,44,0.4)] hover:bg-[#6d1d23] transition-all cursor-pointer disabled:opacity-60" disabled={!canEdit || isSaving} type="submit">{isSaving ? "Saving..." : editingId ? "Save Changes" : "Add Extension Days"}</button></div>
           </form>
         </section>
 
@@ -170,7 +181,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
                     <div><strong className="block !text-[#111827] !text-[0.96rem] leading-[1.25]">{student.name}</strong><small className="block mt-[0.18rem] !text-[#475569] !text-[0.88rem] !font-[700] leading-[1.35]">{student.section} - {student.id}</small></div>
                     <div><strong className="block !text-[#111827] !text-[0.96rem] leading-[1.25]">{record.days} extension day{record.days > 1 ? "s" : ""}</strong><small className="block mt-[0.18rem] !text-[#475569] !text-[0.88rem] !font-[700] leading-[1.35]">{record.basis}</small></div>
                     <div><strong className="block !text-[#111827] !text-[0.96rem] leading-[1.25]">{record.reason}</strong><small className="block mt-[0.18rem] !text-[#475569] !text-[0.88rem] !font-[700] leading-[1.35]">Added {formatDate(record.createdAt)}</small></div>
-                    <div className="flex items-center justify-end gap-[0.65rem] flex-wrap max-[980px]:justify-start"><span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${record.status === "ACTIVE" ? "bg-[#e9f8ef] !text-[#03703c]" : "bg-[#f1f5f9] !text-[#64748b]"}`}>{record.status === "ACTIVE" ? "Added" : "Canceled"}</span>{record.status === "ACTIVE" && record.source === "extension" && <div className="inline-flex items-center gap-[0.45rem]"><button className="inline-flex items-center justify-center min-h-[2.25rem] px-[0.7rem] py-[0.45rem] rounded-[0.45rem] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.78rem] !font-[800] hover:bg-[#f8fafc] cursor-pointer" type="button" onClick={() => editRecord(record)}>Edit</button><button className="inline-flex items-center justify-center min-h-[2.25rem] px-[0.7rem] py-[0.45rem] rounded-[0.45rem] bg-white border border-[#fecaca] !text-[#b91c1c] !text-[0.78rem] !font-[800] hover:bg-[#fef2f2] cursor-pointer" type="button" onClick={() => { setRecordToCancel(String(record.id)); setShowCancelModal(true); }}>Cancel</button></div>}</div>
+                    <div className="flex items-center justify-end gap-[0.65rem] flex-wrap max-[980px]:justify-start"><span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${record.status === "ACTIVE" ? "bg-[#e9f8ef] !text-[#03703c]" : "bg-[#f1f5f9] !text-[#64748b]"}`}>{record.status === "ACTIVE" ? "Added" : "Canceled"}</span>{canEdit && record.status === "ACTIVE" && record.source === "extension" && <div className="inline-flex items-center gap-[0.45rem]"><button className="inline-flex items-center justify-center min-h-[2.25rem] px-[0.7rem] py-[0.45rem] rounded-[0.45rem] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.78rem] !font-[800] hover:bg-[#f8fafc] cursor-pointer" type="button" onClick={() => editRecord(record)}>Edit</button><button className="inline-flex items-center justify-center min-h-[2.25rem] px-[0.7rem] py-[0.45rem] rounded-[0.45rem] bg-white border border-[#fecaca] !text-[#b91c1c] !text-[0.78rem] !font-[800] hover:bg-[#fef2f2] cursor-pointer" type="button" onClick={() => { setRecordToCancel(String(record.id)); setShowCancelModal(true); }}>Cancel</button></div>}</div>
                   </div>
                 ))}
               </div>

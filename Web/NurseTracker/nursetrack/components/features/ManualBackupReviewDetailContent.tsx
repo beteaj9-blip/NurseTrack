@@ -9,6 +9,7 @@ import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useCanEditFeature } from "@/core/auth/permissions";
 
 function formatDate(value?: string) {
   if (!value) return "Not dated";
@@ -53,13 +54,18 @@ export function ManualBackupReviewDetailContent({ basePath = "/chair" }: { baseP
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
+  const { canEdit } = useCanEditFeature("manualBackup");
   const recordId = searchParams.get("id");
-  const { data: attendance = [], isLoading } = useAllAttendance(true, basePath === "/chair" && user?.id != null ? String(user.id) : undefined);
+  const { data: attendance = [], isLoading } = useAllAttendance(true, (basePath === "/chair" || basePath === "/coordinator") && user?.id != null ? String(user.id) : undefined);
   const record = (attendance as any[]).find((entry) => String(entry.id) === String(recordId));
   const [isSaving, setIsSaving] = React.useState(false);
   const isApproved = record?.status === "VERIFIED" || record?.status === "VALIDATED";
 
   const submitDecision = async (status: "VERIFIED" | "REJECTED") => {
+    if (!canEdit) {
+      showToast({ variant: "error", title: "Action unavailable", message: "Manual backup review is not enabled for your role." });
+      return;
+    }
     if (!recordId) return;
     try {
       setIsSaving(true);
@@ -114,7 +120,7 @@ export function ManualBackupReviewDetailContent({ basePath = "/chair" }: { baseP
         </div>
 
         <div className="flex justify-end gap-[0.75rem] mt-[2.2rem] flex-wrap">
-          {isApproved ? <button className="inline-flex items-center justify-center min-h-[48px] px-[1.25rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[900] hover:border-[rgba(138,37,44,0.32)] transition-all cursor-pointer disabled:opacity-60" type="button" disabled={isSaving} onClick={() => submitDecision("REJECTED")}>Return Record</button> : <button className="inline-flex items-center justify-center min-h-[48px] px-[1.75rem] rounded-[8px] bg-[#9f2731] border border-[#9f2731] !text-white !text-[0.95rem] !font-[900] shadow-[0_12px_22px_rgba(138,37,44,0.25)] hover:bg-[#7b1f27] transition-all cursor-pointer disabled:opacity-60" type="button" disabled={isSaving} onClick={() => submitDecision("VERIFIED")}>Approve Record</button>}
+          {isApproved ? <button className="inline-flex items-center justify-center min-h-[48px] px-[1.25rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[900] hover:border-[rgba(138,37,44,0.32)] transition-all cursor-pointer disabled:opacity-60" type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("REJECTED")}>Return Record</button> : <button className="inline-flex items-center justify-center min-h-[48px] px-[1.75rem] rounded-[8px] bg-[#9f2731] border border-[#9f2731] !text-white !text-[0.95rem] !font-[900] shadow-[0_12px_22px_rgba(138,37,44,0.25)] hover:bg-[#7b1f27] transition-all cursor-pointer disabled:opacity-60" type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("VERIFIED")}>Approve Record</button>}
         </div>
       </section>
     </main>

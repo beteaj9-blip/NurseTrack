@@ -7,6 +7,7 @@ import { useUpdateClearanceStatus, useClearances } from "@/core/api/hooks/useCle
 import { useAllClinicalCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { useCanEditFeature } from "@/core/auth/permissions";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -66,6 +67,7 @@ export function ClearanceDetailContent({ basePath = "/chair" }: { basePath?: str
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId") ?? undefined;
   const user = useAuthStore((state) => state.user);
+  const { canEdit } = useCanEditFeature("clearance");
   const { data: clearances = [], isLoading: isClearanceLoading } = useClearances();
   const { data: clinicalCases = [], isLoading: isCasesLoading } = useAllClinicalCases(true, user?.id != null ? String(user.id) : undefined);
   const updateClearance = useUpdateClearanceStatus();
@@ -88,6 +90,10 @@ export function ClearanceDetailContent({ basePath = "/chair" }: { basePath?: str
   const isSaving = updateClearance.isPending;
 
   async function setClearanceStatus(nextStatus: "CLEARED" | "IN_REVIEW") {
+    if (!canEdit) {
+      showToast({ variant: "error", title: "Action unavailable", message: "Clearance decisions are not enabled for your role." });
+      return;
+    }
     if (!clearance?.id) {
       showToast({ variant: "error", title: "No clearance record", message: "The student has no clearance record to update yet." });
       return;
@@ -136,8 +142,8 @@ export function ClearanceDetailContent({ basePath = "/chair" }: { basePath?: str
               <h3 className="m-0 mb-2 !text-[#202124] !text-[1rem] !font-[900]">Clearance Approval</h3>
               <p className="m-0 mb-4 !text-[#64748b] !text-[0.86rem] !font-[800]">Approve only after the student&apos;s submitted clinical cases are complete and already reviewed.</p>
               <div className="flex items-center gap-3 max-[780px]:flex-col max-[780px]:items-stretch">
-                {isApproved ? <button type="button" disabled={isSaving} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-default disabled:opacity-60">Clearance Approved</button> : <button type="button" disabled={!isSubmitted || isSaving} onClick={() => setClearanceStatus("CLEARED")} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{isSubmitted ? "Approve Clearance" : "Waiting for Submission"}</button>}
-                {isApproved && <button type="button" disabled={isSaving} onClick={() => setClearanceStatus("IN_REVIEW")} className="inline-flex items-center justify-center min-h-[46px] px-5 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !font-[900] cursor-pointer disabled:opacity-60">Cancel Approval</button>}
+                {isApproved ? <button type="button" disabled={!canEdit || isSaving} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-default disabled:opacity-60">Clearance Approved</button> : <button type="button" disabled={!canEdit || !isSubmitted || isSaving} onClick={() => setClearanceStatus("CLEARED")} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{isSubmitted ? "Approve Clearance" : "Waiting for Submission"}</button>}
+                {isApproved && <button type="button" disabled={!canEdit || isSaving} onClick={() => setClearanceStatus("IN_REVIEW")} className="inline-flex items-center justify-center min-h-[46px] px-5 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !font-[900] cursor-pointer disabled:opacity-60">Cancel Approval</button>}
                 <div className="flex-1 min-h-[46px] inline-flex items-center rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 !text-[#64748b] !text-[0.82rem] !font-[900]">This will mark the student as cleared for this semester.</div>
               </div>
             </div>

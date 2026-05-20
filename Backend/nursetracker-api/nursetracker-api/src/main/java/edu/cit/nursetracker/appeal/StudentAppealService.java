@@ -3,14 +3,12 @@ package edu.cit.nursetracker.appeal;
 import edu.cit.nursetracker.notification.Notification;
 import edu.cit.nursetracker.notification.NotificationService;
 import edu.cit.nursetracker.notification.NotificationType;
-import edu.cit.nursetracker.user.User;
+import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -34,20 +32,11 @@ public class StudentAppealService {
     }
 
     public List<StudentAppeal> getAppealsVisibleTo(Long viewerId) {
-        Set<Integer> visibleLevels = userRepository.findById(viewerId)
-                .map(User::getAssignedLevels)
-                .orElse(Set.of());
-        if (visibleLevels.isEmpty()) return List.of();
-        return getAllAppeals().stream()
-                .filter(appeal -> intersects(appeal.getStudent().getAssignedLevels(), visibleLevels) || intersects(appeal.getInstructor().getAssignedLevels(), visibleLevels))
-                .toList();
-    }
-
-    private boolean intersects(Set<Integer> recordLevels, Set<Integer> visibleLevels) {
-        if (recordLevels == null || recordLevels.isEmpty()) return false;
-        Set<Integer> overlap = new HashSet<>(recordLevels);
-        overlap.retainAll(visibleLevels);
-        return !overlap.isEmpty();
+        return userRepository.findById(viewerId)
+                .map(viewer -> getAllAppeals().stream()
+                        .filter(appeal -> AccessScope.canViewRecord(viewer, appeal.getStudent(), appeal.getInstructor()))
+                        .toList())
+                .orElse(List.of());
     }
 
     public List<StudentAppeal> getInstructorAppeals(Long instructorId) {

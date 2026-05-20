@@ -4,6 +4,7 @@ import edu.cit.nursetracker.notification.Notification;
 import edu.cit.nursetracker.notification.NotificationService;
 import edu.cit.nursetracker.notification.NotificationType;
 import edu.cit.nursetracker.user.JwtService;
+import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.User;
 import edu.cit.nursetracker.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,9 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/extension-days")
@@ -102,17 +101,10 @@ public class ExtensionDayController {
     }
 
     private List<ExtensionDay> filterVisible(List<ExtensionDay> records, Long viewerId) {
-        Set<Integer> visibleLevels = userRepository.findById(viewerId).map(User::getAssignedLevels).orElse(Set.of());
-        if (visibleLevels.isEmpty()) return List.of();
-        return records.stream()
-                .filter(record -> intersects(record.getStudent().getAssignedLevels(), visibleLevels) || intersects(record.getInstructor().getAssignedLevels(), visibleLevels))
-                .toList();
-    }
-
-    private boolean intersects(Set<Integer> recordLevels, Set<Integer> visibleLevels) {
-        if (recordLevels == null || recordLevels.isEmpty()) return false;
-        Set<Integer> overlap = new HashSet<>(recordLevels);
-        overlap.retainAll(visibleLevels);
-        return !overlap.isEmpty();
+        return userRepository.findById(viewerId)
+                .map(viewer -> records.stream()
+                        .filter(record -> AccessScope.canViewRecord(viewer, record.getStudent(), record.getInstructor()))
+                        .toList())
+                .orElse(List.of());
     }
 }

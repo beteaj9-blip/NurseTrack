@@ -7,6 +7,7 @@ import { useAuthStore } from "@/core/store/authStore";
 import { useToast } from "@/components/ui/ToastProvider";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+import { useCanEditFeature } from "@/core/auth/permissions";
 
 function formatDate(date?: string) {
   if (!date) return "";
@@ -19,7 +20,8 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
   const searchParams = useSearchParams();
   const caseId = searchParams.get("caseId") ?? undefined;
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair";
+  const { canEdit } = useCanEditFeature("clinicalCases");
+  const isChair = basePath === "/chair" || basePath === "/coordinator";
   const { data: detailCase, isLoading: isDetailLoading } = useClinicalCase(caseId);
   const { data: instructorCases = [], isLoading: isInstructorListLoading } = useInstructorCases();
   const { data: allCases = [], isLoading: isAllListLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
@@ -32,6 +34,10 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
   const isSaving = reviewCase.isPending;
 
   const submitDecision = async (status: "APPROVED" | "RETURNED") => {
+    if (!canEdit) {
+      showToast({ variant: "error", title: "Action unavailable", message: "Case decisions are not enabled for your role." });
+      return;
+    }
     const targetCaseId = clinicalCase?.id ?? caseId;
     if (!targetCaseId) return;
     if (status === "RETURNED" && !comment.trim()) {
@@ -88,8 +94,8 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
               <label className="flex flex-col gap-1.5 m-0 !text-[0.875rem] !font-[800] !text-[#344054]" htmlFor="validation-comment">Comment (Required for rejection)<textarea className="w-full p-[0.75rem] border border-[#e2e8f0] rounded-[0.5rem] mt-[0.5rem] font-inherit resize-y bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="validation-comment" rows={5} placeholder="Add a comment or feedback for the student" value={comment} onChange={(event) => setComment(event.target.value)} /></label>
               <div className="flex items-center gap-[0.75rem] p-[1rem] rounded-[8px] !text-[#1e293b] !font-[500] bg-[#f8fafc] border border-[#e2e8f0]" role="status" aria-live="polite">Review the case details, then make an approval decision.</div>
               <div className="grid grid-cols-[1fr_1fr] gap-[1rem] mt-[0.5rem]">
-                <button className={`${ghostBtn} !text-[#dc2626] !border-[#fca5a5] hover:!border-[#f87171]`} type="button" disabled={isSaving} onClick={() => submitDecision("RETURNED")}>{isSaving ? "Saving..." : "Reject case"}</button>
-                <button className={`${primaryBtn} !bg-[#16a34a] !border-[#15803d] hover:!bg-[#15803d]`} type="button" disabled={isSaving} onClick={() => submitDecision("APPROVED")}>{isSaving ? "Saving..." : "Approve case"}</button>
+                <button className={`${ghostBtn} !text-[#dc2626] !border-[#fca5a5] hover:!border-[#f87171]`} type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("RETURNED")}>{isSaving ? "Saving..." : "Reject case"}</button>
+                <button className={`${primaryBtn} !bg-[#16a34a] !border-[#15803d] hover:!bg-[#15803d]`} type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("APPROVED")}>{isSaving ? "Saving..." : "Approve case"}</button>
               </div>
             </div>
           </article>

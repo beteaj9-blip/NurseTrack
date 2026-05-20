@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../axios';
 
-export const useAdminAccessPermissions = (role: string) => {
+export const useAdminAccessPermissions = (role: string, enabled = true) => {
   return useQuery({
     queryKey: ['admin-access-permissions', role],
     queryFn: async () => {
       const { data } = await apiClient.get('/admin-access-permissions', { params: { role } });
       return data;
     },
+    enabled: enabled && Boolean(role),
   });
 };
 

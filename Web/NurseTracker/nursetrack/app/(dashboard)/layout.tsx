@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { roleNavConfigs } from "@/core/config/navConfig";
 import { getTokenExpiresAt, isTokenExpired, markSessionExpired } from "@/core/auth/session";
 import { useAuthStore } from "@/core/store/authStore";
-import { User, UserRole } from "@/core/types/user";
+import { roleToBasePath } from "@/core/types/user";
 
 // Maps URL path segment → display info
 const roleDisplayMap: Record<string, { label: string; urlSegment: string }> = {
@@ -58,8 +58,15 @@ export default function DashboardLayout({
     if (hasHydrated && (!isAuthenticated || !user || !token)) {
       logout();
       router.replace("/");
+      return;
     }
-  }, [hasHydrated, isAuthenticated, user, token, logout, router]);
+    if (hasHydrated && isAuthenticated && user && token) {
+      const expectedBasePath = roleToBasePath[user.role];
+      if (expectedBasePath && pathname !== expectedBasePath && !pathname.startsWith(`${expectedBasePath}/`)) {
+        router.replace(`${expectedBasePath}/dashboard`);
+      }
+    }
+  }, [hasHydrated, isAuthenticated, user, token, logout, router, pathname]);
 
   useEffect(() => {
     if (!hasHydrated || !token) return;
@@ -82,6 +89,9 @@ export default function DashboardLayout({
   // Show nothing until hydration is complete (prevents flash redirect)
   if (!hasHydrated) return null;
   if (!isAuthenticated || !user || !token) return null;
+
+  const expectedBasePath = roleToBasePath[user.role];
+  if (expectedBasePath && pathname !== expectedBasePath && !pathname.startsWith(`${expectedBasePath}/`)) return null;
 
   // Validate role segment
   if (!role || !roleNavConfigs[role]) {

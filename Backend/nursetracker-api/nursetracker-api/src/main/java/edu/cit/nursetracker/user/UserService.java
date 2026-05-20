@@ -60,7 +60,7 @@ public class UserService {
 
     public List<User> getUsersVisibleTo(Long viewerId) {
         return getUserById(viewerId)
-                .map(viewer -> filterByAssignedLevels(getAllUsers(), viewer.getAssignedLevels()))
+                .map(viewer -> getAllUsers().stream().filter(user -> AccessScope.canViewUser(viewer, user)).toList())
                 .orElse(List.of());
     }
     
@@ -74,22 +74,8 @@ public class UserService {
 
     public List<User> getUsersByRoleVisibleTo(UserRole role, Long viewerId) {
         return getUserById(viewerId)
-                .map(viewer -> filterByAssignedLevels(getUsersByRole(role), viewer.getAssignedLevels()))
+                .map(viewer -> getUsersByRole(role).stream().filter(user -> AccessScope.canViewUser(viewer, user)).toList())
                 .orElse(List.of());
-    }
-
-    private List<User> filterByAssignedLevels(List<User> users, Set<Integer> visibleLevels) {
-        if (visibleLevels == null || visibleLevels.isEmpty()) return List.of();
-        return users.stream()
-                .filter(user -> intersects(user.getAssignedLevels(), visibleLevels))
-                .toList();
-    }
-
-    private boolean intersects(Set<Integer> userLevels, Set<Integer> visibleLevels) {
-        if (userLevels == null || userLevels.isEmpty()) return false;
-        Set<Integer> overlap = new HashSet<>(userLevels);
-        overlap.retainAll(visibleLevels);
-        return !overlap.isEmpty();
     }
 
     public User updateUserStatus(Long id, UserStatus newStatus) {

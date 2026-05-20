@@ -72,6 +72,7 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
     { label: "Clearance", href: "/coordinator/clearance", icon: ClearanceIcon },
     { label: "Clinical Cases View", href: "/coordinator/clinical-cases", icon: ClinicalCasesIcon },
     { label: "CI Recommendations", href: "/coordinator/ci-recommendations", icon: CiRecommendationsIcon },
+    { label: "Overtime Details", href: "/coordinator/overtime-details", icon: OvertimeDetailsIcon },
     { label: "Generate Report", href: "/coordinator/reports", icon: ReportsIcon },
   ],
   "clinical-instructor": [

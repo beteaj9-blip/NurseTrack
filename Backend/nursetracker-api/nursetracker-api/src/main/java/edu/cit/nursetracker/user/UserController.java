@@ -97,7 +97,8 @@ public class UserController {
             if (updates.containsKey("groupInfo")) user.setGroupInfo(updates.get("groupInfo"));
             if (updates.containsKey("assignedLevels")) user.setAssignedLevels(parseAssignedLevels(updates.get("assignedLevels")));
             if (updates.containsKey("role")) user.setRole(UserRole.valueOf(updates.get("role")));
-            if (user.getRole() == UserRole.ADMIN) user.setAssignedLevels(new HashSet<>(Set.of(1, 2, 3, 4)));
+            if (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.COORDINATOR) user.setAssignedLevels(new HashSet<>(Set.of(1, 2, 3, 4)));
+            if (user.getRole() == UserRole.INSTRUCTOR) user.setAssignedLevels(firstAssignedLevel(user.getAssignedLevels()));
             if (updates.containsKey("status")) user.setStatus(UserStatus.valueOf(updates.get("status")));
             if (updates.containsKey("profileImageUrl")) user.setProfileImageUrl(updates.get("profileImageUrl"));
             return ResponseEntity.ok(userService.saveUser(user));
@@ -177,8 +178,13 @@ public class UserController {
     }
 
     private Set<Integer> assignedLevelsForRole(UserRole role, String value) {
-        if (role == UserRole.ADMIN) return new HashSet<>(Set.of(1, 2, 3, 4));
+        if (role == UserRole.ADMIN || role == UserRole.COORDINATOR) return new HashSet<>(Set.of(1, 2, 3, 4));
+        if (role == UserRole.INSTRUCTOR) return firstAssignedLevel(parseAssignedLevels(value));
         return parseAssignedLevels(value);
+    }
+
+    private Set<Integer> firstAssignedLevel(Set<Integer> levels) {
+        return levels.stream().sorted().findFirst().map(Set::of).orElseGet(HashSet::new);
     }
 
     private String clean(String value) {

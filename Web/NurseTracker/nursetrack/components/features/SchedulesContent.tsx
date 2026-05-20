@@ -7,6 +7,7 @@ import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
 import { UserRole } from "@/core/types/user";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { useCanEditFeature } from "@/core/auth/permissions";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -58,8 +59,9 @@ function groupSchedulesByDuty(records: any[]) {
 export function SchedulesContent({ basePath }: { basePath: string }) {
   const router = useRouter();
   const [viewMode, setViewMode] = React.useState<"calendar" | "list">("calendar");
-  const canEdit = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator";
-  const usesChairScheduleView = basePath === "/admin" || basePath === "/chair";
+  const { canEdit: canEditSchedules } = useCanEditFeature("scheduleMaker");
+  const canEdit = (basePath === "/admin" || basePath === "/chair") || (basePath === "/coordinator" && canEditSchedules);
+  const usesChairScheduleView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator";
 
   const today = new Date();
   const [calYear, setCalYear] = React.useState(today.getFullYear());

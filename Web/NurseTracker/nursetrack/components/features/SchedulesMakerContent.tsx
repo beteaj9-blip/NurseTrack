@@ -5,6 +5,7 @@ import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useInstructors, useUsers } from "@/core/api/hooks/useUsers";
 import { usePreviewScheduleImport, usePublishScheduleImport } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
+import { useCanEditFeature } from "@/core/auth/permissions";
 import type { User } from "@/core/types/user";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
@@ -134,6 +135,7 @@ function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSecti
 
 export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
+  const { canEdit } = useCanEditFeature("scheduleMaker");
   const { data: hospitals = [] } = useHospitals();
   const { data: instructors = [] } = useInstructors((basePath === "/chair" || basePath === "/coordinator") && user?.id != null ? String(user.id) : undefined);
   const { data: databaseStudents = [] } = useUsers("STUDENT");
@@ -156,6 +158,10 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const matchedModalRecords = selectedStudentRecords.filter((student) => student.matched);
   const unmatchedModalRecords = selectedStudentRecords.filter((student) => !student.matched);
   const modalChanged = modalRecords.length !== modalOriginalRecords.length || modalRecords.some((student, index) => student.name !== modalOriginalRecords[index]?.name || student.matched !== modalOriginalRecords[index]?.matched);
+
+  if (!canEdit) {
+    return <main className="grid w-full content-start gap-6 p-[clamp(24px,4vw,42px)]"><section className="rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]"><h2 className="m-0 !text-[1.25rem] !font-bold !text-[#111827]">Schedule Maker</h2><p className="mb-0 mt-3 !text-sm !font-bold !text-[#64748b]">You can view schedules, but schedule publishing is not enabled for your role.</p></section></main>;
+  }
 
   const hospitalAreaOptions = useMemo(() => (hospitals as any[]).flatMap((hospital: any) => (hospital.wards?.length ? hospital.wards : [""]).map((ward: string) => {
     const value = ward ? `${hospital.name} - ${ward}` : hospital.name;

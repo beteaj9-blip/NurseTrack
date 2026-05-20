@@ -36,7 +36,7 @@ function hoursMatch(total: number, filter: string) {
 
 export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair";
+  const isChair = basePath === "/chair" || basePath === "/coordinator";
   const { data: attendance = [], isLoading } = useAllAttendance(true, isChair && user?.id != null ? String(user.id) : undefined);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");

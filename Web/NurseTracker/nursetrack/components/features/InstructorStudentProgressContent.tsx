@@ -44,7 +44,7 @@ function standingFor(student: Omit<ProgressStudent, "standing">) {
 
 export function InstructorStudentProgressContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair";
+  const isChair = basePath === "/chair" || basePath === "/coordinator";
   const isAdmin = basePath === "/admin";
   const isAllSection = isAdmin || isChair;
   const viewerId = isChair && user?.id != null ? String(user.id) : undefined;

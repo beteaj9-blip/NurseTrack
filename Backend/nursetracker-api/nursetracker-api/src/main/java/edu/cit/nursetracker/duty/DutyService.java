@@ -1,15 +1,13 @@
 package edu.cit.nursetracker.duty;
 
-import edu.cit.nursetracker.user.User;
+import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -77,18 +75,11 @@ public class DutyService {
     }
 
     public List<DutyRecord> getDutiesVisibleTo(Long viewerId) {
-        Set<Integer> visibleLevels = userRepository.findById(viewerId).map(User::getAssignedLevels).orElse(Set.of());
-        if (visibleLevels.isEmpty()) return List.of();
-        return getAllDuties().stream()
-                .filter(record -> intersects(record.getStudent().getAssignedLevels(), visibleLevels) || intersects(record.getInstructor().getAssignedLevels(), visibleLevels))
-                .toList();
-    }
-
-    private boolean intersects(Set<Integer> recordLevels, Set<Integer> visibleLevels) {
-        if (recordLevels == null || recordLevels.isEmpty()) return false;
-        Set<Integer> overlap = new HashSet<>(recordLevels);
-        overlap.retainAll(visibleLevels);
-        return !overlap.isEmpty();
+        return userRepository.findById(viewerId)
+                .map(viewer -> getAllDuties().stream()
+                        .filter(record -> AccessScope.canViewRecord(viewer, record.getStudent(), record.getInstructor()))
+                        .toList())
+                .orElse(List.of());
     }
 
     public DutyRecord validateDuty(Long recordId, DutyStatus status, String feedback) {
