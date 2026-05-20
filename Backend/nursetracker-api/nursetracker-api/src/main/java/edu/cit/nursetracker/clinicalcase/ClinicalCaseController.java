@@ -25,9 +25,9 @@ public class ClinicalCaseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ClinicalCase>> getAllCases(@RequestParam(required = false) Long viewerId) {
-        if (viewerId != null) return ResponseEntity.ok(caseService.getCasesVisibleTo(viewerId));
-        return ResponseEntity.ok(caseService.getAllCases());
+    public ResponseEntity<List<ClinicalCase>> getAllCases(@RequestParam(required = false) Long viewerId, HttpServletRequest request) {
+        Long effectiveViewerId = viewerId != null ? viewerId : jwtService.getUserId(request);
+        return ResponseEntity.ok(caseService.getCasesVisibleTo(effectiveViewerId));
     }
 
     @GetMapping("/student/{studentId}")

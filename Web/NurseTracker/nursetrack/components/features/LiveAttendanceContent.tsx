@@ -10,7 +10,7 @@ import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function LiveAttendanceContent() {
   const user = useAuthStore((state) => state.user);
-  const isChair = user?.role === "CHAIR" || user?.role === "COORDINATOR";
+  const isChair = user?.role === "CHAIR" || user?.role === "COORDINATOR" || user?.role === "ASSISTANT";
   const { data: instructorAttendance = [], isLoading: isInstructorAttendanceLoading } = useInstructorAttendance(!isChair && user?.id != null ? String(user.id) : undefined);
   const { data: allAttendance = [], isLoading: isAllAttendanceLoading } = useAllAttendance(isChair, isChair && user?.id != null ? String(user.id) : undefined);
   const attendance = isChair ? allAttendance : instructorAttendance;
@@ -90,7 +90,7 @@ export function LiveAttendanceContent() {
                   </div>
                 ))}
               </div>
-              {filtered.length === 0 && <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">No scheduled students match the selected filters.</div>}
+              {filtered.length === 0 && <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">No scheduled student(s) match the selected filters.</div>}
             </>
           )}
         </article>

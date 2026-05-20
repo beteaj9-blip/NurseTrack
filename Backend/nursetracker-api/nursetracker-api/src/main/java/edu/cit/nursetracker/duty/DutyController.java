@@ -58,9 +58,9 @@ public class DutyController {
     }
 
     @GetMapping
-    public ResponseEntity<List<DutyRecord>> getAllDuties(@RequestParam(required = false) Long viewerId) {
-        if (viewerId != null) return ResponseEntity.ok(dutyService.getDutiesVisibleTo(viewerId));
-        return ResponseEntity.ok(dutyService.getAllDuties());
+    public ResponseEntity<List<DutyRecord>> getAllDuties(@RequestParam(required = false) Long viewerId, HttpServletRequest request) {
+        Long effectiveViewerId = viewerId != null ? viewerId : jwtService.getUserId(request);
+        return ResponseEntity.ok(dutyService.getDutiesVisibleTo(effectiveViewerId));
     }
 
     @GetMapping("/{id}")

@@ -11,7 +11,7 @@ import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function ExtensionDaysContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator";
+  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
   const isAllSection = isAdmin || isChair;
   const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
@@ -102,7 +102,7 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
             <button className={ghostBtn} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
           </div>
         )}
-        {filtered.length === 0 && (isLoading ? <LoadingState message="Loading assigned students..." className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <p className="m-0 border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[700] text-center">No students found.</p>)}
+        {filtered.length === 0 && (isLoading ? <LoadingState message="Loading assigned student(s)..." className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <p className="m-0 border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[700] text-center">No student(s) found.</p>)}
       </section>
     </main>
   );

@@ -21,7 +21,7 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
   const caseId = searchParams.get("caseId") ?? undefined;
   const user = useAuthStore((state) => state.user);
   const { canEdit } = useCanEditFeature("clinicalCases");
-  const isChair = basePath === "/chair" || basePath === "/coordinator";
+  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const { data: detailCase, isLoading: isDetailLoading } = useClinicalCase(caseId);
   const { data: instructorCases = [], isLoading: isInstructorListLoading } = useInstructorCases();
   const { data: allCases = [], isLoading: isAllListLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);

@@ -39,7 +39,7 @@ export const useAllAppeals = (enabled = true, viewerId?: string) => {
   return useQuery({
     queryKey: ['appeals', 'all', viewerId],
     queryFn: async () => {
-      const { data } = await apiClient.get('/appeals');
+      const { data } = await apiClient.get('/appeals', { params: viewerId ? { viewerId } : undefined });
       return data.map(normalizeAppeal);
     },
     enabled,

@@ -67,7 +67,7 @@ export function ClinicalCasesSelectionContent({ basePath }: { basePath: string; 
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId");
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator";
+  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
   const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
   const cases = isChair ? allCases : instructorCases;

@@ -29,7 +29,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
   const user = useAuthStore((state) => state.user);
   const { showToast } = useToast();
   const { canEdit } = useCanEditFeature("extensionDays");
-  const isChair = basePath === "/chair" || basePath === "/coordinator";
+  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
   const isAllSection = isAdmin || isChair;
   const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
@@ -171,7 +171,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
         </section>
 
         <section className="border border-[#e2e8f0] rounded-xl bg-white shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-[1.5rem]">
-          <div className="flex justify-between items-start gap-[22px] mb-[1.15rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Extension Day History</h2><span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{history.length} records</span></div>
+          <div className="flex justify-between items-start gap-[22px] mb-[1.15rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Extension Day History</h2><span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{history.length} record(s)</span></div>
           {isLoading ? <LoadingState message="Loading extension-day history" className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : history.length > 0 ? (
             <>
               <div className={`grid gap-[0.85rem] ${historyTotalPages > 1 ? "rounded-t-lg" : ""}`}>

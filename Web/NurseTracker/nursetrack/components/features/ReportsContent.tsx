@@ -22,7 +22,7 @@ export function ReportsContent() {
   const { showToast } = useToast();
   const user = useAuthStore((state) => state.user);
   const hasAllCaseAccess = user?.role === "ADMIN" || user?.role === "CHAIR" || user?.role === "ASSISTANT" || user?.role === "COORDINATOR";
-  const viewerId = (user?.role === "CHAIR" || user?.role === "COORDINATOR") && user?.id != null ? String(user.id) : undefined;
+  const viewerId = (user?.role === "CHAIR" || user?.role === "COORDINATOR" || user?.role === "ASSISTANT") && user?.id != null ? String(user.id) : undefined;
   const { data: instructorCases = [], isLoading: isInstructorCasesLoading } = useInstructorCases(undefined, !hasAllCaseAccess);
   const { data: allCases = [], isLoading: isAllCasesLoading } = useAllClinicalCases(hasAllCaseAccess, viewerId);
   const cases = hasAllCaseAccess ? allCases : instructorCases;

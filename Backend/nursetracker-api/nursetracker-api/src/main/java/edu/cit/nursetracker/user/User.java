@@ -10,6 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
@@ -55,6 +56,9 @@ public class User {
     @Builder.Default
     private Set<Integer> assignedLevels = new HashSet<>();
 
+    @Column(name = "level")
+    private String level;
+
     private String profileImageUrl;
 
     @Enumerated(EnumType.STRING)
@@ -79,5 +83,18 @@ public class User {
         if (sectionInfo != null && !sectionInfo.isBlank()) completed++;
         if (profileImageUrl != null && !profileImageUrl.isBlank()) completed++;
         return Math.round((completed * 100f) / total);
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void syncLevelColumn() {
+        if (assignedLevels == null || assignedLevels.isEmpty()) {
+            level = null;
+            return;
+        }
+        level = assignedLevels.stream()
+                .sorted()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
     }
 }

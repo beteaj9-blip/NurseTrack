@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 
 type InlineSelectOption = {
   value: string;
@@ -9,18 +10,38 @@ type InlineSelectOption = {
 
 export function InlineSelect({ value, options, placeholder, onChange, disabled = false, className = "" }: { value: string; options: InlineSelectOption[]; placeholder: string; onChange: (value: string) => void; disabled?: boolean; className?: string }) {
   const [open, setOpen] = React.useState(false);
+  const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const menuRef = React.useRef<HTMLDivElement>(null);
   const selected = options.find((option) => option.value === value);
   const displayTextClass = disabled ? "min-w-0 truncate text-[#64748b]" : selected ? "min-w-0 truncate" : "min-w-0 truncate text-[#64748b]";
   const arrowTextClass = disabled ? "text-[#64748b]" : "text-[#344054]";
 
+  const updateMenuPosition = React.useCallback(() => {
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setMenuPosition({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+  }, []);
+
   React.useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
-      if (!wrapperRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!wrapperRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
     };
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, []);
+
+  React.useLayoutEffect(() => {
+    if (!open) return;
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open, updateMenuPosition]);
 
   return (
     <div ref={wrapperRef} className={`relative min-w-0 w-full ${className}`}>
@@ -36,8 +57,8 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
         <svg className={`h-4 w-4 shrink-0 ${arrowTextClass}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" /></svg>
       </button>
 
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-64 overflow-auto rounded-lg border border-[#dbe3ee] bg-white py-1 shadow-[0_16px_40px_rgba(15,23,42,0.16)]" role="listbox">
+      {open && !disabled && typeof document !== "undefined" && createPortal(
+        <div ref={menuRef} className="fixed z-[10000] max-h-64 overflow-auto rounded-lg border border-[#dbe3ee] bg-white py-1 shadow-[0_16px_40px_rgba(15,23,42,0.16)]" style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width }} role="listbox">
           {options.length > 0 ? options.map((option) => (
             <button
               key={option.value}
@@ -50,7 +71,8 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
               {option.label}
             </button>
           )) : <div className="px-3 py-2 text-[0.85rem] font-semibold text-[#64748b]">No options available</div>}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

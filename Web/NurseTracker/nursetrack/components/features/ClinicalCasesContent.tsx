@@ -9,7 +9,7 @@ import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const user = useAuthStore((state) => state.user);
-    const isChair = basePath === "/chair" || basePath === "/coordinator";
+    const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
     const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
     const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isChair, isChair && user?.id != null ? String(user.id) : undefined);
     const cases = isChair ? allCases : instructorCases;
@@ -52,7 +52,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
             <section className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem]">
                 <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap">
                     <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-[800] tracking-[-0.03em]">Students with Clinical Case Records</h2>
-                    <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{filtered.length} students</span>
+                    <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{filtered.length} student(s)</span>
                 </div>
                 <div className="grid gap-[1rem] mb-[1rem] grid-cols-2 max-[680px]:grid-cols-1">
                     <label className={labelCls} htmlFor="cc-search">Search student<input className={inputCls} id="cc-search" type="search" placeholder="Search name, student ID, or section" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
@@ -76,7 +76,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
                         <button className={ghostBtn} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
                     </div>
                 )}
-                {filtered.length === 0 && (isLoading ? <LoadingState message="Loading assigned students..." className="mt-[1rem] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No students match the selected filters.</div>)}
+                {filtered.length === 0 && (isLoading ? <LoadingState message="Loading assigned student(s)..." className="mt-[1rem] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No student(s) match the selected filters.</div>)}
             </section>
         </main>
     );

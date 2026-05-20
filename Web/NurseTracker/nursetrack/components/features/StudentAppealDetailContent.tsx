@@ -45,6 +45,19 @@ function appendOption(options: { value: string; label: string }[], value?: strin
   return [...options, { value, label: label || value }];
 }
 
+const NOT_APPLICABLE_VALUE = "not-applicable";
+const NOT_APPLICABLE_LABEL = "Not Applicable";
+const notApplicableOption = { value: NOT_APPLICABLE_VALUE, label: NOT_APPLICABLE_LABEL };
+const notApplicableFieldOption = { value: NOT_APPLICABLE_LABEL, label: NOT_APPLICABLE_LABEL };
+
+function isNotApplicableAppeal(appeal: any) {
+  return !appeal?.relatedDutyDate && (appeal?.clinicalSite === NOT_APPLICABLE_LABEL || appeal?.dutyArea === NOT_APPLICABLE_LABEL || !appeal?.instructorId);
+}
+
+function displayRelatedDutyDate(date?: string) {
+  return date ? formatDate(date) : NOT_APPLICABLE_LABEL;
+}
+
 const emptyForm = {
   appealType: "",
   relatedDutyDate: "",
@@ -88,11 +101,11 @@ export function StudentAppealDetailContent() {
   }, [schedules]);
   const scheduleOptions = React.useMemo(() => {
     const options = eligibleSchedules.map((schedule: any) => ({ value: String(schedule.id), label: `${formatDate(schedule.date)} - ${schedule.area || schedule.hospital}` }));
-    return appendOption(options, selectedScheduleId, form.relatedDutyDate ? `${formatDate(form.relatedDutyDate)} - ${form.dutyArea || form.clinicalSite}` : undefined);
+    return [notApplicableOption, ...appendOption(options, selectedScheduleId === NOT_APPLICABLE_VALUE ? undefined : selectedScheduleId, form.relatedDutyDate ? `${formatDate(form.relatedDutyDate)} - ${form.dutyArea || form.clinicalSite}` : undefined)];
   }, [eligibleSchedules, form.clinicalSite, form.dutyArea, form.relatedDutyDate, selectedScheduleId]);
-  const hospitalOptions = React.useMemo(() => appendOption((hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), form.clinicalSite), [hospitals, form.clinicalSite]);
-  const dutyAreaOptions = React.useMemo(() => appendOption(dutyAreas.map((area: string) => ({ value: area, label: area })), form.dutyArea), [dutyAreas, form.dutyArea]);
-  const instructorOptions = React.useMemo(() => appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), form.instructorId, selectedSchedule?.instructorName ?? appeal?.instructorName), [instructors, form.instructorId, selectedSchedule?.instructorName, appeal?.instructorName]);
+  const hospitalOptions = React.useMemo(() => [notApplicableFieldOption, ...appendOption((hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), form.clinicalSite === NOT_APPLICABLE_LABEL ? undefined : form.clinicalSite)], [hospitals, form.clinicalSite]);
+  const dutyAreaOptions = React.useMemo(() => [notApplicableFieldOption, ...appendOption(dutyAreas.map((area: string) => ({ value: area, label: area })), form.dutyArea === NOT_APPLICABLE_LABEL ? undefined : form.dutyArea)], [dutyAreas, form.dutyArea]);
+  const instructorOptions = React.useMemo(() => [notApplicableOption, ...appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), form.instructorId === NOT_APPLICABLE_VALUE ? undefined : form.instructorId, selectedSchedule?.instructorName ?? appeal?.instructorName)], [instructors, form.instructorId, selectedSchedule?.instructorName, appeal?.instructorName]);
 
   const resetForm = React.useCallback(() => {
     if (!appeal) return;
@@ -112,7 +125,7 @@ export function StudentAppealDetailContent() {
       schedule.hospital === appeal.clinicalSite &&
       schedule.area === appeal.dutyArea
     );
-    setSelectedScheduleId(matchingSchedule ? String(matchingSchedule.id) : appeal.relatedDutyDate ? `appeal-${appeal.id}` : "");
+    setSelectedScheduleId(isNotApplicableAppeal(appeal) ? NOT_APPLICABLE_VALUE : matchingSchedule ? String(matchingSchedule.id) : appeal.relatedDutyDate ? `appeal-${appeal.id}` : "");
   }, [appeal, schedules]);
 
   React.useEffect(() => {
@@ -124,6 +137,17 @@ export function StudentAppealDetailContent() {
   };
 
   const handleScheduleChange = (value: string) => {
+    if (value === NOT_APPLICABLE_VALUE) {
+      setSelectedScheduleId(value);
+      setForm((current) => ({
+        ...current,
+        relatedDutyDate: "",
+        clinicalSite: NOT_APPLICABLE_LABEL,
+        dutyArea: NOT_APPLICABLE_LABEL,
+        instructorId: NOT_APPLICABLE_VALUE,
+      }));
+      return;
+    }
     const schedule = (schedules as any[]).find((item: any) => String(item.id) === value);
     setSelectedScheduleId(value);
     if (!schedule) return;
@@ -178,7 +202,8 @@ export function StudentAppealDetailContent() {
       showToast({ variant: "error", title: "Appeal locked", message: "Accepted appeals can no longer be edited." });
       return;
     }
-    if (!appealId || !user || !form.appealType || !form.relatedDutyDate || !form.clinicalSite || !form.dutyArea || !form.instructorId || !form.title || !form.studentReason) {
+    const isNotApplicable = selectedScheduleId === NOT_APPLICABLE_VALUE;
+    if (!appealId || !user || !form.appealType || (!isNotApplicable && !form.relatedDutyDate) || !form.clinicalSite || !form.dutyArea || (!isNotApplicable && !form.instructorId) || !form.title || !form.studentReason) {
       setMessage("Complete the appeal details before saving.");
       showToast({ variant: "error", title: "Missing appeal details", message: "Complete the appeal details before saving." });
       return;
@@ -189,11 +214,11 @@ export function StudentAppealDetailContent() {
         appealId,
         appeal: {
           student: { id: user.id },
-          instructor: { id: Number(form.instructorId) },
+          instructor: isNotApplicable ? null : { id: Number(form.instructorId) },
           appealType: form.appealType,
-          relatedDutyDate: form.relatedDutyDate,
-          clinicalSite: form.clinicalSite,
-          dutyArea: form.dutyArea,
+          relatedDutyDate: isNotApplicable ? null : form.relatedDutyDate,
+          clinicalSite: isNotApplicable ? NOT_APPLICABLE_LABEL : form.clinicalSite,
+          dutyArea: isNotApplicable ? NOT_APPLICABLE_LABEL : form.dutyArea,
           title: form.title,
           studentReason: form.studentReason,
           evidenceNotes: form.evidenceNotes,
@@ -240,7 +265,7 @@ export function StudentAppealDetailContent() {
         </div>
 
         <p className="text-[#344054] text-[0.85rem] font-bold m-0 mb-6 flex flex-wrap items-center gap-3">
-          {formatSubmitted(appeal?.createdAt)} <span className="font-semibold text-[#64748b]">Assigned CI: {appeal?.instructorName || "Clinical Instructor"}</span>
+          {formatSubmitted(appeal?.createdAt)} <span className="font-semibold text-[#64748b]">Assigned CI: {appeal?.instructorName || NOT_APPLICABLE_LABEL}</span>
         </p>
 
         {/* 4-Column Metadata Grid */}
@@ -258,7 +283,7 @@ export function StudentAppealDetailContent() {
             {isEditing ? (
               <InlineSelect value={selectedScheduleId} options={scheduleOptions} placeholder="Select duty date" onChange={handleScheduleChange} />
             ) : (
-              <strong className="text-[#111827] text-[0.9rem] font-bold">{formatDate(appeal?.relatedDutyDate)}</strong>
+              <strong className="text-[#111827] text-[0.9rem] font-bold">{displayRelatedDutyDate(appeal?.relatedDutyDate)}</strong>
             )}
           </div>
           <div className="p-4 px-5">
@@ -266,7 +291,7 @@ export function StudentAppealDetailContent() {
             {isEditing ? (
               <InlineSelect value={form.clinicalSite} options={hospitalOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
             ) : (
-              <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.clinicalSite ?? ""}</strong>
+              <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.clinicalSite ?? NOT_APPLICABLE_LABEL}</strong>
             )}
           </div>
           <div className="p-4 px-5 sm:border-l border-[#e2e8f0] lg:border-none">
@@ -274,7 +299,7 @@ export function StudentAppealDetailContent() {
             {isEditing ? (
               <InlineSelect value={form.dutyArea} options={dutyAreaOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
             ) : (
-              <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.dutyArea ?? ""}</strong>
+              <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.dutyArea ?? NOT_APPLICABLE_LABEL}</strong>
             )}
           </div>
         </div>

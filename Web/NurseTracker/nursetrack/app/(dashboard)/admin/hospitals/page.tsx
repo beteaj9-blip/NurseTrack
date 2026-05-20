@@ -90,6 +90,7 @@ export default function HospitalsDutyAreasPage() {
   const [dutyAreaSearch, setDutyAreaSearch] = useState("");
   const [hospitalStatus, setHospitalStatus] = useState<StatusFilter>("all");
   const [dutyAreaStatus, setDutyAreaStatus] = useState<StatusFilter>("all");
+  const [dutyAreaHospitalFilter, setDutyAreaHospitalFilter] = useState("all");
   const [newDutyHospitalId, setNewDutyHospitalId] = useState("");
   const [editDutyHospitalId, setEditDutyHospitalId] = useState("");
   const [hospitalPage, setHospitalPage] = useState(1);
@@ -97,6 +98,7 @@ export default function HospitalsDutyAreasPage() {
 
   const activeHospitals = useMemo(() => hospitals.filter(hospital => isActive(hospital.active)), [hospitals]);
   const hospitalOptions = useMemo(() => hospitals.map(hospital => ({ value: String(hospital.id), label: `${hospital.name}${isActive(hospital.active) ? "" : " (Deactivated)"}` })), [hospitals]);
+  const dutyAreaHospitalOptions = useMemo(() => [{ value: "all", label: "All hospitals" }, ...hospitalOptions], [hospitalOptions]);
   const editHospitalOptions = useMemo(() => {
     const options = [...hospitalOptions];
     if (editingDutyArea && !options.some(option => option.value === String(editingDutyArea.hospitalId))) {
@@ -123,9 +125,10 @@ export default function HospitalsDutyAreasPage() {
     return dutyAreas.filter(area => {
       const matchesSearch = !query || `${area.name} ${area.hospital}`.toLowerCase().includes(query);
       const matchesStatus = dutyAreaStatus === "all" || (dutyAreaStatus === "active" ? area.active : !area.active);
-      return matchesSearch && matchesStatus;
+      const matchesHospital = dutyAreaHospitalFilter === "all" || String(area.hospitalId) === dutyAreaHospitalFilter;
+      return matchesSearch && matchesStatus && matchesHospital;
     });
-  }, [dutyAreaSearch, dutyAreas, dutyAreaStatus]);
+  }, [dutyAreaHospitalFilter, dutyAreaSearch, dutyAreas, dutyAreaStatus]);
   const hospitalTotalPages = Math.max(1, Math.ceil(filteredHospitals.length / PER_PAGE));
   const dutyAreaTotalPages = Math.max(1, Math.ceil(filteredDutyAreas.length / PER_PAGE));
   const pagedHospitals = filteredHospitals.slice((hospitalPage - 1) * PER_PAGE, hospitalPage * PER_PAGE);
@@ -299,7 +302,7 @@ export default function HospitalsDutyAreasPage() {
         </section>
 
         <section className="min-w-0 p-[1.45rem] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)]"><div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-[#e5eaf1] flex-wrap"><div><h2 className="m-0 !text-[#111827] !text-[1.25rem] leading-[1.15] !font-bold">Duty Area List</h2></div>{isLoading ? <span className="h-[26px] w-20 animate-pulse rounded-full bg-[#f1f5f9]" aria-hidden="true" /> : <span className="inline-flex items-center px-[10px] py-[4px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#e9f8ef] !text-[#078033]">{dutyAreas.filter(area => area.active).length} active</span>}</div>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,190px),1fr))] gap-3 mb-4"><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="duty-area-list-search">Search Duty Areas<input className={inputClass} id="duty-area-list-search" type="search" placeholder="Search duty area or hospital" value={dutyAreaSearch} onChange={(event) => { setDutyAreaSearch(event.target.value); setDutyAreaPage(1); }} /></label><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Status Filter<InlineSelect value={dutyAreaStatus} options={statusOptions} placeholder="All" onChange={(value) => { setDutyAreaStatus(value as StatusFilter); setDutyAreaPage(1); }} /></label></div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,190px),1fr))] gap-3 mb-4"><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="duty-area-list-search">Search Duty Areas<input className={inputClass} id="duty-area-list-search" type="search" placeholder="Search duty area or hospital" value={dutyAreaSearch} onChange={(event) => { setDutyAreaSearch(event.target.value); setDutyAreaPage(1); }} /></label><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Hospital Filter<InlineSelect value={dutyAreaHospitalFilter} options={dutyAreaHospitalOptions} placeholder="All hospitals" onChange={(value) => { setDutyAreaHospitalFilter(value); setDutyAreaPage(1); }} /></label><label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Status Filter<InlineSelect value={dutyAreaStatus} options={statusOptions} placeholder="All" onChange={(value) => { setDutyAreaStatus(value as StatusFilter); setDutyAreaPage(1); }} /></label></div>
           <div className="min-w-0 w-full overflow-x-auto overflow-y-hidden border border-[#dbe3ee] rounded-xl"><div className="grid grid-cols-[minmax(260px,1fr)_minmax(120px,180px)_minmax(130px,170px)_110px] items-center gap-4 w-full min-w-[760px] p-[1rem_1.25rem] bg-[#f8fafc] border-b border-[#dbe3ee]"><span className="min-w-0 whitespace-nowrap !text-[#0b1b3a] !text-[0.85rem] !font-extrabold uppercase">Duty Area</span><span className="min-w-0 whitespace-nowrap !text-[#0b1b3a] !text-[0.85rem] !font-extrabold uppercase">Hospital</span><span className="min-w-0 whitespace-nowrap !text-[#0b1b3a] !text-[0.85rem] !font-extrabold uppercase">Status</span><span className="justify-self-end whitespace-nowrap !text-[#0b1b3a] !text-[0.85rem] !font-extrabold uppercase">Action</span></div>
             {isLoading ? <LoadingState message="Loading duty areas..." className="min-w-[760px]" /> : pagedDutyAreas.map(area => <div className="grid grid-cols-[minmax(260px,1fr)_minmax(120px,180px)_minmax(130px,170px)_110px] items-center gap-4 w-full min-w-[760px] p-[1rem_1.25rem] border-b border-[#e5eaf1] last:border-b-0" key={`${area.hospitalId}-${area.name}-${area.active ? "active" : "inactive"}`}><span className="min-w-0 whitespace-nowrap !text-[#111827] !text-sm"><strong className="!font-[800] whitespace-nowrap">{area.name}</strong></span><span className="min-w-0 whitespace-nowrap !text-[#4c5d7d] !text-sm !font-semibold">{area.hospital}</span><span className={`w-fit rounded-full px-3 py-1 !text-[0.76rem] !font-extrabold ${statusBadge(area.active)}`}>{area.active ? "Active" : "Deactivated"}</span><span className="justify-self-end whitespace-nowrap"><button className="flex items-center justify-center w-[88px] min-w-[88px] min-h-[42px] px-[18px] whitespace-nowrap rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !text-sm !font-bold hover:bg-[#f8fafc] transition-colors cursor-pointer" type="button" onClick={() => { setEditingDutyArea(area); setEditDutyHospitalId(String(area.hospitalId)); }}>Edit</button></span></div>)}
             {!isLoading && !pagedDutyAreas.length && <div className="p-5 text-center !text-[#64748b] !text-sm !font-bold">No duty areas match your search.</div>}

@@ -5,6 +5,14 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS appeal_types;
 SET FOREIGN_KEY_CHECKS = 1;
 
+UPDATE users u
+SET level = (
+    SELECT GROUP_CONCAT(ual.assigned_level ORDER BY ual.assigned_level SEPARATOR ',')
+    FROM user_assigned_levels ual
+    WHERE ual.user_id = u.id
+)
+WHERE EXISTS (SELECT 1 FROM user_assigned_levels ual WHERE ual.user_id = u.id);
+
 INSERT INTO clinical_case_categories (value, label)
 SELECT 'Major Cases - Assist', 'Major Case - Assist'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Assist');

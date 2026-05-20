@@ -22,9 +22,9 @@ public class StudentAppealController {
     }
 
     @GetMapping
-    public ResponseEntity<List<StudentAppeal>> getAllAppeals(@RequestParam(required = false) Long viewerId) {
-        if (viewerId != null) return ResponseEntity.ok(appealService.getAppealsVisibleTo(viewerId));
-        return ResponseEntity.ok(appealService.getAllAppeals());
+    public ResponseEntity<List<StudentAppeal>> getAllAppeals(@RequestParam(required = false) Long viewerId, HttpServletRequest request) {
+        Long effectiveViewerId = viewerId != null ? viewerId : jwtService.getUserId(request);
+        return ResponseEntity.ok(appealService.getAppealsVisibleTo(effectiveViewerId));
     }
 
     @GetMapping("/student/{studentId}")

@@ -1,6 +1,6 @@
-﻿import { StudentProgressContent } from "@/components/features/StudentProgressContent";
+﻿import { InstructorStudentProgressContent } from "@/components/features/InstructorStudentProgressContent";
 
 export default function Page() {
-  return <StudentProgressContent basePath="/assistant" />;
+  return <InstructorStudentProgressContent basePath="/assistant" />;
 }
 

@@ -60,8 +60,8 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
   const router = useRouter();
   const [viewMode, setViewMode] = React.useState<"calendar" | "list">("calendar");
   const { canEdit: canEditSchedules } = useCanEditFeature("scheduleMaker");
-  const canEdit = (basePath === "/admin" || basePath === "/chair") || (basePath === "/coordinator" && canEditSchedules);
-  const usesChairScheduleView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator";
+  const canEdit = (basePath === "/admin" || basePath === "/chair") || ((basePath === "/coordinator" || basePath === "/assistant") && canEditSchedules);
+  const usesChairScheduleView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
 
   const today = new Date();
   const [calYear, setCalYear] = React.useState(today.getFullYear());
@@ -187,7 +187,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                         ${isToday ? "!bg-[#8A252C] !text-white" : sched ? "!bg-[#8a252c]/10 !text-[#8a252c]" : "!text-[#475467]"}
                       `}>{cell.day}</span>
                        {sched && <strong className="mt-[10px] block max-w-full truncate !text-[#111827] !text-[0.88rem] !font-[850] leading-[1.25] max-[640px]:mt-auto max-[640px]:rounded-full max-[640px]:bg-white/80 max-[640px]:px-1 max-[640px]:py-[2px] max-[640px]:text-center max-[640px]:!text-[0.52rem] max-[420px]:!text-[0.48rem]">{isCanceledOnly ? "Canceled" : activeDaySchedules.length > 1 ? `${activeDaySchedules.length}` : sched.area}</strong>}
-                       {sched && <p className="m-[6px_0_0] max-w-full truncate !text-[0.76rem] !font-[800] leading-[1.4] !text-[#344054] max-[640px]:hidden">{isCanceledOnly ? "No active schedule" : activeDaySchedules.length > 1 ? "Multiple duty assignments" : sched.hospital}</p>}
+                       {sched && <p className="m-[6px_0_0] max-w-full truncate !text-[0.76rem] !font-[800] leading-[1.4] !text-[#344054] max-[640px]:hidden">{isCanceledOnly ? "No active schedule" : activeDaySchedules.length > 1 ? "Multiple Duties" : sched.hospital}</p>}
                       {!sched && !isOtherMonth && <p className="m-[10px_0_0] break-words !text-[0.76rem] !font-[800] leading-[1.4] !text-[#94a3b8] max-[640px]:hidden">No assigned duty</p>}
                        {isToday && <small className="mt-auto inline-flex w-fit items-center justify-center rounded-full border border-[#8a252c]/18 bg-white/78 px-[8px] py-[5px] !text-[#8a252c] !text-[0.76rem] !font-[900] max-[640px]:sr-only">Today</small>}
                      </button>

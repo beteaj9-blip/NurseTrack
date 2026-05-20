@@ -24,12 +24,11 @@ public class ExtensionDayController {
     private final JwtService jwtService;
 
     @GetMapping
-    public ResponseEntity<List<ExtensionDay>> getAll(@RequestParam(required = false) Long studentId, @RequestParam(required = false) Long viewerId) {
-        if (viewerId != null) return ResponseEntity.ok(filterVisible(extensionDayRepository.findAllByOrderByCreatedAtDesc(), viewerId).stream()
+    public ResponseEntity<List<ExtensionDay>> getAll(@RequestParam(required = false) Long studentId, @RequestParam(required = false) Long viewerId, HttpServletRequest request) {
+        Long effectiveViewerId = viewerId != null ? viewerId : jwtService.getUserId(request);
+        return ResponseEntity.ok(filterVisible(extensionDayRepository.findAllByOrderByCreatedAtDesc(), effectiveViewerId).stream()
                 .filter(record -> studentId == null || record.getStudent().getId().equals(studentId))
                 .toList());
-        if (studentId != null) return ResponseEntity.ok(extensionDayRepository.findByStudentIdOrderByCreatedAtDesc(studentId));
-        return ResponseEntity.ok(extensionDayRepository.findAllByOrderByCreatedAtDesc());
     }
 
     @GetMapping("/student/{studentId}")

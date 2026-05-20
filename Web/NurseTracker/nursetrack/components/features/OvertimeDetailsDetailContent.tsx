@@ -48,7 +48,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
   const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const personId = searchParams.get("id");
-  const isChair = basePath === "/chair" || basePath === "/coordinator";
+  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
   const { data: attendance = [], isLoading: isAttendanceLoading } = useAllAttendance(true, viewerId);
   const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(viewerId, user?.role);

@@ -45,16 +45,17 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers(
             @RequestParam(required = false) UserRole role,
-            @RequestParam(required = false) Long viewerId) {
-        if (viewerId != null) {
-            if (role != null) return ResponseEntity.ok(userService.getUsersByRoleVisibleTo(role, viewerId));
-            return ResponseEntity.ok(userService.getUsersVisibleTo(viewerId));
+            @RequestParam(required = false) Long viewerId,
+            HttpServletRequest request) {
+        Long effectiveViewerId = viewerId != null ? viewerId : jwtService.getUserId(request);
+        User viewer = userService.getUserById(effectiveViewerId).orElse(null);
+        if (viewer != null && viewer.getRole() == UserRole.ADMIN && viewerId == null) {
+            if (role != null) return ResponseEntity.ok(userService.getUsersByRole(role));
+            return ResponseEntity.ok(userService.getAllUsers());
         }
-        
-        if (role != null) {
-            return ResponseEntity.ok(userService.getUsersByRole(role));
-        }
-        return ResponseEntity.ok(userService.getAllUsers());
+
+        if (role != null) return ResponseEntity.ok(userService.getUsersByRoleVisibleTo(role, effectiveViewerId));
+        return ResponseEntity.ok(userService.getUsersVisibleTo(effectiveViewerId));
     }
 
     @GetMapping("/{id}")

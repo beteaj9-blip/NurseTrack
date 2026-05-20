@@ -124,11 +124,11 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
   const routeRole = routeRoleMap[basePath] ?? user?.role;
   const userId = user?.id != null ? String(user.id) : undefined;
-  const { data: schedules = [], isLoading } = useSchedules(routeRole === "CHAIR" || routeRole === "COORDINATOR" ? userId : undefined, routeRole);
+  const { data: schedules = [], isLoading } = useSchedules(routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT" ? userId : undefined, routeRole);
   const updateSchedule = useUpdateSchedule();
   const deleteSchedule = useDeleteSchedule();
   const { data: hospitals = [] } = useHospitals();
-  const { data: instructors = [] } = useInstructors((routeRole === "CHAIR" || routeRole === "COORDINATOR") && userId ? userId : undefined);
+  const { data: instructors = [] } = useInstructors((routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT") && userId ? userId : undefined);
   const { data: instructorCases = [] } = useInstructorCases();
   const { data: studentCases = [] } = useStudentCases();
   const { data: allCases = [] } = useAllClinicalCases(routeRole !== "STUDENT" && routeRole !== "INSTRUCTOR", userId);
@@ -153,8 +153,8 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const activeAssignedStudents = assignedStudents.filter((schedule: any) => !schedule.canceled);
   const instructorName = selectedSchedule?.instructorName || "Clinical Instructor";
   const isStudentView = basePath === "/nursing-student";
-  const isChairView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator";
-  const canEditChairSchedule = basePath === "/admin" || basePath === "/chair" || (basePath === "/coordinator" && canEditSchedules);
+  const isChairView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const canEditChairSchedule = basePath === "/admin" || basePath === "/chair" || ((basePath === "/coordinator" || basePath === "/assistant") && canEditSchedules);
   const [reviewNotes, setReviewNotes] = React.useState("");
   const [studentSearch, setStudentSearch] = React.useState("");
   const [breakDate, setBreakDate] = React.useState("");
@@ -304,7 +304,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
         {dayScheduleGroups.length > 1 && <article className="relative rounded-xl border border-[#e2e8f0] shadow-[0_16px_44px_rgba(32,33,36,0.07)] overflow-hidden p-[1.75rem] bg-[linear-gradient(180deg,#fff8d6_0%,#ffffff_58%,#ffffff_100%)]">
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <h2 className="m-0 !text-[#202124] !text-[1.25rem] leading-[1.2] !font-[900] tracking-[-0.03em]">{formatDisplayDate(selectedSchedule.date)}</h2>
-            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.8rem] !font-[900]">{activeDayScheduleGroups.length} active schedules</span>
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.8rem] !font-[900]">{activeDayScheduleGroups.length} active schedule(s)</span>
           </div>
           <div className="grid grid-cols-2 gap-[1rem] max-[900px]:grid-cols-1">
             {dayScheduleGroups.map((schedule: any, index: number) => {
@@ -358,15 +358,15 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
               </div>
 
               <label className="flex flex-col gap-2 mt-4 !text-[#4b5565] !text-[0.86rem] !font-[900]">Review Notes<textarea disabled={editorDisabled} className="w-full min-h-[104px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 py-3 !text-[#111827] !font-[800] resize-y disabled:!text-[#94a3b8]" placeholder="Add correction notes before republishing" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} /></label>
-              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving || activeAssignedStudents.length === 0} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">Cancel Schedule</button><button type="button" disabled={isSaving} onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60 max-[560px]:w-full">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 max-[560px]:w-full">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
+              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving || activeAssignedStudents.length === 0} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">Deactivate Schedule</button><button type="button" disabled={isSaving} onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60 max-[560px]:w-full">Cancel Edit</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 max-[560px]:w-full">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
             </div>
           </article>
 
           <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[clamp(0.75rem,3vw,1.45rem)] min-w-0 max-w-full overflow-hidden">
-            <div className="flex items-center justify-between gap-4 mb-5"><h2 className="m-0 !text-[#202124] !text-[1.15rem] !font-[900]">Assigned Students</h2><span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.78rem] !font-[900]">{activeAssignedStudents.length} active students</span></div>
+            <div className="flex items-center justify-between gap-4 mb-5"><h2 className="m-0 !text-[#202124] !text-[1.15rem] !font-[900]">Assigned Student(s)</h2><span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.78rem] !font-[900]">{activeAssignedStudents.length} active student(s)</span></div>
             <label className="block rounded-xl border border-[#dbe3ee] p-4 !text-[#111827] !font-[900] mb-4">Search Student To Add<input className="mt-2 w-full min-h-[52px] rounded-lg border border-[#dbe3ee] bg-white px-4 !text-[#111827] !font-[800]" placeholder="Search by name, ID, section, or site" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} /></label>
             <div className="rounded-xl border border-[#e2e8f0] overflow-x-auto"><table className="w-full border-collapse text-left"><thead><tr className="bg-[#f8fafc] border-b border-[#e2e8f0] !text-[#111827] !text-[0.76rem] !font-[900] uppercase"><th className="p-4 w-[52px]">No.</th><th className="p-4">Student</th><th className="p-4 w-[180px] max-[640px]:hidden">Move To</th><th className="p-4 w-[110px]">Action</th></tr></thead><tbody>{filteredAssignedStudents.map((schedule: any, index: number) => <tr key={schedule.id} className="border-b border-[#e2e8f0] last:border-0"><td className="p-4 !font-[800]">{index + 1}.</td><td className="p-4"><div className="flex items-center gap-3"><ProfileAvatar name={schedule.studentName || "Nursing Student"} imageUrl={schedule.studentProfileImageUrl} size={42} /><strong className="!text-[#202124] !font-[900]">{schedule.studentName || "Nursing Student"}</strong></div></td><td className="p-4 max-[640px]:hidden"><InlineSelect value={selectedSchedule.groupKey} options={groupOptions} placeholder="Move to group" onChange={(value) => moveStudentSchedule(schedule, value)} /></td><td className="p-4"><button type="button" disabled={isSaving} onClick={() => removeStudentSchedule(schedule)} className="min-h-[38px] px-4 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !text-[0.82rem] !font-[900] cursor-pointer disabled:opacity-60">Remove</button></td></tr>)}</tbody></table></div>
-            <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-[#e2e8f0] flex-wrap max-[560px]:flex-col"><button type="button" className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#94a3b8] !font-[900] cursor-pointer">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#c98f96] border border-[#c98f96] !text-white !font-[900] cursor-pointer disabled:opacity-60">Save Assigned Students</button></div>
+            <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-[#e2e8f0] flex-wrap max-[560px]:flex-col"><button type="button" onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#94a3b8] !font-[900] cursor-pointer">Cancel Edit</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#c98f96] border border-[#c98f96] !text-white !font-[900] cursor-pointer disabled:opacity-60">Save Assigned Student(s)</button></div>
           </article>
         </>}
 
@@ -418,8 +418,8 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
           <div className="absolute bottom-[-60px] right-[-60px] w-80 h-80 rounded-full bg-[#ffcf01]/5 blur-[80px] pointer-events-none" />
           <div className="relative z-10">
             <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
-              <h3 className="m-0 !text-[#111827] !text-[1.15rem] leading-[1.2] !font-bold tracking-[-0.03em]">Assigned Students</h3>
-              <span className="inline-flex items-center px-4 py-1.5 rounded-full !text-[0.8rem] !font-extrabold bg-[#fef3c7] !text-[#92400e]">{activeAssignedStudents.length} active student{activeAssignedStudents.length === 1 ? "" : "s"}</span>
+              <h3 className="m-0 !text-[#111827] !text-[1.15rem] leading-[1.2] !font-bold tracking-[-0.03em]">Assigned Student(s)</h3>
+              <span className="inline-flex items-center px-4 py-1.5 rounded-full !text-[0.8rem] !font-extrabold bg-[#fef3c7] !text-[#92400e]">{activeAssignedStudents.length} active student(s)</span>
             </div>
 
             <div className="flex items-center gap-4 p-4 mb-5 bg-[#fffaf0] border border-[#fde68a] rounded-xl shadow-[0_2px_4px_rgba(251,191,36,0.05)]">

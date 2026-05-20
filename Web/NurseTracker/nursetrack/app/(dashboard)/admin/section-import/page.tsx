@@ -167,9 +167,9 @@ export default function SectionImportPage() {
       setAddStudentSearch("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       setStatus("Import complete");
-      setMessage(`${result.updatedStudents} students updated to section ${result.section || ""}, level ${result.level ?? ""}. Academic term set to ${result.semester || ""}, ${result.schoolYear || ""}.`);
+      setMessage(`${result.updatedStudents} student(s) updated to section ${result.section || ""}, level ${result.level ?? ""}. Academic term set to ${result.semester || ""}, ${result.schoolYear || ""}.`);
       setMessageClass("is-success");
-      showToast({ variant: "success", title: "Import complete", message: `${result.updatedStudents} students updated.` });
+      showToast({ variant: "success", title: "Import complete", message: `${result.updatedStudents} student(s) updated.` });
     } catch (error: any) {
       const backendMessage = error?.response?.data?.message || error?.response?.data || "Section assignments could not be imported.";
       setStatus("Import failed");
@@ -254,7 +254,7 @@ function StudentTable({ title, tone, students, section, empty, onRemove }: { tit
   return <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] overflow-hidden">
     <div className="flex items-center justify-between gap-4 p-4 border-b border-[#e2e8f0] bg-[#f8fafc]">
       <h3 className="m-0 !text-[#111827] !text-[1rem] !font-[900]">{title}</h3>
-      <span className={`inline-flex items-center px-3 py-1 rounded-full !text-[0.75rem] !font-[900] ${tone === "success" ? "bg-[#dcfce7] !text-[#166534]" : "bg-[#fef2f2] !text-[#991b1b]"}`}>{students.length} students</span>
+      <span className={`inline-flex items-center px-3 py-1 rounded-full !text-[0.75rem] !font-[900] ${tone === "success" ? "bg-[#dcfce7] !text-[#166534]" : "bg-[#fef2f2] !text-[#991b1b]"}`}>{students.length} student(s)</span>
     </div>
     <div className="overflow-x-auto">
       <table className="w-full min-w-[720px] border-collapse text-left">

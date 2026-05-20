@@ -29,8 +29,8 @@ public final class AccessScope {
         if (viewer == null) return false;
         if (canViewAll(viewer)) return true;
         if (viewer.getRole() == UserRole.CHAIR || viewer.getRole() == UserRole.ASSISTANT) {
-            return intersects(student == null ? null : student.getAssignedLevels(), viewer.getAssignedLevels())
-                    || intersects(instructor == null ? null : instructor.getAssignedLevels(), viewer.getAssignedLevels());
+            if (student != null) return intersects(student.getAssignedLevels(), viewer.getAssignedLevels());
+            return intersects(instructor == null ? null : instructor.getAssignedLevels(), viewer.getAssignedLevels());
         }
         if (viewer.getRole() == UserRole.INSTRUCTOR || viewer.getRole() == UserRole.STUDENT) {
             return sameSection(viewer.getSectionInfo(), student == null ? null : student.getSectionInfo())

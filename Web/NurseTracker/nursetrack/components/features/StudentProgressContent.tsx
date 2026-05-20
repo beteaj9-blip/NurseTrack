@@ -119,14 +119,14 @@ export function StudentProgressContent({ basePath }: { basePath: string }) {
           icon="cases"
           status={totalRequiredCases > 0 && completedCases >= totalRequiredCases ? "Completed" : "In progress"}
           title="Clinical Cases"
-          description={isRequirementsLoading ? "Checking clinical cases" : `${completedCases} of ${totalRequiredCases} cases completed`}
+          description={isRequirementsLoading ? "Checking clinical cases" : `${completedCases} of ${totalRequiredCases} case(s) completed`}
           isLoading={isRequirementsLoading}
         />
         <SummaryCard
           icon="alert"
           status={pendingItems > 0 ? "Open" : "Clear"}
           title="Pending Items"
-          description={isCasesLoading || isDutyLoading ? "Checking pending items" : `${pendingItems} records need student or instructor action`}
+          description={isCasesLoading || isDutyLoading ? "Checking pending items" : `${pendingItems} record(s) need student or instructor action`}
           isLoading={isCasesLoading || isDutyLoading}
         />
       </section>

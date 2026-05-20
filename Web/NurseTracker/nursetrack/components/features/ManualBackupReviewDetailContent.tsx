@@ -56,7 +56,7 @@ export function ManualBackupReviewDetailContent({ basePath = "/chair" }: { baseP
   const user = useAuthStore((state) => state.user);
   const { canEdit } = useCanEditFeature("manualBackup");
   const recordId = searchParams.get("id");
-  const { data: attendance = [], isLoading } = useAllAttendance(true, (basePath === "/chair" || basePath === "/coordinator") && user?.id != null ? String(user.id) : undefined);
+  const { data: attendance = [], isLoading } = useAllAttendance(true, (basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined);
   const record = (attendance as any[]).find((entry) => String(entry.id) === String(recordId));
   const [isSaving, setIsSaving] = React.useState(false);
   const isApproved = record?.status === "VERIFIED" || record?.status === "VALIDATED";

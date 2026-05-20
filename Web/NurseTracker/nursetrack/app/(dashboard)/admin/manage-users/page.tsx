@@ -39,6 +39,7 @@ type DisplayUser = {
   id: string;
   section: string;
   group: string;
+  level: string;
   status: string;
   initials: string;
   profileImageUrl: string;
@@ -113,6 +114,12 @@ const statusApi = (value: string) =>
   statusOptions.find(
     (status) => status.value === value.toLowerCase() || status.label === value,
   )?.api || "ACTIVE";
+const levelLabel = (levels?: number[]) => {
+  const normalized = Array.from(new Set(levels ?? [])).sort((a, b) => a - b);
+  if (!normalized.length) return "Not set";
+  return normalized.length === 1 ? `Level ${normalized[0]}` : `Levels ${normalized.join(", ")}`;
+};
+const USERS_PER_PAGE = 10;
 
 export default function ManageUsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
@@ -132,6 +139,7 @@ export default function ManageUsersPage() {
   >("edit");
   const [editRole, setEditRole] = useState("student");
   const [nextStatus, setNextStatus] = useState("Active");
+  const [userPage, setUserPage] = useState(1);
 
   const { data: userData = [], isLoading } = useUsers();
   const createUser = useAdminCreateUser();
@@ -149,6 +157,7 @@ export default function ManageUsersPage() {
         id: user.schoolId,
         section: user.sectionInfo ?? "",
         group: user.groupInfo ?? "",
+        level: levelLabel(user.assignedLevels),
         status: statusLabel(user.status),
         initials: initials(user.fullName),
         profileImageUrl: user.profileImageUrl ?? "",
@@ -197,10 +206,17 @@ export default function ManageUsersPage() {
         user.id,
         user.section,
         user.group,
+        user.level,
         user.status,
       ].some((val) => val.toLowerCase().includes(search.toLowerCase()));
     return matchesRole && matchesStatus && matchesSection && matchesSearch;
   });
+  const userTotalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE));
+  const pagedUsers = filteredUsers.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE);
+
+  React.useEffect(() => {
+    setUserPage((page) => Math.min(page, userTotalPages));
+  }, [userTotalPages]);
 
   const closeActionModal = () => {
     setSelectedUserForAction(null);
@@ -369,7 +385,7 @@ export default function ManageUsersPage() {
                   value={roleFilter}
                   options={roleFilterOptions}
                   placeholder="Select role"
-                  onChange={setRoleFilter}
+                  onChange={(value) => { setRoleFilter(value); setUserPage(1); }}
                 />
               </label>
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
@@ -381,7 +397,7 @@ export default function ManageUsersPage() {
                     label,
                   }))}
                   placeholder="All status"
-                  onChange={setStatusFilter}
+                  onChange={(value) => { setStatusFilter(value); setUserPage(1); }}
                 />
               </label>
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
@@ -390,7 +406,7 @@ export default function ManageUsersPage() {
                   value={sectionFilter}
                   options={sectionOptions}
                   placeholder="All sections"
-                  onChange={setSectionFilter}
+                  onChange={(value) => { setSectionFilter(value); setUserPage(1); }}
                 />
               </label>
               <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
@@ -400,16 +416,17 @@ export default function ManageUsersPage() {
                   type="search"
                   placeholder="Search name, ID, email"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setUserPage(1); }}
                 />
               </label>
             </div>
 
-            <div className="max-h-[560px] rounded-lg border border-[#e2e8f0] overflow-y-auto bg-white">
-              <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.7fr)_minmax(0,0.55fr)] gap-[0.9rem] p-[1rem_1.1rem] bg-[#f8fafc] border-b border-[#e2e8f0] !text-xs !font-extrabold !text-gray-500 uppercase tracking-wider max-[1180px]:hidden">
+            <div className="rounded-lg border border-[#e2e8f0] overflow-hidden bg-white">
+              <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.8fr)_minmax(0,0.55fr)_minmax(0,0.65fr)_minmax(0,0.5fr)] gap-[0.9rem] p-[1rem_1.1rem] bg-[#f8fafc] border-b border-[#e2e8f0] !text-xs !font-extrabold !text-gray-500 uppercase tracking-wider max-[1180px]:hidden">
                 <span>Name</span>
                 <span>Role</span>
                 <span>ID / Section</span>
+                <span>Level</span>
                 <span>Status</span>
                 <span className="text-center">Action</span>
               </div>
@@ -420,9 +437,9 @@ export default function ManageUsersPage() {
                     className="min-h-[120px]"
                   />
                 ) : (
-                  filteredUsers.map((user) => (
+                  pagedUsers.map((user) => (
                     <div
-                      className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.7fr)_minmax(0,0.55fr)] items-center gap-[0.9rem] p-[1rem_1.1rem] bg-white hover:bg-gray-50/50 transition-colors max-[1180px]:grid-cols-[minmax(0,1fr)_auto] max-[1180px]:items-start max-[1180px]:gap-3 max-[1180px]:rounded-xl max-[1180px]:border max-[1180px]:border-[#e2e8f0] max-[1180px]:p-4 max-[1180px]:shadow-sm"
+                      className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)_minmax(0,0.8fr)_minmax(0,0.55fr)_minmax(0,0.65fr)_minmax(0,0.5fr)] items-center gap-[0.9rem] p-[1rem_1.1rem] bg-white hover:bg-gray-50/50 transition-colors max-[1180px]:grid-cols-[minmax(0,1fr)_auto] max-[1180px]:items-start max-[1180px]:gap-3 max-[1180px]:rounded-xl max-[1180px]:border max-[1180px]:border-[#e2e8f0] max-[1180px]:p-4 max-[1180px]:shadow-sm"
                       key={user.api.id}
                     >
                       <span className="flex items-center gap-3 min-w-0 max-[1180px]:pr-2">
@@ -459,6 +476,10 @@ export default function ManageUsersPage() {
                             Group: {user.group}
                           </small>
                         )}
+                      </span>
+                      <span className="!text-[#4c5d7d] !text-[0.88rem] !font-bold max-[1180px]:col-span-2 max-[1180px]:grid max-[1180px]:gap-1 max-[1180px]:rounded-lg max-[1180px]:border max-[1180px]:border-[#e2e8f0] max-[1180px]:bg-[#f8fafc] max-[1180px]:px-3 max-[1180px]:py-2">
+                        <small className="hidden max-[1180px]:block !text-[#64748b] !text-[0.68rem] !font-[900] uppercase tracking-wide">Level</small>
+                        <span>{user.level}</span>
                       </span>
                       <span className="max-[1180px]:col-span-2 max-[1180px]:flex max-[1180px]:items-center max-[1180px]:justify-between max-[1180px]:gap-3 max-[1180px]:rounded-lg max-[1180px]:border max-[1180px]:border-[#e2e8f0] max-[1180px]:bg-white max-[1180px]:px-3 max-[1180px]:py-2">
                         <small className="hidden max-[1180px]:block !text-[#64748b] !text-[0.68rem] !font-[900] uppercase tracking-wide">Status</small>
@@ -505,6 +526,13 @@ export default function ManageUsersPage() {
                 )}
               </div>
             </div>
+            {userTotalPages > 1 && (
+              <div className="flex justify-between items-center p-[1rem_1.5rem] gap-2 border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]">
+                <button className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => setUserPage((page) => Math.max(1, page - 1))} disabled={userPage === 1}>Previous</button>
+                <span className="!text-[0.875rem] !font-[600] !text-[#64748b] whitespace-nowrap"><span className="hidden sm:inline">Page </span>{userPage} of {userTotalPages}</span>
+                <button className="inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => setUserPage((page) => Math.min(userTotalPages, page + 1))} disabled={userPage === userTotalPages}>Next</button>
+              </div>
+            )}
 
             {!isLoading && message && (
               <div

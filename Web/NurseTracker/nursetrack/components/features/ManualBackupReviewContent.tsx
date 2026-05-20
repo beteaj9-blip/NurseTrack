@@ -57,7 +57,7 @@ export function ManualBackupReviewContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
   const instructorId = searchParams.get("instructorId");
   const scopedInstructorId = basePath === "/clinical-instructor" ? (user?.id != null ? String(user.id) : undefined) : undefined;
-  const { data: allAttendance = [], isLoading: isAllLoading } = useAllAttendance(true, (basePath === "/chair" || basePath === "/coordinator") && user?.id != null ? String(user.id) : undefined);
+  const { data: allAttendance = [], isLoading: isAllLoading } = useAllAttendance(true, (basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined);
   const { data: instructorAttendance = [], isLoading: isInstructorLoading } = useInstructorAttendance(scopedInstructorId);
   const attendance = scopedInstructorId ? instructorAttendance : allAttendance;
   const isLoading = scopedInstructorId ? isInstructorLoading : isAllLoading;
@@ -87,7 +87,7 @@ export function ManualBackupReviewContent({ basePath }: { basePath: string }) {
       </section>
 
       <section className="bg-white rounded-xl border border-[#e2e8f0] shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-[1.6rem_1.75rem_1.75rem]">
-        <div className="flex items-center justify-between gap-[1rem] mb-[1.5rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-[850] tracking-[-0.03em]">Manual Attendance Records</h2><span className="inline-flex items-center w-max min-h-[28px] px-[12px] py-[6px] rounded-full bg-[#e9f8ef] !text-[#03703c] !text-[0.76rem] !font-[900]">{completedRecords.length} records</span></div>
+        <div className="flex items-center justify-between gap-[1rem] mb-[1.5rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-[850] tracking-[-0.03em]">Manual Attendance Records</h2><span className="inline-flex items-center w-max min-h-[28px] px-[12px] py-[6px] rounded-full bg-[#e9f8ef] !text-[#03703c] !text-[0.76rem] !font-[900]">{completedRecords.length} record(s)</span></div>
         <div className="border border-[#dbe3ee] rounded-lg overflow-hidden bg-white">
           {completedRecords.map((record) => <ManualRecordRow key={record.id} record={record} basePath={basePath} />)}
           {completedRecords.length === 0 && (isLoading ? <LoadingState message="Loading manual attendance records..." /> : <div className="p-[1.25rem] !text-[#64748b] !font-[800] text-center">No completed manual attendance records.</div>)}

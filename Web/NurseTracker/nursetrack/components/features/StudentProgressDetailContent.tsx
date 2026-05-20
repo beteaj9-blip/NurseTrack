@@ -94,8 +94,8 @@ export function StudentProgressDetailContent({ basePath }: { basePath: string; s
 
       <section className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-[18px] mb-[18px]" aria-label="Student progress summary">
         <SummaryCard icon="calendar" status={activeExtensionDayTotal > 0 ? "Open" : "Clear"} title="Extension Days" description={`${activeExtensionDayTotal} extension days recorded`} isLoading={isExtensionDaysLoading} />
-        <SummaryCard icon="cases" status={totalRequiredCases > 0 && completedCases >= totalRequiredCases ? "Completed" : "In progress"} title="Clinical Cases" description={`${completedCases} of ${totalRequiredCases} cases completed`} isLoading={isRequirementsLoading} />
-        <SummaryCard icon="alert" status={pending > 0 ? "Open" : "Clear"} title="Pending Items" description={`${pending} records need student or instructor action`} isLoading={isCasesLoading || isDutyLoading} />
+        <SummaryCard icon="cases" status={totalRequiredCases > 0 && completedCases >= totalRequiredCases ? "Completed" : "In progress"} title="Clinical Cases" description={`${completedCases} of ${totalRequiredCases} case(s) completed`} isLoading={isRequirementsLoading} />
+        <SummaryCard icon="alert" status={pending > 0 ? "Open" : "Clear"} title="Pending Items" description={`${pending} record(s) need student or instructor action`} isLoading={isCasesLoading || isDutyLoading} />
       </section>
 
       <div className="grid min-w-0 grid-cols-1 min-[1400px]:grid-cols-2 gap-[18px] items-start">

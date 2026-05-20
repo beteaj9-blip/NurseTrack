@@ -467,7 +467,7 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
             <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">Manual Attendance Records</h2>
             <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.8rem] !font-extrabold">
-              {records.length} records
+              {records.length} record(s)
             </span>
           </div>
 

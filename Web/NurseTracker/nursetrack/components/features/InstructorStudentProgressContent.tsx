@@ -44,7 +44,7 @@ function standingFor(student: Omit<ProgressStudent, "standing">) {
 
 export function InstructorStudentProgressContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator";
+  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
   const isAllSection = isAdmin || isChair;
   const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
@@ -151,7 +151,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
             </Link>
           ))}
         </div>
-        {!isLoading && filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No assigned students match the selected filters.</div>}
+        {!isLoading && filtered.length === 0 && <div className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No assigned student(s) match the selected filters.</div>}
       </section>
     </main>
   );

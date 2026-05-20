@@ -46,6 +46,19 @@ function appendOption(options: { value: string; label: string }[], value?: strin
   return [...options, { value, label: label || value }];
 }
 
+const NOT_APPLICABLE_VALUE = "not-applicable";
+const NOT_APPLICABLE_LABEL = "Not Applicable";
+const notApplicableOption = { value: NOT_APPLICABLE_VALUE, label: NOT_APPLICABLE_LABEL };
+const notApplicableFieldOption = { value: NOT_APPLICABLE_LABEL, label: NOT_APPLICABLE_LABEL };
+
+function isNotApplicableAppeal(appeal: any) {
+  return !appeal?.relatedDutyDate && (appeal?.clinicalSite === NOT_APPLICABLE_LABEL || appeal?.dutyArea === NOT_APPLICABLE_LABEL || !appeal?.instructorId);
+}
+
+function displayRelatedDutyDate(date?: string) {
+  return date ? formatDate(date) : NOT_APPLICABLE_LABEL;
+}
+
 const emptyForm = {
   appealType: "",
   relatedDutyDate: "",
@@ -96,7 +109,7 @@ export function StudentAppealsContent() {
       evidenceNotes: editingAppeal.evidenceNotes ?? "",
       supportingFiles: editingAppeal.supportingFiles ?? "",
     });
-    setSelectedScheduleId(matchingSchedule ? String(matchingSchedule.id) : editingAppeal.relatedDutyDate ? `appeal-${editingAppeal.id}` : "");
+    setSelectedScheduleId(isNotApplicableAppeal(editingAppeal) ? NOT_APPLICABLE_VALUE : matchingSchedule ? String(matchingSchedule.id) : editingAppeal.relatedDutyDate ? `appeal-${editingAppeal.id}` : "");
     setMessage("Edit the appeal details and submit changes for CI recommendation.");
   }, [editingAppeal, schedules]);
 
@@ -114,11 +127,11 @@ export function StudentAppealsContent() {
   }, [schedules]);
   const scheduleOptions = useMemo(() => {
     const options = eligibleSchedules.map((schedule: any) => ({ value: String(schedule.id), label: `${formatDate(schedule.date)} - ${schedule.area || schedule.hospital}` }));
-    return appendOption(options, selectedScheduleId, form.relatedDutyDate ? `${formatDate(form.relatedDutyDate)} - ${form.dutyArea || form.clinicalSite}` : undefined);
+    return [notApplicableOption, ...appendOption(options, selectedScheduleId === NOT_APPLICABLE_VALUE ? undefined : selectedScheduleId, form.relatedDutyDate ? `${formatDate(form.relatedDutyDate)} - ${form.dutyArea || form.clinicalSite}` : undefined)];
   }, [eligibleSchedules, form.clinicalSite, form.dutyArea, form.relatedDutyDate, selectedScheduleId]);
-  const hospitalOptions = useMemo(() => appendOption((hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), form.clinicalSite), [hospitals, form.clinicalSite]);
-  const dutyAreaOptions = useMemo(() => appendOption(dutyAreas.map((area: string) => ({ value: area, label: area })), form.dutyArea), [dutyAreas, form.dutyArea]);
-  const instructorOptions = useMemo(() => appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), form.instructorId, selectedSchedule?.instructorName ?? editingAppeal?.instructorName), [instructors, form.instructorId, selectedSchedule?.instructorName, editingAppeal?.instructorName]);
+  const hospitalOptions = useMemo(() => [notApplicableFieldOption, ...appendOption((hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), form.clinicalSite === NOT_APPLICABLE_LABEL ? undefined : form.clinicalSite)], [hospitals, form.clinicalSite]);
+  const dutyAreaOptions = useMemo(() => [notApplicableFieldOption, ...appendOption(dutyAreas.map((area: string) => ({ value: area, label: area })), form.dutyArea === NOT_APPLICABLE_LABEL ? undefined : form.dutyArea)], [dutyAreas, form.dutyArea]);
+  const instructorOptions = useMemo(() => [notApplicableOption, ...appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), form.instructorId === NOT_APPLICABLE_VALUE ? undefined : form.instructorId, selectedSchedule?.instructorName ?? editingAppeal?.instructorName)], [instructors, form.instructorId, selectedSchedule?.instructorName, editingAppeal?.instructorName]);
 
   const groupedAppeals = useMemo(() => {
     return ["PENDING", "ACCEPTED", "RETURNED"]
@@ -140,6 +153,17 @@ export function StudentAppealsContent() {
   };
 
   const handleScheduleChange = (value: string) => {
+    if (value === NOT_APPLICABLE_VALUE) {
+      setSelectedScheduleId(value);
+      setForm((current) => ({
+        ...current,
+        relatedDutyDate: "",
+        clinicalSite: NOT_APPLICABLE_LABEL,
+        dutyArea: NOT_APPLICABLE_LABEL,
+        instructorId: NOT_APPLICABLE_VALUE,
+      }));
+      return;
+    }
     const schedule = (schedules as any[]).find((item: any) => String(item.id) === value);
     setSelectedScheduleId(value);
     if (!schedule) return;
@@ -183,7 +207,8 @@ export function StudentAppealsContent() {
 
   const submitAppeal = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!user || !form.appealType || !form.relatedDutyDate || !form.clinicalSite || !form.dutyArea || !form.instructorId || !form.title || !form.studentReason) {
+    const isNotApplicable = selectedScheduleId === NOT_APPLICABLE_VALUE;
+    if (!user || !form.appealType || (!isNotApplicable && !form.relatedDutyDate) || !form.clinicalSite || !form.dutyArea || (!isNotApplicable && !form.instructorId) || !form.title || !form.studentReason) {
       setMessage("Complete the appeal details to submit it for CI recommendation.");
       showToast({ variant: "error", title: "Missing appeal details", message: "Complete the appeal details before submitting." });
       return;
@@ -192,11 +217,11 @@ export function StudentAppealsContent() {
     try {
       const appealPayload = {
         student: { id: user.id },
-        instructor: { id: Number(form.instructorId) },
+        instructor: isNotApplicable ? null : { id: Number(form.instructorId) },
         appealType: form.appealType,
-        relatedDutyDate: form.relatedDutyDate,
-        clinicalSite: form.clinicalSite,
-        dutyArea: form.dutyArea,
+        relatedDutyDate: isNotApplicable ? null : form.relatedDutyDate,
+        clinicalSite: isNotApplicable ? NOT_APPLICABLE_LABEL : form.clinicalSite,
+        dutyArea: isNotApplicable ? NOT_APPLICABLE_LABEL : form.dutyArea,
         title: form.title,
         studentReason: form.studentReason,
         evidenceNotes: form.evidenceNotes,
@@ -343,7 +368,7 @@ export function StudentAppealsContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h2 className="text-[1.25rem] font-[800] text-[#111827] m-0">{user?.fullName ?? 'My'} Appeal History</h2>
           <span className="inline-flex items-center px-3 py-1 rounded-full bg-[#e9f8ef] text-[#03703c] text-[0.75rem] font-bold whitespace-nowrap">
-            {appeals.length} records
+            {appeals.length} record(s)
           </span>
         </div>
 
@@ -371,7 +396,7 @@ export function StudentAppealsContent() {
                             </span>
                           </div>
                           <p className="text-[#344054] text-[0.9rem] font-bold m-0 mb-1.5 truncate">
-                            {appeal.appealType} - {formatDate(appeal.relatedDutyDate)} - {appeal.clinicalSite}
+                            {appeal.appealType} - {displayRelatedDutyDate(appeal.relatedDutyDate)} - {appeal.clinicalSite || NOT_APPLICABLE_LABEL}
                           </p>
                           <p className="text-[#64748b] text-[0.85rem] font-semibold m-0 truncate">
                             {formatSubmitted(appeal.createdAt)} - {appeal.supportingFiles ? "Files attached" : "No files attached"}
