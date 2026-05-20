@@ -48,6 +48,22 @@ const hospitalPayload = (code: string, fullName: string, wards: string[] = [], a
   inactiveWards,
 });
 
+const normalizedName = (value?: string) => (value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+
+const hasHospitalDuplicate = (hospitals: Hospital[], code: string, fullName: string, ignoreId?: number) => {
+  const normalizedCode = normalizedName(code);
+  const normalizedFullName = normalizedName(fullName);
+  return hospitals.some(hospital => hospital.id !== ignoreId && ((normalizedCode && normalizedName(hospital.name) === normalizedCode) || (normalizedFullName && normalizedName(hospital.fullName) === normalizedFullName)));
+};
+
+const hasDutyAreaDuplicate = (hospital: Hospital, areaName: string, ignoreArea?: DutyArea | null) => {
+  const normalizedArea = normalizedName(areaName);
+  return [...(hospital.wards ?? []), ...(hospital.inactiveWards ?? [])].some(ward => {
+    const isCurrentArea = ignoreArea && hospital.id === ignoreArea.hospitalId && normalizedName(ward) === normalizedName(ignoreArea.name);
+    return !isCurrentArea && normalizedName(ward) === normalizedArea;
+  });
+};
+
 const errorMessage = (error: unknown, fallback: string) => {
   if (typeof error === "object" && error !== null && "response" in error) {
     const response = (error as { response?: { data?: { message?: string } } }).response;
@@ -132,13 +148,19 @@ export default function HospitalsDutyAreasPage() {
     event.preventDefault();
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
+    const hospitalName = String(form.get("hospitalName") ?? "");
+    const hospitalCode = String(form.get("hospitalCode") ?? "");
+    if (hasHospitalDuplicate(hospitals, hospitalCode, hospitalName)) {
+      showToast({ variant: "error", title: "Duplicate hospital", message: "A hospital with the same code or name already exists." });
+      return;
+    }
     try {
-      await createHospital.mutateAsync(hospitalPayload(String(form.get("hospitalCode") ?? ""), String(form.get("hospitalName") ?? ""), [], "", true));
+      await createHospital.mutateAsync(hospitalPayload(hospitalCode, hospitalName, [], "", true));
       formElement.reset();
       setMessage("Hospital saved.");
       showToast({ variant: "success", title: "Hospital added", message: "Hospital record was saved." });
-    } catch {
-      showToast({ variant: "error", title: "Save failed", message: "Hospital record could not be saved." });
+    } catch (error) {
+      showToast({ variant: "error", title: "Save failed", message: errorMessage(error, "Hospital record could not be saved.") });
     }
   };
 
@@ -149,6 +171,10 @@ export default function HospitalsDutyAreasPage() {
     const hospital = hospitals.find(item => item.id === Number(newDutyHospitalId));
     const areaName = String(form.get("dutyAreaName") ?? "").trim();
     if (!hospital || !areaName) return;
+    if (hasDutyAreaDuplicate(hospital, areaName)) {
+      showToast({ variant: "error", title: "Duplicate duty area", message: "This duty area already exists for the selected hospital." });
+      return;
+    }
     try {
       await addHospitalWard.mutateAsync({ hospitalId: hospital.id, name: areaName });
       formElement.reset();
@@ -166,6 +192,10 @@ export default function HospitalsDutyAreasPage() {
       if (editingHospital) {
         const fullName = String(form.get("name") ?? "");
         const code = String(form.get("code") ?? "");
+        if (hasHospitalDuplicate(hospitals, code, fullName, editingHospital.id)) {
+          showToast({ variant: "error", title: "Duplicate hospital", message: "A hospital with the same code or name already exists." });
+          return;
+        }
         await updateHospital.mutateAsync({ id: editingHospital.id, updates: hospitalPayload(code, fullName, editingHospital.wards ?? [], editingHospital.address ?? "", isActive(editingHospital.active), editingHospital.inactiveWards ?? []) });
         setMessage("Hospital updated.");
         showToast({ variant: "success", title: "Hospital updated", message: "Hospital changes were saved." });
@@ -175,6 +205,10 @@ export default function HospitalsDutyAreasPage() {
         const target = hospitals.find(hospital => hospital.id === Number(editDutyHospitalId));
         const newName = String(form.get("name") ?? "").trim();
         if (source && target && newName) {
+          if (hasDutyAreaDuplicate(target, newName, editingDutyArea)) {
+            showToast({ variant: "error", title: "Duplicate duty area", message: "This duty area already exists for the selected hospital." });
+            return;
+          }
           const sourceActive = editingDutyArea.active;
           const sourceWards = (source.wards ?? []).filter(ward => ward !== editingDutyArea.name);
           const sourceInactiveWards = (source.inactiveWards ?? []).filter(ward => ward !== editingDutyArea.name);

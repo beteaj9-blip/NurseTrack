@@ -21,13 +21,21 @@ public class HospitalController {
     }
 
     @PostMapping
-    public ResponseEntity<Hospital> createHospital(@RequestBody Hospital hospital) {
-        return ResponseEntity.ok(hospitalService.createHospital(hospital));
+    public ResponseEntity<?> createHospital(@RequestBody Hospital hospital) {
+        try {
+            return ResponseEntity.ok(hospitalService.createHospital(hospital));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(409).body(Map.of("message", exception.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Hospital> updateHospital(@PathVariable Long id, @RequestBody Hospital hospital) {
-        return ResponseEntity.ok(hospitalService.updateHospital(id, hospital));
+    public ResponseEntity<?> updateHospital(@PathVariable Long id, @RequestBody Hospital hospital) {
+        try {
+            return ResponseEntity.ok(hospitalService.updateHospital(id, hospital));
+        } catch (IllegalStateException exception) {
+            return ResponseEntity.status(409).body(Map.of("message", exception.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")

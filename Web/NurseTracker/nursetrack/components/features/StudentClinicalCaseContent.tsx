@@ -212,9 +212,6 @@ export default function StudentClinicalCaseContent() {
               <p className="text-[#64748b] text-[0.9rem] font-semibold m-0">{user?.sectionInfo ?? ''} — Student ID {user?.schoolId ?? ''}</p>
             </div>
           </div>
-          <span className="inline-flex items-center h-[30px] px-4 rounded-full bg-[#fff4c2] !text-[#7a4f00] !text-[0.78rem] !font-[900] whitespace-nowrap">
-            {clearanceLabel}
-          </span>
         </div>
 
         <div className="grid grid-cols-[minmax(180px,1fr)_minmax(180px,1fr)_auto_auto] gap-4 items-end p-4 mb-6 rounded-lg border border-[#e2e8f0] bg-[linear-gradient(135deg,#fff9db,#ffffff_56%)] max-[980px]:grid-cols-1">
@@ -228,7 +225,7 @@ export default function StudentClinicalCaseContent() {
           </label>
           <div className="relative group">
             <button className="relative h-[50px] px-5 pr-10 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
-            {!canSubmitClearance && <span className="absolute right-3 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full bg-[#fff7d6] !text-[#92400e] pointer-events-none"><svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-[2.4]" aria-hidden="true"><path d="M12 3 2.5 20.5h19L12 3Z" /><path d="M12 9v5" strokeLinecap="round" /><path d="M12 17.5h.01" strokeLinecap="round" /></svg></span>}
+            {!canSubmitClearance && <span className="absolute right-2.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full bg-[#fff7d6] !text-[#92400e] pointer-events-none"><svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-none stroke-current stroke-[2.4]" aria-hidden="true"><path d="M12 3 2.5 20.5h19L12 3Z" /><path d="M12 9v5" strokeLinecap="round" /><path d="M12 17.5h.01" strokeLinecap="round" /></svg></span>}
             {!canSubmitClearance && <span className="pointer-events-none absolute left-1/2 top-[58px] z-30 hidden w-[280px] -translate-x-1/2 rounded-lg border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-center !text-[0.76rem] !font-[850] leading-[1.35] !text-[#92400e] shadow-[0_14px_28px_rgba(15,23,42,0.14)] group-hover:block">{clearanceBlockReason}</span>}
           </div>
           <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer" type="button" onClick={() => window.print()}>Print Clearance</button>

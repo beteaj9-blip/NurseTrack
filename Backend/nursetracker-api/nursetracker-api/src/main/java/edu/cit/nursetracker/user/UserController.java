@@ -184,7 +184,7 @@ public class UserController {
     }
 
     private Set<Integer> firstAssignedLevel(Set<Integer> levels) {
-        return levels.stream().sorted().findFirst().map(Set::of).orElseGet(HashSet::new);
+        return levels.stream().sorted().findFirst().map(level -> new HashSet<>(Set.of(level))).orElseGet(HashSet::new);
     }
 
     private String clean(String value) {

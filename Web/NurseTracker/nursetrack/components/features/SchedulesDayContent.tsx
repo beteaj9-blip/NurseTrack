@@ -102,7 +102,7 @@ function toTimeInput(time?: string) {
 
 function schedulePayload(schedule: any, overrides: any = {}) {
   const next = { ...schedule, ...overrides };
-  return {
+  const payload: any = {
     student: { id: next.studentId },
     instructor: { id: next.instructorId },
     hospital: next.hospital,
@@ -111,6 +111,8 @@ function schedulePayload(schedule: any, overrides: any = {}) {
     startTime: `${toTimeInput(next.rawStartTime ?? next.startTime)}:00`,
     endTime: `${toTimeInput(next.rawEndTime ?? next.endTime)}:00`,
   };
+  if (next.canceled !== undefined) payload.canceled = next.canceled;
+  return payload;
 }
 
 export function SchedulesDayContent({ basePath }: { basePath: string }) {
@@ -233,8 +235,9 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
           rawStartTime: draftSchedule.shiftStart,
           rawEndTime: draftSchedule.shiftEnd,
         }),
-      })));
+      }))); 
       showToast({ variant: "success", title: "Schedule saved", message: "The selected duty schedule was updated." });
+      setIsEditingChairSchedule(false);
     } catch {
       showToast({ variant: "error", title: "Save failed", message: "Selected schedule could not be saved." });
     }
@@ -274,8 +277,22 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
     try {
       await Promise.all(activeAssignedStudents.map((schedule: any) => deleteSchedule.mutateAsync(String(schedule.id))));
       showToast({ variant: "success", title: "Schedule canceled", message: "The selected schedule was canceled." });
+      setIsEditingChairSchedule(false);
     } catch {
       showToast({ variant: "error", title: "Cancel failed", message: "Selected schedule could not be canceled." });
+    }
+  }
+
+  async function restoreSelectedSchedule() {
+    try {
+      await Promise.all(assignedStudents.map((schedule: any) => updateSchedule.mutateAsync({
+        scheduleId: String(schedule.id),
+        schedule: schedulePayload(schedule, { canceled: false }),
+      })));
+      showToast({ variant: "success", title: "Schedule restored", message: "The selected schedule is active again." });
+      setIsEditingChairSchedule(false);
+    } catch {
+      showToast({ variant: "error", title: "Restore failed", message: "Selected schedule could not be restored." });
     }
   }
 
@@ -306,7 +323,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
             <div className="relative z-10 min-w-0 max-w-full">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 mb-5 max-[760px]:grid-cols-1">
                 <h2 className="m-0 min-w-0 !text-[#202124] !text-[1.25rem] !font-[900] tracking-[-0.03em] break-words max-[760px]:!text-[1.15rem]">{draftSchedule.title}</h2>
-                <div className="flex items-center justify-end gap-3 flex-wrap max-[760px]:w-full max-[760px]:justify-start"><span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] ${chairScheduleBadgeClass(activeAssignedStudents.length === 0 ? "Canceled" : "Published")}`}>{activeAssignedStudents.length === 0 ? "Canceled" : "Published"}</span><button type="button" onClick={() => setIsEditingChairSchedule(true)} disabled={!canEditChairSchedule || isEditingChairSchedule || activeAssignedStudents.length === 0} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.86rem] !font-[900] cursor-pointer hover:border-[#cbd5e1] transition-colors disabled:opacity-60 disabled:cursor-default max-[760px]:flex-1 max-[760px]:min-w-[150px]">Edit Schedule</button></div>
+                <div className="flex items-center justify-end gap-3 flex-wrap max-[760px]:w-full max-[760px]:justify-start"><span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] ${chairScheduleBadgeClass(activeAssignedStudents.length === 0 ? "Canceled" : "Published")}`}>{activeAssignedStudents.length === 0 ? "Canceled" : "Published"}</span>{activeAssignedStudents.length === 0 ? <button type="button" onClick={restoreSelectedSchedule} disabled={!canEditChairSchedule || isSaving} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#86efac] !text-[#15803d] !text-[0.86rem] !font-[900] cursor-pointer hover:bg-[#ecfdf3] transition-colors disabled:opacity-60 disabled:cursor-not-allowed max-[760px]:flex-1 max-[760px]:min-w-[150px]">Restore Schedule</button> : <button type="button" onClick={() => setIsEditingChairSchedule(true)} disabled={!canEditChairSchedule || isEditingChairSchedule} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.86rem] !font-[900] cursor-pointer hover:border-[#cbd5e1] transition-colors disabled:opacity-60 disabled:cursor-default max-[760px]:flex-1 max-[760px]:min-w-[150px]">Edit Schedule</button>}</div>
               </div>
 
               <div className="grid min-w-0 grid-cols-1 gap-[16px] min-[1500px]:grid-cols-4">
@@ -341,7 +358,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
               </div>
 
               <label className="flex flex-col gap-2 mt-4 !text-[#4b5565] !text-[0.86rem] !font-[900]">Review Notes<textarea disabled={editorDisabled} className="w-full min-h-[104px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 py-3 !text-[#111827] !font-[800] resize-y disabled:!text-[#94a3b8]" placeholder="Add correction notes before republishing" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} /></label>
-              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60 max-[560px]:w-full">Cancel Schedule</button><button type="button" disabled={isSaving} onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60 max-[560px]:w-full">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 max-[560px]:w-full">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
+              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving || activeAssignedStudents.length === 0} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">Cancel Schedule</button><button type="button" disabled={isSaving} onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60 max-[560px]:w-full">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 max-[560px]:w-full">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
             </div>
           </article>
 

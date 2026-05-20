@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FormEvent, useState } from "react";
+import React, { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthInfoPanel } from "@/components/ui/AuthInfoPanel";
@@ -28,7 +28,7 @@ function normalizeLoginResponse(raw: unknown): LoginResponse | null {
   return value.user && token ? { user: value.user, token } : null;
 }
 
-export default function Login() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
@@ -170,4 +170,8 @@ export default function Login() {
       </section>
     </main>
   );
+}
+
+export default function Login() {
+  return <Suspense fallback={null}><LoginContent /></Suspense>;
 }

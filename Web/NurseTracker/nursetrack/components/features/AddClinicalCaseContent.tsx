@@ -31,6 +31,11 @@ function getCaseType(category: string, dutyArea: string) {
   return "WARD";
 }
 
+function appendOption(options: { value: string; label: string }[], value?: string, label?: string) {
+  if (!value || options.some((option) => option.value === value)) return options;
+  return [...options, { value, label: label || value }];
+}
+
 export default function AddClinicalCaseContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -88,10 +93,10 @@ export default function AddClinicalCaseContent() {
     if (selectedHospital?.wards?.length) return selectedHospital.wards;
     return allDutyAreas;
   }, [selectedHospital, allDutyAreas]);
-  const hospitalOptions = useMemo(() => (hospitals as any[]).map((item: any) => ({ value: item.name, label: `${item.name}${item.fullName ? ` - ${item.fullName}` : ""}` })), [hospitals]);
-  const wardOptions = useMemo(() => wards.map((ward: string) => ({ value: ward, label: ward })), [wards]);
+  const hospitalOptions = useMemo(() => appendOption((hospitals as any[]).map((item: any) => ({ value: item.name, label: `${item.name}${item.fullName ? ` - ${item.fullName}` : ""}` })), hospital), [hospitals, hospital]);
+  const wardOptions = useMemo(() => appendOption(wards.map((ward: string) => ({ value: ward, label: ward })), dutyArea), [wards, dutyArea]);
   const categoryOptions = useMemo(() => categories.map((item) => ({ value: item.value, label: item.label })), [categories]);
-  const instructorOptions = useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), [instructors]);
+  const instructorOptions = useMemo(() => appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), instructorId, selectedSchedule?.instructorName ?? editCase?.instructorName), [instructors, instructorId, selectedSchedule?.instructorName, editCase?.instructorName]);
   const eligibleSchedules = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -103,12 +108,15 @@ export default function AddClinicalCaseContent() {
   }, [schedules]);
   const scheduleOptions = useMemo(() => eligibleSchedules.map((schedule: any) => ({ value: String(schedule.id), label: `${formatScheduleDate(schedule.date)} - ${schedule.area}` })), [eligibleSchedules]);
 
+  React.useEffect(() => {
+    if (!selectedSchedule || isEditMode) return;
+    setHospital(selectedSchedule.hospital ?? "");
+    setDutyArea(selectedSchedule.area ?? "");
+    setInstructorId(selectedSchedule.instructorId != null ? String(selectedSchedule.instructorId) : "");
+  }, [isEditMode, selectedSchedule?.id, selectedSchedule?.hospital, selectedSchedule?.area, selectedSchedule?.instructorId]);
+
   const handleScheduleChange = (value: string) => {
-    const schedule = schedules.find((item: any) => String(item.id) === value);
     setSelectedScheduleId(value);
-    setHospital(schedule?.hospital ?? "");
-    setDutyArea(schedule?.area ?? "");
-    setInstructorId(schedule?.instructorId != null ? String(schedule.instructorId) : "");
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -207,17 +215,17 @@ export default function AddClinicalCaseContent() {
 
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Name of Hospital</label>
-              <InlineSelect value={hospital} options={hospitalOptions} placeholder="Select hospital" onChange={(value) => { setHospital(value); setDutyArea(""); }} />
+              <InlineSelect value={hospital} options={hospitalOptions} placeholder="Select a case date first" onChange={() => undefined} disabled />
             </div>
 
             <div className="flex flex-col">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Supervising Clinical Instructor</label>
-              <InlineSelect value={instructorId} options={instructorOptions} placeholder="Select supervising CI" onChange={setInstructorId} />
+              <InlineSelect value={instructorId} options={instructorOptions} placeholder="Select a case date first" onChange={() => undefined} disabled />
             </div>
 
             <div className="flex flex-col md:col-span-2">
               <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Duty Area</label>
-              <InlineSelect value={dutyArea} options={wardOptions} placeholder="Select duty area" onChange={setDutyArea} />
+              <InlineSelect value={dutyArea} options={wardOptions} placeholder="Select a case date first" onChange={() => undefined} disabled />
             </div>
 
             <div className="flex flex-col md:col-span-2">

@@ -11,6 +11,8 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
   const [open, setOpen] = React.useState(false);
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const selected = options.find((option) => option.value === value);
+  const displayTextClass = disabled ? "min-w-0 truncate text-[#64748b]" : selected ? "min-w-0 truncate" : "min-w-0 truncate text-[#64748b]";
+  const arrowTextClass = disabled ? "text-[#64748b]" : "text-[#344054]";
 
   React.useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -26,12 +28,12 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
         type="button"
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
-        className="flex min-h-[42px] w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-[#dbe3ee] bg-white px-3 py-2 text-left !text-[#111827] text-[0.9rem] font-medium shadow-sm transition-all cursor-pointer focus:border-[#FFCF01] focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#64748b]"
+        className={`flex min-h-[42px] w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-[#dbe3ee] px-3 py-2 text-left text-[0.9rem] font-medium shadow-sm transition-all focus:border-[#FFCF01] focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 ${disabled ? "cursor-not-allowed bg-[#f8fafc] !text-[#64748b]" : "cursor-pointer bg-white !text-[#111827]"}`}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={selected ? "min-w-0 truncate" : "min-w-0 truncate text-[#64748b]"}>{selected?.label ?? placeholder}</span>
-        <svg className="h-4 w-4 shrink-0 text-[#64748b]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" /></svg>
+        <span className={displayTextClass}>{selected?.label ?? placeholder}</span>
+        <svg className={`h-4 w-4 shrink-0 ${arrowTextClass}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" /></svg>
       </button>
 
       {open && !disabled && (

@@ -44,6 +44,15 @@ type DraftGroup = {
   locationMatched?: boolean;
 };
 
+type ScheduleImportPreview = {
+  fileName: string;
+  level: number;
+  groups: DraftGroup[];
+  totalStudents: number;
+  matchedStudents: number;
+  skippedStudents: number;
+};
+
 const dutyTypeOptions = [
   { value: "Regular", label: "Regular" },
   { value: "Completion", label: "Completion" },
@@ -101,7 +110,7 @@ function ScheduleTimePicker({ label, value, onChange, disabled }: { label: strin
   );
 }
 
-function getStudentRecords(group: DraftGroup) {
+function getStudentRecords(group: DraftGroup): StudentRecord[] {
   return group.studentRecords?.length ? group.studentRecords : group.students.map((name) => ({ name, matched: true }));
 }
 
@@ -122,6 +131,60 @@ function normalizeSection(value?: string) {
 
 function hasSectionMismatch(student: StudentRecord, group?: DraftGroup) {
   return Boolean(student.section && group?.section && normalizeSection(student.section) !== normalizeSection(group.section));
+}
+
+function levelFromSection(value?: string) {
+  const match = value?.match(/BSN\s*(\d)|N\s*(\d)|Level\s*(\d)/i);
+  return match ? Number(match[1] ?? match[2] ?? match[3]) : undefined;
+}
+
+function inferDraftLevel(groups: DraftGroup[]) {
+  const levels = new Set<number>();
+  groups.forEach((group) => {
+    const groupLevel = levelFromSection(group.section);
+    if (groupLevel) levels.add(groupLevel);
+    getStudentRecords(group).forEach((student) => student.levels?.forEach((level) => Number.isFinite(level) && levels.add(level)));
+  });
+  return levels.size === 1 ? Array.from(levels)[0] : undefined;
+}
+
+function publishDisabledReason(groups: DraftGroup[], preview: ScheduleImportPreview | null, isPublishing: boolean) {
+  if (isPublishing) return "Schedule is currently being published.";
+  if (groups.length === 0) return "Create a manual schedule or upload a schedule file first.";
+  const incompleteGroup = groups.find((group) => !group.startDate || !group.endDate || !group.shiftStart || !group.shiftEnd || !group.hospitalArea || !group.instructor);
+  if (incompleteGroup) return "Complete date range, shift time, hospital/area, and supervising CI before publishing.";
+  if (groups.some((group) => getStudentRecords(group).filter((student) => student.matched).length === 0)) return "Add at least one matched database student to every schedule group.";
+  if (!preview && !inferDraftLevel(groups)) return "Manual schedules need one clear level. Add students from one level or include the level in the section name.";
+  if (preview && !preview.level) return "The uploaded file did not detect a valid level.";
+  return "";
+}
+
+function buildPublishPayload(groups: DraftGroup[], preview: ScheduleImportPreview | null, fileName: string): ScheduleImportPreview {
+  const normalizedGroups = groups.map((group) => {
+    const records = getStudentRecords(group);
+    const matchedRecords = records.filter((student) => student.matched);
+    return {
+      ...group,
+      breakDates: group.breakDates ?? [],
+      dutyType: group.dutyType || "Regular",
+      students: matchedRecords.map((student) => student.name),
+      studentRecords: records,
+      matchedStudents: matchedRecords.length,
+      skippedStudents: records.length - matchedRecords.length,
+      instructorMatched: group.instructorMatched ?? true,
+      locationMatched: group.locationMatched ?? true,
+    };
+  });
+  const totalStudents = normalizedGroups.reduce((sum, group) => sum + getStudentRecords(group).length, 0);
+  const matchedStudents = normalizedGroups.reduce((sum, group) => sum + (group.matchedStudents ?? 0), 0);
+  return {
+    fileName: preview?.fileName || (fileName !== "No file selected" ? fileName : "Manual schedule"),
+    level: preview?.level || inferDraftLevel(groups) || 0,
+    groups: normalizedGroups,
+    totalStudents,
+    matchedStudents,
+    skippedStudents: totalStudents - matchedStudents,
+  };
 }
 
 function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSection?: string; uploadedSection?: string }) {
@@ -146,7 +209,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const [fileName, setFileName] = useState("No file selected");
   const [message, setMessage] = useState("Upload an imported file or create a schedule manually before publishing.");
   const [groups, setGroups] = useState<DraftGroup[]>([]);
-  const [preview, setPreview] = useState<any>(null);
+  const [preview, setPreview] = useState<ScheduleImportPreview | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [breakDrafts, setBreakDrafts] = useState<Record<string, string>>({});
   const [studentSearch, setStudentSearch] = useState("");
@@ -169,6 +232,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   })), [hospitals]);
   const instructorOptions = useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: instructor.fullName, label: instructor.fullName })), [instructors]);
   const totalStudents = groups.reduce((sum, group) => sum + getStudentRecords(group).length, 0);
+  const publishBlockMessage = publishDisabledReason(groups, preview, publishImport.isPending);
   const studentSearchResults = useMemo(() => {
     const query = studentSearch.trim().toLowerCase();
     if (!query) return [];
@@ -198,9 +262,9 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   }
 
   async function publishSchedule() {
-    if (!preview || groups.length === 0) return;
+    if (publishBlockMessage) return;
     try {
-      const result = await publishImport.mutateAsync({ ...preview, groups });
+      const result = await publishImport.mutateAsync(buildPublishPayload(groups, preview, fileName));
       setMessage(`${result.schedulesCreated} schedules published for level ${result.level}. ${result.studentsMatched} students matched, ${result.studentsSkipped} skipped, ${result.duplicateSchedules} duplicates ignored.`);
       setPreview(null);
       setGroups([]);
@@ -217,7 +281,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   function addManualGroup() {
     setGroups((current) => [{
       id: `${Date.now()}`,
-      section: "New Group",
+      section: "",
       group: "",
       startDate: "",
       endDate: "",
@@ -367,7 +431,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
             </div>
           </article>)}
         </div>
-        <div className="mt-6 flex justify-end"><button className="inline-flex min-h-[52px] items-center justify-center rounded-lg bg-[#8A252C] px-8 !font-[900] !text-white cursor-pointer disabled:opacity-60" type="button" disabled={!preview || publishImport.isPending} onClick={publishSchedule}>{publishImport.isPending ? "Publishing..." : "Publish Schedule"}</button></div>
+        <div className="mt-6 flex justify-end"><span title={publishBlockMessage || "Publish reviewed schedule"}><button className="inline-flex min-h-[52px] items-center justify-center rounded-lg bg-[#8A252C] px-8 !font-[900] !text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60" type="button" disabled={Boolean(publishBlockMessage)} onClick={publishSchedule}>{publishImport.isPending ? "Publishing..." : "Publish Schedule"}</button></span></div>
       </section>}
 
       {selectedGroup && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f172a]/45 p-5">
@@ -403,7 +467,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
                   <colgroup><col className="w-[76px]" /><col /><col className="w-[180px]" /><col className="w-[120px]" /><col className="w-[150px]" /><col className="w-[150px]" /></colgroup>
                   <thead className="bg-[#f8fafc]"><tr><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">No.</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Student</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Section</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Group</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Level</th><th className="px-4 py-4 text-right !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Action</th></tr></thead>
                   <tbody>
-                    {matchedModalRecords.length > 0 ? matchedModalRecords.map((student, index) => <tr key={`matched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={40} /><div><span className="block !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</span>{student.schoolId && <span className="block !text-[0.78rem] !font-[850] !text-[#64748b]">{student.schoolId}</span>}</div></div></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]"><span className="inline-flex items-center gap-2">{selectedGroup.section || "No section"}{hasSectionMismatch(student, selectedGroup) && <SectionMismatchIcon studentSection={student.section} uploadedSection={selectedGroup.section} />}</span></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{selectedGroup.group || student.group || "No group"}</td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{formatLevels(student.levels)}</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>) : <tr><td colSpan={6} className="px-4 py-8 text-center !font-[800] !text-[#64748b]">No matched students added.</td></tr>}
+                    {matchedModalRecords.length > 0 ? matchedModalRecords.map((student, index) => <tr key={`matched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={40} /><div><span className="block !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</span>{student.schoolId && <span className="block !text-[0.78rem] !font-[850] !text-[#64748b]">{student.schoolId}</span>}</div></div></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]"><span className="inline-flex items-center gap-2">{selectedGroup.section}{hasSectionMismatch(student, selectedGroup) && <SectionMismatchIcon studentSection={student.section} uploadedSection={selectedGroup.section} />}</span></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{selectedGroup.group || student.group || ""}</td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{formatLevels(student.levels)}</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>) : <tr><td colSpan={6} className="px-4 py-8 text-center !font-[800] !text-[#64748b]">No matched students added.</td></tr>}
                   </tbody>
                 </table>
               </div>

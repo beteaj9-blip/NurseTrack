@@ -22,17 +22,10 @@ public class HospitalService {
 
     public Hospital createHospital(Hospital hospital) {
         Hospital incoming = normalize(hospital);
-        return hospitalRepository.findByNameIgnoreCase(incoming.getName())
-                .map(existing -> {
-                    existing.setFullName(incoming.getFullName());
-                    existing.setLabel(incoming.getLabel());
-                    existing.setAddress(incoming.getAddress());
-                    existing.setActive(true);
-                    existing.setWards(merge(existing.getWards(), incoming.getWards()));
-                    existing.setInactiveWards(removeAll(existing.getInactiveWards(), existing.getWards()));
-                    return hospitalRepository.save(normalize(existing));
-                })
-                .orElseGet(() -> hospitalRepository.save(incoming));
+        if (hasHospitalDuplicate(incoming.getName(), incoming.getFullName(), null)) {
+            throw new IllegalStateException("A hospital with the same code or name already exists.");
+        }
+        return hospitalRepository.save(incoming);
     }
 
     public Hospital updateHospital(Long id, Hospital updates) {
@@ -40,6 +33,9 @@ public class HospitalService {
                 .orElseThrow(() -> new RuntimeException("Hospital not found with id: " + id));
         Boolean requestedActive = updates.getActive();
         Hospital normalizedUpdates = normalize(updates);
+        if (hasHospitalDuplicate(normalizedUpdates.getName(), normalizedUpdates.getFullName(), id)) {
+            throw new IllegalStateException("A hospital with the same code or name already exists.");
+        }
         hospital.setName(normalizedUpdates.getName());
         hospital.setFullName(normalizedUpdates.getFullName());
         hospital.setLabel(normalizedUpdates.getLabel());
@@ -102,10 +98,14 @@ public class HospitalService {
 
     private List<String> cleanList(List<String> values) {
         if (values == null) return new ArrayList<>();
-        return values.stream()
-                .filter(value -> value != null && !value.isBlank())
-                .map(String::trim)
-                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toCollection(LinkedHashSet::new), ArrayList::new));
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        List<String> cleaned = new ArrayList<>();
+        for (String value : values) {
+            if (value == null || value.isBlank()) continue;
+            String trimmed = value.trim();
+            if (normalized.add(normalizeName(trimmed))) cleaned.add(trimmed);
+        }
+        return cleaned;
     }
 
     private List<String> merge(List<String> first, List<String> second) {
@@ -123,5 +123,18 @@ public class HospitalService {
 
     private boolean containsIgnoreCase(List<String> values, String target) {
         return cleanList(values).stream().anyMatch(value -> value.equalsIgnoreCase(target));
+    }
+
+    private boolean hasHospitalDuplicate(String code, String fullName, Long ignoreId) {
+        String normalizedCode = normalizeName(code);
+        String normalizedFullName = normalizeName(fullName);
+        return hospitalRepository.findAll().stream().anyMatch(hospital ->
+                (ignoreId == null || !hospital.getId().equals(ignoreId)) &&
+                        ((!normalizedCode.isBlank() && normalizeName(hospital.getName()).equals(normalizedCode)) || (!normalizedFullName.isBlank() && normalizeName(hospital.getFullName()).equals(normalizedFullName)))
+        );
+    }
+
+    private String normalizeName(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", " ").toLowerCase();
     }
 }

@@ -214,6 +214,7 @@ export default function SectionImportPage() {
       </section>
 
       {preview && <section className="grid gap-4">
+        <div className="rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-4 py-3 !text-[0.86rem] !font-[800] !text-[#744b00]">Double-check every matched student before importing. Unmatched rows are not database users yet, so they will not be updated unless you add the exact existing student from search.</div>
         <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-4">
           <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
             <div><h3 className="m-0 !text-[#111827] !text-[1rem] !font-[900]">Add Existing Student</h3><p className="m-[0.35rem_0_0] !text-[#64748b] !text-[0.84rem] !font-[700]">Search students and add them to the matched import list before publishing.</p></div>
@@ -261,7 +262,7 @@ function StudentTable({ title, tone, students, section, empty, onRemove }: { tit
         <tbody>
           {students.length === 0 ? <tr><td className="p-5 !text-[#64748b] !font-[800]" colSpan={6}>{empty}</td></tr> : pageStudents.map((student) => <tr key={studentKey(student)} className="border-b border-[#e2e8f0] last:border-0">
             <td className="p-4 !font-[900] !text-[#111827]">{student.studentNo || "-"}</td>
-            <td className="p-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.databaseName || student.name || "Student"} imageUrl={student.profileImageUrl} size={38} /><strong className="block !text-[#111827] !font-[900]">{student.databaseName || student.name || "Unnamed student"}</strong></div></td>
+            <td className="p-4"><div className="flex items-center gap-3">{student.matched && <ProfileAvatar name={student.databaseName || student.name || "Student"} imageUrl={student.profileImageUrl} size={38} />}<strong className="block !text-[#111827] !font-[900]">{student.databaseName || student.name || "Unnamed student"}</strong></div></td>
             <td className="p-4 !text-[#334155] !font-[800]">{student.schoolId || "-"}</td>
             <td className="p-4 !text-[#334155] !font-[800]">{student.level ? `Level ${student.level}` : student.courseYear || "-"}</td>
             <td className="p-4 !text-[#334155] !font-[800]">{section || "-"}</td>
