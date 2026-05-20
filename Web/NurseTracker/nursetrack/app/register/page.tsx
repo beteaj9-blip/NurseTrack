@@ -59,7 +59,7 @@ export default function Register() {
       });
 
       setIsSuccess(true);
-      setFormMessage("Account created! Your account is pending approval. Redirecting to login...");
+      setFormMessage("Account created! Redirecting to login...");
       setTimeout(() => router.push("/"), 2000);
     } catch (error: any) {
       setIsError(true);
