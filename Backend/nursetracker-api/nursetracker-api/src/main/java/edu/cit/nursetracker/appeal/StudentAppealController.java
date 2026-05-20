@@ -14,13 +14,7 @@ import java.util.List;
 public class StudentAppealController {
 
     private final StudentAppealService appealService;
-    private final AppealTypeOptionRepository appealTypeOptionRepository;
     private final JwtService jwtService;
-
-    @GetMapping("/types")
-    public ResponseEntity<List<AppealTypeOption>> getAppealTypes() {
-        return ResponseEntity.ok(appealTypeOptionRepository.findAllByOrderByIdAsc());
-    }
 
     @PostMapping
     public ResponseEntity<StudentAppeal> createAppeal(@RequestBody StudentAppeal appeal) {

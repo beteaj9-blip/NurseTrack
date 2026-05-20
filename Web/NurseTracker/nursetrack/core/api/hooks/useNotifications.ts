@@ -9,6 +9,10 @@ export const useNotifications = (userId?: string, enabled = true) => {
       return data;
     },
     enabled,
+    refetchInterval: enabled ? 5000 : false,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 
@@ -20,7 +24,7 @@ export const useMarkNotificationRead = (userId?: string) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 };
@@ -33,7 +37,7 @@ export const useMarkNotificationUnread = (userId?: string) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 };
@@ -45,7 +49,7 @@ export const useMarkAllNotificationsRead = (userId?: string) => {
       await apiClient.put('/notifications/me/read-all');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 };

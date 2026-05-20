@@ -155,19 +155,9 @@ UPDATE academic_terms
 SET active = CASE WHEN school_year = '2025 - 2026' AND semester = '2nd Semester' THEN TRUE ELSE FALSE END,
     updated_at = NOW();
 
-INSERT INTO appeal_types (value, label)
-SELECT 'Attendance', 'Attendance'
-WHERE NOT EXISTS (SELECT 1 FROM appeal_types WHERE value = 'Attendance');
-
-INSERT INTO appeal_types (value, label)
-SELECT 'Schedule', 'Schedule'
-WHERE NOT EXISTS (SELECT 1 FROM appeal_types WHERE value = 'Schedule');
-
-INSERT INTO appeal_types (value, label)
-SELECT 'Clinical Case', 'Clinical Case'
-WHERE NOT EXISTS (SELECT 1 FROM appeal_types WHERE value = 'Clinical Case');
-
-DELETE FROM appeal_types WHERE value IN ('Grade', 'Other');
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS appeal_types;
+SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO clinical_case_categories (value, label)
 SELECT 'Major Cases - Assist', 'Major Case - Assist'

@@ -58,16 +58,6 @@ export const useStudentAppeal = (appealId?: string) => {
   });
 };
 
-export const useAppealTypes = () => {
-  return useQuery({
-    queryKey: ['appeal-types'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/appeals/types');
-      return data;
-    },
-  });
-};
-
 export const useCreateStudentAppeal = (studentId?: string) => {
   const queryClient = useQueryClient();
   return useMutation({

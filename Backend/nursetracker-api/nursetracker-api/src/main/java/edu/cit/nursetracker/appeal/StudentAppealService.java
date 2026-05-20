@@ -19,6 +19,7 @@ public class StudentAppealService {
     private final UserRepository userRepository;
 
     public StudentAppeal createAppeal(StudentAppeal appeal) {
+        appeal.setAppealType(clean(appeal.getAppealType()));
         appeal.setStatus(AppealStatus.PENDING);
         return appealRepository.save(appeal);
     }
@@ -51,7 +52,7 @@ public class StudentAppealService {
     public StudentAppeal updateAppeal(Long id, StudentAppeal updatedAppeal) {
         StudentAppeal appeal = getAppeal(id);
         appeal.setInstructor(updatedAppeal.getInstructor());
-        appeal.setAppealType(updatedAppeal.getAppealType());
+        appeal.setAppealType(clean(updatedAppeal.getAppealType()));
         appeal.setRelatedDutyDate(updatedAppeal.getRelatedDutyDate());
         appeal.setClinicalSite(updatedAppeal.getClinicalSite());
         appeal.setDutyArea(updatedAppeal.getDutyArea());
@@ -78,5 +79,9 @@ public class StudentAppealService {
                 .actionUrl("/nursing-student/appeals")
                 .build());
         return saved;
+    }
+
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
     }
 }

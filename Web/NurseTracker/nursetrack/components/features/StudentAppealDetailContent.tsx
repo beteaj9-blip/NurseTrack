@@ -3,8 +3,9 @@
 import React from "react";
 import { useSearchParams } from "next/navigation";
 import { useHospitals } from "@/core/api/hooks/useHospitals";
+import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useInstructors } from "@/core/api/hooks/useUsers";
-import { useAppealTypes, useStudentAppeal, useUpdateStudentAppeal, useUploadAppealFile } from "@/core/api/hooks/useStudentAppeals";
+import { useStudentAppeal, useUpdateStudentAppeal, useUploadAppealFile } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -39,6 +40,11 @@ function statusClass(status?: string) {
   return "bg-[#fff8e1] text-[#6c4c00]";
 }
 
+function appendOption(options: { value: string; label: string }[], value?: string, label?: string) {
+  if (!value || options.some((option) => option.value === value)) return options;
+  return [...options, { value, label: label || value }];
+}
+
 const emptyForm = {
   appealType: "",
   relatedDutyDate: "",
@@ -58,14 +64,15 @@ export function StudentAppealDetailContent() {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id != null ? String(user.id) : undefined;
   const { data: appeal } = useStudentAppeal(appealId);
-  const { data: appealTypes = [] } = useAppealTypes();
   const { data: hospitals = [] } = useHospitals();
   const { data: instructors = [] } = useInstructors(userId);
+  const { data: schedules = [] } = useSchedules(undefined, user?.role);
   const updateAppeal = useUpdateStudentAppeal(userId);
   const uploadAppealFile = useUploadAppealFile();
   const [isEditing, setIsEditing] = React.useState(false);
   const [message, setMessage] = React.useState("");
   const [form, setForm] = React.useState(emptyForm);
+  const [selectedScheduleId, setSelectedScheduleId] = React.useState("");
   const canEdit = appeal?.status !== "ACCEPTED";
   const isSaving = updateAppeal.isPending;
   const isUploading = uploadAppealFile.isPending;
@@ -73,10 +80,19 @@ export function StudentAppealDetailContent() {
   const selectedHospital = hospitals.find((hospital: any) => hospital.name === form.clinicalSite);
   const allDutyAreas = React.useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
   const dutyAreas = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
-  const appealTypeOptions = React.useMemo(() => appealTypes.map((appealType: any) => ({ value: appealType.value, label: appealType.label })), [appealTypes]);
-  const hospitalOptions = React.useMemo(() => (hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), [hospitals]);
-  const dutyAreaOptions = React.useMemo(() => dutyAreas.map((area: string) => ({ value: area, label: area })), [dutyAreas]);
-  const instructorOptions = React.useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), [instructors]);
+  const selectedSchedule = React.useMemo(() => (schedules as any[]).find((schedule: any) => String(schedule.id) === selectedScheduleId), [schedules, selectedScheduleId]);
+  const eligibleSchedules = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (schedules as any[]).filter((schedule: any) => schedule.date && new Date(`${schedule.date}T00:00:00`).getTime() <= today.getTime());
+  }, [schedules]);
+  const scheduleOptions = React.useMemo(() => {
+    const options = eligibleSchedules.map((schedule: any) => ({ value: String(schedule.id), label: `${formatDate(schedule.date)} - ${schedule.area || schedule.hospital}` }));
+    return appendOption(options, selectedScheduleId, form.relatedDutyDate ? `${formatDate(form.relatedDutyDate)} - ${form.dutyArea || form.clinicalSite}` : undefined);
+  }, [eligibleSchedules, form.clinicalSite, form.dutyArea, form.relatedDutyDate, selectedScheduleId]);
+  const hospitalOptions = React.useMemo(() => appendOption((hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name })), form.clinicalSite), [hospitals, form.clinicalSite]);
+  const dutyAreaOptions = React.useMemo(() => appendOption(dutyAreas.map((area: string) => ({ value: area, label: area })), form.dutyArea), [dutyAreas, form.dutyArea]);
+  const instructorOptions = React.useMemo(() => appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), form.instructorId, selectedSchedule?.instructorName ?? appeal?.instructorName), [instructors, form.instructorId, selectedSchedule?.instructorName, appeal?.instructorName]);
 
   const resetForm = React.useCallback(() => {
     if (!appeal) return;
@@ -91,7 +107,13 @@ export function StudentAppealDetailContent() {
       evidenceNotes: appeal.evidenceNotes ?? "",
       supportingFiles: appeal.supportingFiles ?? "",
     });
-  }, [appeal]);
+    const matchingSchedule = (schedules as any[]).find((schedule: any) =>
+      schedule.date === appeal.relatedDutyDate &&
+      schedule.hospital === appeal.clinicalSite &&
+      schedule.area === appeal.dutyArea
+    );
+    setSelectedScheduleId(matchingSchedule ? String(matchingSchedule.id) : appeal.relatedDutyDate ? `appeal-${appeal.id}` : "");
+  }, [appeal, schedules]);
 
   React.useEffect(() => {
     resetForm();
@@ -99,6 +121,19 @@ export function StudentAppealDetailContent() {
 
   const updateForm = (field: keyof typeof emptyForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleScheduleChange = (value: string) => {
+    const schedule = (schedules as any[]).find((item: any) => String(item.id) === value);
+    setSelectedScheduleId(value);
+    if (!schedule) return;
+    setForm((current) => ({
+      ...current,
+      relatedDutyDate: schedule.date ?? "",
+      clinicalSite: schedule.hospital ?? "",
+      dutyArea: schedule.area ?? "",
+      instructorId: schedule.instructorId != null ? String(schedule.instructorId) : "",
+    }));
   };
 
   const cancelEdit = () => {
@@ -213,7 +248,7 @@ export function StudentAppealDetailContent() {
           <div className="p-4 px-5">
             <span className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Appeal Type</span>
             {isEditing ? (
-              <InlineSelect value={form.appealType} options={appealTypeOptions} placeholder="Select appeal type" onChange={(value) => updateForm("appealType", value)} />
+              <input className="w-full h-[38px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white" type="text" value={form.appealType} onChange={(event) => updateForm("appealType", event.target.value)} placeholder="Enter appeal type" />
             ) : (
               <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.appealType ?? ""}</strong>
             )}
@@ -221,7 +256,7 @@ export function StudentAppealDetailContent() {
           <div className="p-4 px-5 sm:border-l border-[#e2e8f0] lg:border-none">
             <span className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Related Duty Date</span>
             {isEditing ? (
-              <input className="w-full h-[38px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white" type="date" value={form.relatedDutyDate} onChange={(event) => updateForm("relatedDutyDate", event.target.value)} />
+              <InlineSelect value={selectedScheduleId} options={scheduleOptions} placeholder="Select duty date" onChange={handleScheduleChange} />
             ) : (
               <strong className="text-[#111827] text-[0.9rem] font-bold">{formatDate(appeal?.relatedDutyDate)}</strong>
             )}
@@ -229,7 +264,7 @@ export function StudentAppealDetailContent() {
           <div className="p-4 px-5">
             <span className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Clinical Site</span>
             {isEditing ? (
-              <InlineSelect value={form.clinicalSite} options={hospitalOptions} placeholder="Select clinical site" onChange={(value) => setForm((current) => ({ ...current, clinicalSite: value, dutyArea: "" }))} />
+              <InlineSelect value={form.clinicalSite} options={hospitalOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
             ) : (
               <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.clinicalSite ?? ""}</strong>
             )}
@@ -237,7 +272,7 @@ export function StudentAppealDetailContent() {
           <div className="p-4 px-5 sm:border-l border-[#e2e8f0] lg:border-none">
             <span className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Duty Area</span>
             {isEditing ? (
-              <InlineSelect value={form.dutyArea} options={dutyAreaOptions} placeholder="Select duty area" onChange={(value) => updateForm("dutyArea", value)} />
+              <InlineSelect value={form.dutyArea} options={dutyAreaOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
             ) : (
               <strong className="text-[#111827] text-[0.9rem] font-bold">{appeal?.dutyArea ?? ""}</strong>
             )}
@@ -247,7 +282,7 @@ export function StudentAppealDetailContent() {
         {isEditing && (
           <div className="mb-6">
             <label className="block text-[#64748b] text-[0.65rem] font-[800] uppercase tracking-wider mb-1">Assigned Clinical Instructor</label>
-            <InlineSelect value={form.instructorId} options={instructorOptions} placeholder="Select assigned CI" onChange={(value) => updateForm("instructorId", value)} />
+            <InlineSelect value={form.instructorId} options={instructorOptions} placeholder="Select duty date first" onChange={() => undefined} disabled />
           </div>
         )}
 

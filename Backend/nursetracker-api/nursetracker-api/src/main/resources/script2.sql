@@ -1,6 +1,10 @@
 -- Minimal baseline data for a fresh NurseTracker database.
 -- Includes only hospitals, duty areas, clinical case categories, and clearance settings.
 
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS appeal_types;
+SET FOREIGN_KEY_CHECKS = 1;
+
 INSERT INTO clinical_case_categories (value, label)
 SELECT 'Major Cases - Assist', 'Major Case - Assist'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Assist');
