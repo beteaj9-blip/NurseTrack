@@ -33,29 +33,29 @@ const assistantPermissionItems = coordinatorPermissionItems.filter((item) => ite
 
 function LevelAssignments({ title, badge, users, isLoading, onLevelChange }: { title: string; badge: string; users: ApiUser[]; isLoading: boolean; onLevelChange: (user: ApiUser, level: number) => void }) {
   return (
-    <section className="mt-0 grid min-w-0 gap-3 rounded-lg border border-[#e2e8f0] bg-white p-[clamp(1rem,2vw,1.25rem)] shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-3 border-b border-[#e5eaf1] pb-3">
+    <section className="mt-0 grid min-w-0 gap-4 rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-[#e5eaf1] pb-4">
         <h2 className="m-0 !text-[#111827] !text-[1.25rem] !font-bold leading-[1.15]">{title}</h2>
         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#fff6cc] px-[10px] py-[4px] !text-[0.76rem] !font-extrabold !text-[#6c4c00]">{badge}</span>
       </div>
 
-      <div className="grid max-h-[300px] gap-[0.7rem] overflow-y-auto pr-1 max-[1179px]:max-h-none max-[1179px]:overflow-visible max-[1179px]:pr-0">
+      <div className="grid gap-[0.85rem]">
         {isLoading ? (
           <LoadingState message={`Loading ${title.toLowerCase()}`} />
         ) : users.length > 0 ? (
           users.map((user) => {
             const selectedLevel = user.assignedLevels?.[0] ?? 1;
             return (
-              <article className="grid min-w-0 grid-cols-[minmax(190px,0.8fr)_minmax(260px,1.2fr)] items-center gap-3 rounded-[0.75rem] border border-[#e2e8f0] bg-white p-[0.85rem] shadow-[0_10px_24px_rgba(15,23,42,0.04)] max-[760px]:grid-cols-1" key={user.id}>
+              <article className="grid min-w-0 grid-cols-[minmax(260px,0.85fr)_minmax(420px,1.15fr)] items-center gap-4 rounded-[0.75rem] border border-[#e2e8f0] bg-white p-[1rem_1.1rem] shadow-[0_10px_24px_rgba(15,23,42,0.04)] max-[980px]:grid-cols-1" key={user.id}>
                 <div className="flex min-w-0 items-center gap-[0.85rem]">
                   <ProfileAvatar name={user.fullName} imageUrl={user.profileImageUrl} size={46} />
                   <div className="min-w-0">
                     <strong className="block !text-[#111827] !text-[0.98rem] !font-[850] leading-[1.25]">{user.fullName}</strong>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-[0.45rem] max-[560px]:grid-cols-2" role="radiogroup" aria-label={`${user.fullName} level access`}>
+                <div className="grid grid-cols-4 gap-[0.55rem] max-[560px]:grid-cols-2" role="radiogroup" aria-label={`${user.fullName} level access`}>
                   {[1, 2, 3, 4].map((level) => (
-                    <label className={`relative grid min-h-[38px] cursor-pointer place-items-center rounded-[0.6rem] border px-2 text-center !text-[0.82rem] !font-[850] transition-all hover:border-[#8a252c]/35 hover:!text-[#8a252c] ${selectedLevel === level ? "border-[#8a252c] bg-[#fff7f7] !text-[#8a252c] shadow-[0_8px_18px_rgba(138,37,44,0.1)]" : "border-[#dbe3ee] bg-white !text-[#334155]"}`} key={level}>
+                    <label className={`relative grid min-h-[44px] cursor-pointer place-items-center rounded-[0.6rem] border px-3 text-center !text-[0.88rem] !font-[850] transition-all hover:border-[#8a252c]/35 hover:!text-[#8a252c] ${selectedLevel === level ? "border-[#8a252c] bg-[#fff7f7] !text-[#8a252c] shadow-[0_8px_18px_rgba(138,37,44,0.1)]" : "border-[#dbe3ee] bg-white !text-[#334155]"}`} key={level}>
                       <input className="pointer-events-none absolute opacity-0" type="radio" name={`${user.id}-level`} value={level} checked={selectedLevel === level} onChange={() => onLevelChange(user, level)} />
                       Level {level}
                     </label>
@@ -81,21 +81,21 @@ function PermissionCards({ role, title, badge }: { role: "ASSISTANT" | "COORDINA
   const items = role === "COORDINATOR" ? coordinatorPermissionItems : assistantPermissionItems;
 
   return (
-    <section className="mt-0 grid min-w-0 gap-3 rounded-lg border border-[#e2e8f0] bg-white p-[clamp(1rem,2vw,1.25rem)] shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-3 border-b border-[#e5eaf1] pb-3">
+    <section className="mt-0 grid min-w-0 gap-4 rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-[#e5eaf1] pb-4">
         <h2 className="m-0 !text-[#111827] !text-[1.25rem] !font-bold leading-[1.15]">{title}</h2>
         <span className="inline-flex items-center whitespace-nowrap rounded-full bg-[#fff6cc] px-[10px] py-[4px] !text-[0.76rem] !font-extrabold !text-[#6c4c00]">{badge}</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-[0.7rem] max-[760px]:grid-cols-1">
+      <div className="grid grid-cols-2 gap-[0.85rem] max-[760px]:grid-cols-1">
         {isLoading ? (
           <LoadingState message={`Loading ${title.toLowerCase()}`} className="col-span-full" />
         ) : (
           items.map((item) => (
-            <div className="grid min-h-[92px] grid-cols-[1fr_auto] items-center gap-3 rounded-[0.75rem] border border-[#e2e8f0] bg-white p-[0.85rem] shadow-[0_10px_24px_rgba(15,23,42,0.04)] max-[560px]:grid-cols-1" key={item.id}>
+            <div className="grid min-h-[112px] grid-cols-[1fr_auto] items-center gap-4 rounded-[0.75rem] border border-[#e2e8f0] bg-white p-[1.05rem_1.1rem] shadow-[0_10px_24px_rgba(15,23,42,0.04)] max-[560px]:grid-cols-1" key={item.id}>
               <div className="min-w-0">
-                <h3 className="m-0 !text-[#111827] !text-[0.95rem] !font-[850] leading-[1.25]">{item.title}</h3>
-                <p className="mb-0 mt-[0.25rem] !text-[#475569] !text-[0.78rem] !font-[750] leading-[1.35]">{item.desc}</p>
+                <h3 className="m-0 !text-[#111827] !text-base !font-[850] leading-[1.25]">{item.title}</h3>
+                <p className="mb-0 mt-[0.32rem] !text-[#475569] !text-[0.85rem] !font-[750] leading-[1.45]">{item.desc}</p>
               </div>
               <label className="relative inline-flex h-[32px] w-[58px] shrink-0 cursor-pointer items-center" htmlFor={`${role}-${item.id}`} aria-label={`Toggle ${role} ${item.title} access`}>
                 <input
@@ -140,12 +140,12 @@ export default function AssistantAccessPage() {
   };
 
   return (
-    <main className="grid w-full min-w-0 content-start gap-4 p-[clamp(24px,4vw,42px)] min-[1180px]:grid-cols-2">
+    <main className="grid w-full min-w-0 content-start gap-4 p-[clamp(24px,4vw,42px)]">
       <LevelAssignments title="Chair Level Assignments" badge="Level access" users={chairs} isLoading={isLoading} onLevelChange={updateLevel} />
       <LevelAssignments title="Assistant Level Assignments" badge="Level access" users={assistants} isLoading={isLoading} onLevelChange={updateLevel} />
       <PermissionCards role="ASSISTANT" title="Assistant Edit Permissions" badge="Assistant controls" />
       <PermissionCards role="COORDINATOR" title="Coordinator Edit Permissions" badge="Coordinator controls" />
-      <div className="flex min-h-[48px] items-center rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 !text-[0.85rem] !font-bold !text-[#4c5d7d] min-[1180px]:col-span-2" role="status" aria-live="polite">Level assignments and edit permissions control assistant access.</div>
+      <div className="flex min-h-[48px] items-center rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 !text-[0.85rem] !font-bold !text-[#4c5d7d]" role="status" aria-live="polite">Level assignments and edit permissions control assistant access.</div>
     </main>
   );
 }

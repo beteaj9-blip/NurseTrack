@@ -174,7 +174,7 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
                   </div>
                 ))}
               </div>
-              {historyTotalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] mt-[1rem] border border-[#e2e8f0] rounded-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setHistoryPage((page) => Math.max(1, page - 1))} disabled={historyPage === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b]">Page {historyPage} of {historyTotalPages}</span><button className={ghostBtn} onClick={() => setHistoryPage((page) => Math.min(historyTotalPages, page + 1))} disabled={historyPage === historyTotalPages}>Next</button></div>}
+              {historyTotalPages > 1 && <div className="flex justify-between items-center p-[1rem_1.5rem] mt-[1rem] gap-2 border border-[#e2e8f0] rounded-lg bg-[#f8fafc]"><button className={ghostBtn} onClick={() => setHistoryPage((page) => Math.max(1, page - 1))} disabled={historyPage === 1}>Previous</button><span className="!text-[0.875rem] !font-[600] !text-[#64748b] whitespace-nowrap"><span className="hidden sm:inline">Page </span>{historyPage} of {historyTotalPages}</span><button className={ghostBtn} onClick={() => setHistoryPage((page) => Math.min(historyTotalPages, page + 1))} disabled={historyPage === historyTotalPages}>Next</button></div>}
             </>
           ) : <div className="p-4 rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !font-bold">No extension-day history yet.</div>}
         </section>

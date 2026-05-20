@@ -277,8 +277,8 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   }
 
   return (
-    <main className="min-w-0 overflow-x-hidden p-[clamp(14px,3vw,42px)] content-start grid gap-5 w-full">
-      <section className="grid min-w-0 gap-5">
+    <main className="min-w-0 overflow-x-hidden p-[clamp(24px,4vw,42px)] content-start grid gap-5 w-full">
+      <section className="grid min-w-0 max-w-full gap-5 overflow-x-hidden">
         
         {/* Day schedule options */}
         {dayScheduleGroups.length > 1 && <article className="relative rounded-xl border border-[#e2e8f0] shadow-[0_16px_44px_rgba(32,33,36,0.07)] overflow-hidden p-[1.75rem] bg-[linear-gradient(180deg,#fff8d6_0%,#ffffff_58%,#ffffff_100%)]">
@@ -298,15 +298,15 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
         </article>}
 
         {isChairView && draftSchedule && <>
-          <article className="relative min-w-0 max-w-full rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] overflow-hidden p-[clamp(0.95rem,3vw,1.45rem)]">
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_72%,#fff8d6_100%)] pointer-events-none" />
-            <div className="relative z-10 min-w-0 max-w-full [&_input]:box-border [&_input]:w-full [&_input]:min-w-0 [&_input]:max-w-full [&_label]:min-w-0 [&_label]:max-w-full [&_textarea]:box-border [&_textarea]:w-full [&_textarea]:min-w-0 [&_textarea]:max-w-full">
+          <article className="relative min-w-0 max-w-full w-full box-border rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] overflow-hidden p-[clamp(0.75rem,3vw,1.45rem)]">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,#fff8d6_0%,#ffffff_60%)] pointer-events-none" />
+            <div className="relative z-10 min-w-0 max-w-full">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 mb-5 max-[760px]:grid-cols-1">
                 <h2 className="m-0 min-w-0 !text-[#202124] !text-[1.25rem] !font-[900] tracking-[-0.03em] break-words max-[760px]:!text-[1.15rem]">{draftSchedule.title}</h2>
                 <div className="flex items-center justify-end gap-3 flex-wrap max-[760px]:w-full max-[760px]:justify-start"><span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] ${chairScheduleBadgeClass(activeAssignedStudents.length === 0 ? "Canceled" : "Published")}`}>{activeAssignedStudents.length === 0 ? "Canceled" : "Published"}</span><button type="button" onClick={() => setIsEditingChairSchedule(true)} disabled={isEditingChairSchedule || activeAssignedStudents.length === 0} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.86rem] !font-[900] cursor-pointer hover:border-[#cbd5e1] transition-colors disabled:opacity-60 disabled:cursor-default max-[760px]:flex-1 max-[760px]:min-w-[150px]">Edit Schedule</button></div>
               </div>
 
-              <div className="grid min-w-0 grid-cols-4 gap-[16px] max-[1180px]:grid-cols-2 max-[720px]:grid-cols-1">
+              <div className="grid min-w-0 grid-cols-1 gap-[16px] min-[1500px]:grid-cols-4">
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Schedule Title<input disabled={editorDisabled} className="w-full min-w-0 min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" value={draftSchedule.title} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, title: event.target.value }))} /></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Assigned Group<input className="w-full min-w-0 min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#94a3b8] !font-[800]" value={draftSchedule.group} readOnly /></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Start Date<input disabled={editorDisabled} className="w-full min-w-0 min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="date" value={draftSchedule.startDate} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, startDate: event.target.value, endDate: event.target.value }))} /></label>
@@ -319,34 +319,34 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
                 <p className="m-[14px_0_0] !text-[#64748b] !text-[0.82rem] !font-[800]">{breakDates.length ? breakDates.join(", ") : "No breaks added"}</p>
               </div>
 
-              <div className="grid min-w-0 grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-[16px] mt-4 max-[980px]:grid-cols-1">
+              <div className="grid min-w-0 grid-cols-1 gap-[16px] mt-4 min-[1500px]:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Hospital<InlineSelect value={draftSchedule.hospital} options={hospitalOptions} placeholder="Select hospital" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, hospital: value }))} disabled={editorDisabled} /></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Duty Area<InlineSelect value={draftSchedule.area} options={dutyAreaOptions} placeholder="Select duty area" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, area: value }))} disabled={editorDisabled} /></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Duty Type<InlineSelect value={draftSchedule.dutyType} options={[{ value: "Regular", label: "Regular" }, { value: "Make-up Duty", label: "Make-up Duty" }, { value: "Extension", label: "Extension" }]} placeholder="Duty type" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, dutyType: value }))} disabled={editorDisabled} /></label>
               </div>
 
-              <div className="grid min-w-0 grid-cols-4 gap-[16px] mt-4 max-[1180px]:grid-cols-2 max-[720px]:grid-cols-1">
+              <div className="grid min-w-0 grid-cols-1 gap-[16px] mt-4 min-[1500px]:grid-cols-4">
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Shift Start<input disabled={editorDisabled} className="w-full min-w-0 min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="time" value={draftSchedule.shiftStart} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, shiftStart: event.target.value }))} /></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Shift End<input disabled={editorDisabled} className="w-full min-w-0 min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="time" value={draftSchedule.shiftEnd} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, shiftEnd: event.target.value }))} /></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Case Presentation Date<input className="w-full min-w-0 min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="date" value={draftSchedule.casePresentationDate} disabled={editorDisabled || draftSchedule.noCasePresentation} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, casePresentationDate: event.target.value }))} /></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Case Presentation Time<input className="w-full min-w-0 min-h-[48px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 !text-[#111827] !font-[800] disabled:!text-[#94a3b8]" type="time" value={draftSchedule.casePresentationTime} disabled={editorDisabled || draftSchedule.noCasePresentation} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, casePresentationTime: event.target.value }))} /></label>
               </div>
 
-              <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-[16px] mt-4 max-[900px]:grid-cols-1">
-                <label className="min-w-0 flex items-center gap-3 pt-7 !text-[#334155] !font-[900] max-[900px]:pt-0"><input type="checkbox" disabled={editorDisabled} checked={draftSchedule.noCasePresentation} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, noCasePresentation: event.target.checked }))} />No Case Presentation</label>
+              <div className="grid min-w-0 grid-cols-1 gap-[16px] mt-4 min-[1500px]:grid-cols-2">
+                <label className="flex items-center gap-2 min-[1500px]:pt-7 cursor-pointer"><input type="checkbox" className="w-5 h-5 shrink-0 accent-[#8A252C] cursor-pointer" disabled={editorDisabled} checked={draftSchedule.noCasePresentation} onChange={(event) => setDraftSchedule((current: any) => ({ ...current, noCasePresentation: event.target.checked }))} /><span className="!text-[#334155] !font-[900] whitespace-nowrap">No Case Presentation</span></label>
                 <label className="min-w-0 flex flex-col gap-2 !text-[#4b5565] !text-[0.86rem] !font-[900]">Supervising CI<InlineSelect value={draftSchedule.instructorId} options={instructorOptions.length ? instructorOptions : [{ value: draftSchedule.instructorId, label: instructorName }]} placeholder="Select CI" onChange={(value) => setDraftSchedule((current: any) => ({ ...current, instructorId: value }))} disabled={editorDisabled} /></label>
               </div>
 
-              <label className="flex flex-col gap-2 mt-4 !text-[#4b5565] !text-[0.86rem] !font-[900]">Review Notes<textarea disabled={editorDisabled} className="min-h-[104px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 py-3 !text-[#111827] !font-[800] resize-y disabled:!text-[#94a3b8]" placeholder="Add correction notes before republishing" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} /></label>
-              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[760px]:flex-col"><button type="button" disabled={isSaving} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60">Cancel Schedule</button><button type="button" disabled={isSaving} onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
+              <label className="flex flex-col gap-2 mt-4 !text-[#4b5565] !text-[0.86rem] !font-[900]">Review Notes<textarea disabled={editorDisabled} className="w-full min-h-[104px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 py-3 !text-[#111827] !font-[800] resize-y disabled:!text-[#94a3b8]" placeholder="Add correction notes before republishing" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} /></label>
+              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60 max-[560px]:w-full">Cancel Schedule</button><button type="button" disabled={isSaving} onClick={() => setIsEditingChairSchedule(false)} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60 max-[560px]:w-full">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 max-[560px]:w-full">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
             </div>
           </article>
 
-          <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[1.45rem]">
+          <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[clamp(0.75rem,3vw,1.45rem)] min-w-0 max-w-full overflow-hidden">
             <div className="flex items-center justify-between gap-4 mb-5"><h2 className="m-0 !text-[#202124] !text-[1.15rem] !font-[900]">Assigned Students</h2><span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.78rem] !font-[900]">{activeAssignedStudents.length} active students</span></div>
             <label className="block rounded-xl border border-[#dbe3ee] p-4 !text-[#111827] !font-[900] mb-4">Search Student To Add<input className="mt-2 w-full min-h-[52px] rounded-lg border border-[#dbe3ee] bg-white px-4 !text-[#111827] !font-[800]" placeholder="Search by name, ID, section, or site" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} /></label>
-            <div className="rounded-xl border border-[#e2e8f0] overflow-x-auto"><table className="w-full min-w-[880px] border-collapse text-left"><thead><tr className="bg-[#f8fafc] border-b border-[#e2e8f0] !text-[#111827] !text-[0.76rem] !font-[900] uppercase"><th className="p-4 w-[68px]">No.</th><th className="p-4">Student</th><th className="p-4 w-[210px]">Move To</th><th className="p-4 w-[140px]">Action</th></tr></thead><tbody>{filteredAssignedStudents.map((schedule: any, index: number) => <tr key={schedule.id} className="border-b border-[#e2e8f0] last:border-0"><td className="p-4 !font-[800]">{index + 1}.</td><td className="p-4"><div className="flex items-center gap-3"><ProfileAvatar name={schedule.studentName || "Nursing Student"} imageUrl={schedule.studentProfileImageUrl} size={42} /><strong className="!text-[#202124] !font-[900]">{schedule.studentName || "Nursing Student"}</strong></div></td><td className="p-4"><InlineSelect value={selectedSchedule.groupKey} options={groupOptions} placeholder="Move to group" onChange={(value) => moveStudentSchedule(schedule, value)} /></td><td className="p-4"><button type="button" disabled={isSaving} onClick={() => removeStudentSchedule(schedule)} className="min-h-[40px] px-5 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60">Remove</button></td></tr>)}</tbody></table></div>
-            <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-[#e2e8f0]"><button type="button" className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#94a3b8] !font-[900] cursor-pointer">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#c98f96] border border-[#c98f96] !text-white !font-[900] cursor-pointer disabled:opacity-60">Save Assigned Students</button></div>
+            <div className="rounded-xl border border-[#e2e8f0] overflow-x-auto"><table className="w-full border-collapse text-left"><thead><tr className="bg-[#f8fafc] border-b border-[#e2e8f0] !text-[#111827] !text-[0.76rem] !font-[900] uppercase"><th className="p-4 w-[52px]">No.</th><th className="p-4">Student</th><th className="p-4 w-[180px] max-[640px]:hidden">Move To</th><th className="p-4 w-[110px]">Action</th></tr></thead><tbody>{filteredAssignedStudents.map((schedule: any, index: number) => <tr key={schedule.id} className="border-b border-[#e2e8f0] last:border-0"><td className="p-4 !font-[800]">{index + 1}.</td><td className="p-4"><div className="flex items-center gap-3"><ProfileAvatar name={schedule.studentName || "Nursing Student"} imageUrl={schedule.studentProfileImageUrl} size={42} /><strong className="!text-[#202124] !font-[900]">{schedule.studentName || "Nursing Student"}</strong></div></td><td className="p-4 max-[640px]:hidden"><InlineSelect value={selectedSchedule.groupKey} options={groupOptions} placeholder="Move to group" onChange={(value) => moveStudentSchedule(schedule, value)} /></td><td className="p-4"><button type="button" disabled={isSaving} onClick={() => removeStudentSchedule(schedule)} className="min-h-[38px] px-4 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !text-[0.82rem] !font-[900] cursor-pointer disabled:opacity-60">Remove</button></td></tr>)}</tbody></table></div>
+            <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-[#e2e8f0] flex-wrap max-[560px]:flex-col"><button type="button" className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#94a3b8] !font-[900] cursor-pointer">Cancel</button><button type="button" disabled={isSaving} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#c98f96] border border-[#c98f96] !text-white !font-[900] cursor-pointer disabled:opacity-60">Save Assigned Students</button></div>
           </article>
         </>}
 
@@ -410,13 +410,13 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
               </div>
             </div>
 
-            <div className="mt-2 rounded-xl overflow-hidden border border-[#e2e8f0] max-[720px]:overflow-x-auto">
-              <table className="w-full border-collapse text-left !text-[0.9rem] min-w-[700px]">
+            <div className="mt-2 rounded-xl overflow-hidden border border-[#e2e8f0] overflow-x-auto">
+              <table className="w-full border-collapse text-left !text-[0.9rem]">
                 <thead>
                   <tr className="border-b border-[#e2e8f0] !text-[#111827] !text-[0.75rem] !font-black uppercase tracking-wider">
-                    <th className="p-[1.25rem_1rem] w-[80px]">No.</th>
+                    <th className="p-[1.25rem_1rem] w-[80px] max-[640px]:w-[52px]">No.</th>
                     <th className="p-[1.25rem_1rem]">Student</th>
-                    <th className="p-[1.25rem_1rem]">Section</th>
+                    <th className="p-[1.25rem_1rem] max-[640px]:hidden">Section</th>
                     <th className="p-[1.25rem_1rem]">Validation</th>
                   </tr>
                 </thead>
@@ -431,7 +431,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
                         <ProfileAvatar name={studentName} imageUrl={schedule.studentProfileImageUrl || (String(schedule.studentId) === String(user?.id) ? user?.profileImageUrl : "")} size={38} />
                         {studentName}
                       </td>
-                      <td className="p-[1.1rem_1rem] !text-[#64748b] !font-bold">{schedule.studentSection || user?.sectionInfo || "Nursing Student"}</td>
+                      <td className="p-[1.1rem_1rem] !text-[#64748b] !font-bold max-[640px]:hidden">{schedule.studentSection || user?.sectionInfo || "Nursing Student"}</td>
                       <td className="p-[1.1rem_1rem]">
                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.75rem] !font-bold ${getClinicalValidationClass(validationLabel)}`}>
                           {validationLabel}

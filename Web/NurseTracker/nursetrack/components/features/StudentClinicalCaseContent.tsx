@@ -128,9 +128,9 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
           </tbody>
         </table>
       </div>
-      {filteredCases.length > CASES_PER_PAGE && <div className="mt-3 flex items-center justify-end gap-3">
+      {filteredCases.length > CASES_PER_PAGE && <div className="mt-3 flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full">
         <button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white !text-[#334155] !text-[0.84rem] !font-[900] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
-        <span className="!text-[#64748b] !text-[0.84rem] !font-[900]">Page {currentPage} of {totalPages}</span>
+        <span className="!text-[#64748b] !text-[0.84rem] !font-[900] whitespace-nowrap"><span className="hidden sm:inline">Page </span>{currentPage} of {totalPages}</span>
         <button type="button" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} className="min-h-[38px] px-4 rounded-lg border border-[#e2e8f0] bg-white !text-[#334155] !text-[0.84rem] !font-[900] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
       </div>}
     </div>

@@ -102,7 +102,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
   }
 
   return (
-    <main className="min-w-0 overflow-x-hidden p-[clamp(16px,3vw,42px)] content-start grid gap-4 w-full">
+    <main className="min-w-0 overflow-x-hidden p-[clamp(24px,4vw,42px)] content-start grid gap-4 w-full">
       <section className="grid gap-6">
         <article className="min-w-0 mt-0 p-[clamp(18px,2.5vw,1.45rem)] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] flex flex-col min-h-[calc(100vh-clamp(48px,8vw,84px))]">
           <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-[#e5eaf1] flex-wrap">

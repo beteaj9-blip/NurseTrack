@@ -272,7 +272,7 @@ function StudentTable({ title, tone, students, section, empty, onRemove }: { tit
     </div>
     {students.length > PAGE_SIZE && <div className="flex items-center justify-between gap-3 p-4 border-t border-[#e2e8f0] bg-[#f8fafc]">
       <button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="min-h-[38px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !font-[900] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
-      <span className="!text-[#475569] !text-[0.84rem] !font-[900]">Page {currentPage} of {pageCount}</span>
+      <span className="!text-[#475569] !text-[0.84rem] !font-[900] whitespace-nowrap"><span className="hidden sm:inline">Page </span>{currentPage} of {pageCount}</span>
       <button type="button" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} className="min-h-[38px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#334155] !font-[900] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
     </div>}
   </article>;
