@@ -32,7 +32,10 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
   const clinicalCase = detailCase ?? listCase;
   const reviewCase = useReviewCase();
   const [comment, setComment] = useState("");
+  const [forceEdit, setForceEdit] = useState(false);
   const isSaving = reviewCase.isPending;
+  const isPending = clinicalCase?.status === "PENDING";
+  const isEditing = forceEdit || isPending;
 
   const submitDecision = async (status: "APPROVED" | "RETURNED") => {
     if (!canEdit) {
@@ -48,7 +51,8 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
     try {
       await reviewCase.mutateAsync({ caseId: String(targetCaseId), status, remarks: comment.trim() });
       showToast({ variant: "success", title: status === "APPROVED" ? "Case approved" : "Case rejected", message: "The student clinical case was updated." });
-      router.push(`${basePath}/clinical-cases/selection?studentId=${clinicalCase?.studentId ?? ""}`);
+      setForceEdit(false);
+      // Wait a moment for data to refetch before deciding to redirect, or just let the UI show the updated status.
     } catch {
       showToast({ variant: "error", title: "Update failed", message: "The case decision could not be saved." });
     }
@@ -91,14 +95,49 @@ export function ClinicalCasesValidationContent({ basePath }: { basePath: string;
         <aside>
           <article className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem] w-full mt-0">
             <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap"><h2 className="m-0 !text-[#111827] !text-[1.15rem] leading-[1.2] !font-[800] tracking-[-0.03em]">Clinical Instructor Action</h2></div>
-            <div className="flex flex-col gap-[12px]">
-              <label className="flex flex-col gap-1.5 m-0 !text-[0.875rem] !font-[800] !text-[#344054]" htmlFor="validation-comment">Comment (Required for rejection)<textarea className="w-full p-[0.75rem] border border-[#e2e8f0] rounded-[0.5rem] mt-[0.5rem] font-inherit resize-y bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="validation-comment" rows={5} placeholder="Add a comment or feedback for the student" value={comment} onChange={(event) => setComment(event.target.value)} /></label>
-              <div className="flex items-center gap-[0.75rem] p-[1rem] rounded-[8px] !text-[#1e293b] !font-[500] bg-[#f8fafc] border border-[#e2e8f0]" role="status" aria-live="polite">Review the case details, then make an approval decision.</div>
-              <div className="grid grid-cols-[1fr_1fr] gap-[1rem] mt-[0.5rem]">
-                <button className={`${ghostBtn} !text-[#dc2626] !border-[#fca5a5] hover:!border-[#f87171]`} type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("RETURNED")}>{isSaving ? "Saving..." : "Reject case"}</button>
-                <button className={`${primaryBtn} !bg-[#16a34a] !border-[#15803d] hover:!bg-[#15803d]`} type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("APPROVED")}>{isSaving ? "Saving..." : "Approve case"}</button>
+            {!isEditing ? (
+              <div className="flex flex-col gap-[16px]">
+                <div className={`flex flex-col gap-[14px] p-[1.25rem] rounded-[12px] border ${clinicalCase.status === "APPROVED" ? "bg-[linear-gradient(110deg,#ecfdf3_0%,#ffffff_100%)] border-[#86efac]" : "bg-[linear-gradient(110deg,#fef2f2_0%,#ffffff_100%)] border-[#fca5a5]"}`}>
+                  <div className="flex items-center gap-[14px]">
+                    {clinicalCase.status === "APPROVED" ? (
+                      <div className="flex flex-shrink-0 items-center justify-center w-[46px] h-[46px] rounded-full bg-[#dcfce7] !text-[#16a34a] shadow-[0_4px_12px_rgba(22,163,74,0.15)]">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                      </div>
+                    ) : (
+                      <div className="flex flex-shrink-0 items-center justify-center w-[46px] h-[46px] rounded-full bg-[#fee2e2] !text-[#dc2626] shadow-[0_4px_12px_rgba(220,38,38,0.15)]">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+                      </div>
+                    )}
+                    <div className="flex flex-col min-w-0">
+                      <strong className={`block truncate !text-[1.15rem] !font-[900] tracking-[-0.01em] ${clinicalCase.status === "APPROVED" ? "!text-[#166534]" : "!text-[#991b1b]"}`}>{clinicalCase.status === "APPROVED" ? "Case Validated & Approved" : "Case Returned to Student"}</strong>
+                      <span className="block truncate !text-[#64748b] !text-[0.86rem] !font-[800]">Decision has been recorded</span>
+                    </div>
+                  </div>
+                  {clinicalCase.instructorFeedback && (
+                    <div className="mt-[4px] p-[14px] bg-white rounded-[10px] border border-[#e2e8f0]/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                      <span className="block mb-[6px] !text-[#64748b] !text-[0.74rem] !font-[900] uppercase tracking-wider">Instructor Feedback</span>
+                      <p className="m-0 !text-[#334155] !text-[0.94rem] !font-[600] leading-[1.6] break-words">{clinicalCase.instructorFeedback}</p>
+                    </div>
+                  )}
+                </div>
+                {canEdit && (
+                  <button className="flex items-center justify-center gap-[10px] min-h-[48px] w-full px-[16px] rounded-[10px] bg-white border border-[#cbd5e1] shadow-[0_2px_6px_rgba(15,23,42,0.04)] !text-[#475569] !text-[0.95rem] !font-[800] hover:bg-[#f8fafc] hover:border-[#94a3b8] hover:!text-[#0f172a] hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] transition-all duration-200 cursor-pointer" type="button" onClick={() => setForceEdit(true)}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+                    Modify Decision
+                  </button>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-[12px]">
+                <label className="flex flex-col gap-1.5 m-0 !text-[0.875rem] !font-[800] !text-[#344054]" htmlFor="validation-comment">Comment (Required for rejection)<textarea className="w-full p-[0.75rem] border border-[#e2e8f0] rounded-[0.5rem] mt-[0.5rem] font-inherit resize-y bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="validation-comment" rows={5} placeholder="Add a comment or feedback for the student" value={comment} onChange={(event) => setComment(event.target.value)} /></label>
+                <div className="flex items-center gap-[0.75rem] p-[1rem] rounded-[8px] !text-[#1e293b] !font-[500] bg-[#f8fafc] border border-[#e2e8f0]" role="status" aria-live="polite">Review the case details, then make an approval decision.</div>
+                <div className="grid grid-cols-[1fr_1fr] gap-[1rem] mt-[0.5rem]">
+                  <button className={`${ghostBtn} !text-[#dc2626] !border-[#fca5a5] hover:!border-[#f87171]`} type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("RETURNED")}>{isSaving ? "Saving..." : "Reject case"}</button>
+                  <button className={`${primaryBtn} !bg-[#16a34a] !border-[#15803d] hover:!bg-[#15803d]`} type="button" disabled={!canEdit || isSaving} onClick={() => submitDecision("APPROVED")}>{isSaving ? "Saving..." : "Approve case"}</button>
+                </div>
+                {!isPending && <button className={`${ghostBtn} mt-2`} type="button" onClick={() => setForceEdit(false)}>Cancel Edit</button>}
+              </div>
+            )}
           </article>
         </aside>
       </section>

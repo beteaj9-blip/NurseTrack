@@ -74,7 +74,7 @@ export const useCheckIn = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['attendance', variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
     },
   });
 };
@@ -88,7 +88,7 @@ export const useVerifyAttendance = () => {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['attendance', data.studentId] });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
     },
   });
 };

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/core/api/axios";
 import { useInstructorAttendance } from "@/core/api/hooks/useAttendance";
+import { useQueryClient } from "@tanstack/react-query";
 import { useHospitals } from "@/core/api/hooks/useHospitals";
 import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
@@ -85,6 +86,7 @@ function appendOption(options: { value: string; label: string }[], value?: strin
 export function CiManualAttendanceContent({ basePath, isEditMode = false }: { basePath: string; isEditMode?: boolean }) {
   const router = useRouter();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const instructorId = user?.id != null ? String(user.id) : undefined;
   const { data: schedules = [] } = useSchedules(instructorId, user?.role);
@@ -266,6 +268,7 @@ export function CiManualAttendanceContent({ basePath, isEditMode = false }: { ba
           : apiClient.post("/duties/manual", payload);
       }));
       await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['attendance'] });
       setAddedStudents([]);
       setEditing(false);
       showToast({ variant: "success", title: isEditMode ? "Manual attendance updated" : "Manual attendance saved", message: isEditMode ? "Manual duty records were updated and remain pending review." : "Manual duty records were created for the selected students." });

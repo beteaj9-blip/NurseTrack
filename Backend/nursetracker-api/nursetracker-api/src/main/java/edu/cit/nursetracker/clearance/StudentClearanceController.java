@@ -35,11 +35,39 @@ public class StudentClearanceController {
         Long viewerId = jwtService.getUserId(request);
         User viewer = userRepository.findById(viewerId).orElse(null);
         if (viewer == null) return ResponseEntity.ok(List.of());
-        List<StudentClearance> studentClearances = clearanceRepository.findAll().stream()
+        
+        // Fetch all existing clearances
+        List<StudentClearance> existingClearances = clearanceRepository.findAll().stream()
                 .filter(this::isStudentClearance)
                 .toList();
-        if (AccessScope.canViewAll(viewer)) return ResponseEntity.ok(studentClearances);
-        return ResponseEntity.ok(studentClearances.stream()
+                
+        // Map by student ID
+        Map<Long, StudentClearance> clearanceMap = existingClearances.stream()
+                .collect(java.util.stream.Collectors.toMap(c -> c.getStudent().getId(), c -> c, (a, b) -> a));
+                
+        // Fetch all students
+        List<User> allStudents = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == UserRole.STUDENT)
+                .toList();
+                
+        AcademicTerm activeTerm = academicTermRepository.findFirstByActiveTrueOrderByUpdatedAtDesc().orElse(null);
+        String schoolYear = activeTerm == null ? "" : activeTerm.getSchoolYear();
+        String semester = activeTerm == null ? "" : activeTerm.getSemester();
+        
+        // Ensure every student has a clearance record returned
+        List<StudentClearance> allClearances = allStudents.stream().map(student -> {
+            return clearanceMap.computeIfAbsent(student.getId(), id -> 
+                StudentClearance.builder()
+                    .student(student)
+                    .schoolYear(schoolYear)
+                    .semester(semester)
+                    .status(ClearanceStatus.LOCKED)
+                    .build()
+            );
+        }).toList();
+
+        if (AccessScope.canViewAll(viewer)) return ResponseEntity.ok(allClearances);
+        return ResponseEntity.ok(allClearances.stream()
                 .filter(clearance -> AccessScope.canViewRecord(viewer, clearance.getStudent(), null))
                 .toList());
     }
@@ -92,6 +120,12 @@ public class StudentClearanceController {
         User viewer = userRepository.findById(jwtService.getUserId(request)).orElse(null);
         if (viewer == null || !AccessScope.canViewRecord(viewer, clearance.getStudent(), null) || !accessPermissionService.canEdit(viewer.getRole(), "clearance")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        if ((status == ClearanceStatus.CLEARED || status == ClearanceStatus.APPROVED) 
+                && clearance.getStatus() != ClearanceStatus.IN_REVIEW 
+                && clearance.getStatus() != ClearanceStatus.CLEARED 
+                && clearance.getStatus() != ClearanceStatus.APPROVED) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot approve a clearance that has not been submitted.");
         }
         clearance.setStatus(status);
         if (status == ClearanceStatus.IN_REVIEW && clearance.getSubmittedAt() == null) {

@@ -10,6 +10,19 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { useCanEditFeature } from "@/core/auth/permissions";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
+import { InlineSelect } from "@/components/ui/InlineSelect";
+
+const caseStatusOptions = [
+  { value: "all", label: "All statuses" },
+  { value: "PENDING", label: "Pending" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "RETURNED", label: "Returned" },
+];
+
+const submittedSortOptions = [
+  { value: "newest", label: "Newest submitted" },
+  { value: "oldest", label: "Oldest submitted" },
+];
 
 function statusLabel(status?: string) {
   if (status === "CLEARED" || status === "APPROVED") return "Approved";
@@ -86,6 +99,7 @@ export function ClearanceDetailContent({ basePath = "/chair" }: { basePath?: str
   const status = clearance?.status ?? "LOCKED";
   const isApproved = status === "CLEARED" || status === "APPROVED";
   const isSubmitted = status === "IN_REVIEW" || isApproved;
+  const canApprove = isSubmitted;
   const isLoading = isClearanceLoading || isCasesLoading;
   const isSaving = updateClearance.isPending;
 
@@ -142,7 +156,7 @@ export function ClearanceDetailContent({ basePath = "/chair" }: { basePath?: str
               <h3 className="m-0 mb-2 !text-[#202124] !text-[1rem] !font-[900]">Clearance Approval</h3>
               <p className="m-0 mb-4 !text-[#64748b] !text-[0.86rem] !font-[800]">Approve only after the student&apos;s submitted clinical cases are complete and already reviewed.</p>
               <div className="flex items-center gap-3 max-[780px]:flex-col max-[780px]:items-stretch">
-                {isApproved ? <button type="button" disabled={!canEdit || isSaving} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-default disabled:opacity-60">Clearance Approved</button> : <button type="button" disabled={!canEdit || !isSubmitted || isSaving} onClick={() => setClearanceStatus("CLEARED")} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{isSubmitted ? "Approve Clearance" : "Waiting for Submission"}</button>}
+                {isApproved ? <button type="button" disabled={!canEdit || isSaving} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-default disabled:opacity-60">Clearance Approved</button> : <button type="button" disabled={!canEdit || !canApprove || isSaving} onClick={() => setClearanceStatus("CLEARED")} className="inline-flex items-center justify-center min-h-[46px] px-6 rounded-lg bg-[#8A252C] border border-[#8A252C] !text-white !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{canApprove ? "Approve Clearance" : "Waiting for Submission"}</button>}
                 {isApproved && <button type="button" disabled={!canEdit || isSaving} onClick={() => setClearanceStatus("IN_REVIEW")} className="inline-flex items-center justify-center min-h-[46px] px-5 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !font-[900] cursor-pointer disabled:opacity-60">Cancel Approval</button>}
                 <div className="flex-1 min-h-[46px] inline-flex items-center rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-4 !text-[#64748b] !text-[0.82rem] !font-[900]">This will mark the student as cleared for this semester.</div>
               </div>
@@ -156,19 +170,47 @@ export function ClearanceDetailContent({ basePath = "/chair" }: { basePath?: str
 
 function CaseSection({ title, subtitle, records, basePath }: { title: string; subtitle: string; records: any[]; basePath: string }) {
   const [page, setPage] = React.useState(1);
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [submittedSort, setSubmittedSort] = React.useState("newest");
+
+  const filteredRecords = React.useMemo(() => {
+    return records
+      .filter((record: any) => statusFilter === "all" || record.status === statusFilter)
+      .slice()
+      .sort((a: any, b: any) => {
+        const timeA = new Date(a.createdAt ?? a.submittedAt ?? a.updatedAt ?? a.procedureDate ?? 0).getTime();
+        const timeB = new Date(b.createdAt ?? b.submittedAt ?? b.updatedAt ?? b.procedureDate ?? 0).getTime();
+        const difference = timeB - timeA;
+        return submittedSort === "newest" ? difference : -difference;
+      });
+  }, [records, statusFilter, submittedSort]);
+
   const perPage = 5;
-  const totalPages = Math.max(1, Math.ceil(records.length / perPage));
-  const paged = records.slice((page - 1) * perPage, page * perPage);
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / perPage));
+  const paged = filteredRecords.slice((page - 1) * perPage, page * perPage);
+
   React.useEffect(() => {
-    setPage((current) => Math.min(current, totalPages));
-  }, [totalPages]);
+    setPage(1);
+  }, [records.length, statusFilter, submittedSort]);
+
   const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   if (records.length === 0) return null;
+
   return (
     <section aria-label={subtitle} className="min-w-0">
-      <div className="mb-3 flex items-baseline justify-between gap-4 max-[640px]:flex-col max-[640px]:items-start max-[640px]:gap-1">
-        <h3 className="m-0 !text-[#8A252C] !text-[1.05rem] !font-[900]">{title}</h3>
-        <span className="!text-[#475569] !text-[0.86rem] !font-[900]">{subtitle}</span>
+      <div className="mb-3 flex items-center justify-between gap-3 flex-wrap max-[640px]:items-start">
+        <div className="flex items-baseline gap-4 max-[640px]:flex-col max-[640px]:items-start max-[640px]:gap-1">
+          <h3 className="m-0 !text-[#8A252C] !text-[1.05rem] !font-[900]">{title}</h3>
+          <span className="!text-[#475569] !text-[0.86rem] !font-[900]">{subtitle}</span>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap max-[640px]:grid max-[640px]:w-full max-[640px]:grid-cols-1">
+          <div className="min-w-[190px] max-[640px]:min-w-0">
+            <InlineSelect value={statusFilter} options={caseStatusOptions} placeholder="All statuses" onChange={setStatusFilter} />
+          </div>
+          <div className="min-w-[190px] max-[640px]:min-w-0">
+            <InlineSelect value={submittedSort} options={submittedSortOptions} placeholder="Sort by submitted" onChange={setSubmittedSort} />
+          </div>
+        </div>
       </div>
       <div className={`overflow-hidden rounded-lg border border-[#e2e8f0] ${totalPages > 1 ? "rounded-b-none" : ""}`}>
         <div className="grid grid-cols-[minmax(92px,0.85fr)_minmax(180px,2.25fr)_minmax(88px,0.8fr)_minmax(86px,0.75fr)_minmax(74px,0.6fr)_minmax(58px,0.45fr)] items-center gap-3 bg-[#f8fafc] px-4 py-3 !text-[#17233c] !text-[0.72rem] !font-[900] uppercase max-[760px]:hidden">

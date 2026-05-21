@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
 import { useAuthStore } from "@/core/store/authStore";
+import { useUsers } from "@/core/api/hooks/useUsers";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
@@ -28,18 +29,32 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
     const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
     const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isAllCaseScope, scopedViewerId);
+    const { data: allStudentsData = [], isLoading: isUsersLoading } = useUsers("STUDENT", scopedViewerId, isAllCaseScope);
     const cases = isAllCaseScope ? allCases : instructorCases;
-    const isLoading = isAllCaseScope ? isAllLoading : isInstructorLoading;
-    const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+    const isLoading = isAllCaseScope ? (isAllLoading || isUsersLoading) : isInstructorLoading;
+    const canFilterByLevel = user?.role === "ADMIN" || user?.role === "COORDINATOR";
     const [search, setSearch] = useState("");
     const [sectionFilter, setSectionFilter] = useState("all");
     const [levelFilter, setLevelFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const PER_PAGE = 10;
 
+    const baseStudentsMap = (isAllCaseScope ? (allStudentsData as any[]) : []).reduce((acc: Record<string, any>, user: any) => {
+        acc[String(user.id)] = {
+            studentId: user.id,
+            id: user.schoolId || "Not provided",
+            name: user.fullName || "Nursing Student",
+            profileImageUrl: user.profileImageUrl,
+            section: user.sectionInfo || "Nursing Student",
+            levels: Array.from(new Set(user.assignedLevels ?? [])).sort((a: any, b: any) => a - b),
+            pending: 0,
+        };
+        return acc;
+    }, {});
+
     const students = Object.values((cases as any[]).reduce((acc: Record<string, any>, clinicalCase: any) => {
         const key = String(clinicalCase.studentId ?? clinicalCase.studentSchoolId ?? clinicalCase.studentName);
-        if (!key) return acc;
+        if (!key || key === "undefined" || key === "null") return acc;
         const current = acc[key] ?? {
             studentId: clinicalCase.studentId,
             id: clinicalCase.studentSchoolId || "Not provided",
@@ -53,7 +68,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
         current.pending += clinicalCase.status === "PENDING" ? 1 : 0;
         acc[key] = current;
         return acc;
-    }, {}));
+    }, baseStudentsMap));
 
     const sections = Array.from(new Set(students.map((student: any) => student.section).filter(Boolean))).sort() as string[];
     const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section) => ({ value: section, label: section }))];

@@ -6,6 +6,7 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 import { useToast } from "@/components/ui/ToastProvider";
+import { useAuthStore } from "@/core/store/authStore";
 
 function statusLabel(status?: string) {
   if (status === "CLEARED" || status === "APPROVED") return "Approved";
@@ -45,7 +46,8 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const PER_PAGE = 10;
-  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+  const user = useAuthStore((state) => state.user);
+  const canFilterByLevel = user?.role === "ADMIN" || user?.role === "COORDINATOR";
   const sections = Array.from(new Set((clearances as any[]).map((c) => c.studentSection).filter(Boolean))).sort();
   const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section: any) => ({ value: section, label: section }))];
   const statusOptions = [{ value: "all", label: "All statuses" }, { value: "LOCKED", label: "Not submitted" }, { value: "IN_REVIEW", label: "Submitted" }, { value: "CLEARED", label: "Approved" }];
@@ -63,7 +65,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
   const labelCls = "flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]";
   const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   const clearanceEnabled = settings?.enabled !== false;
-  const canToggleSubmissions = basePath === "/admin" || basePath === "/chair";
+  const canToggleSubmissions = user?.role === "ADMIN" || user?.role === "CHAIR";
 
   React.useEffect(() => {
     setCurrentPage(page => Math.min(page, totalPages));
@@ -93,7 +95,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
           <label className={labelCls} htmlFor="cl-status">Clearance<InlineSelect value={statusFilter} options={statusOptions} placeholder="All statuses" onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }} /></label>
         </div>
         <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
-          {paged.map((c: any, i: number) => <Link key={c.id} href={`${basePath}/clearance/detail?studentId=${c.studentId}`} className="grid grid-cols-[42px_38px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)_auto] max-[680px]:gap-2.5 max-[680px]:p-3"><div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div><ProfileAvatar name={c.studentName} imageUrl={c.studentProfileImageUrl} size={34} /><span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{c.studentName}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{c.studentSection} - {c.studentSchoolId}</small></span><mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[430px]:col-start-3 max-[430px]:mt-1 ${statusClass(c.status)}`}>{statusLabel(c.status)}</mark></Link>)}
+          {paged.map((c: any, i: number) => <Link key={c.id ?? c.studentId ?? i} href={`${basePath}/clearance/detail?studentId=${c.studentId}`} className="grid grid-cols-[42px_38px_minmax(0,1fr)_auto] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)_auto] max-[680px]:gap-2.5 max-[680px]:p-3"><div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div><ProfileAvatar name={c.studentName} imageUrl={c.studentProfileImageUrl} size={34} /><span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{c.studentName}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{c.studentSection} - {c.studentSchoolId}</small></span><mark className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[430px]:col-start-3 max-[430px]:mt-1 ${statusClass(c.status)}`}>{statusLabel(c.status)}</mark></Link>)}
         </div>
         {totalPages > 1 && (
           <div className="flex justify-between items-center p-[1rem_1.5rem] gap-2 border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]">
