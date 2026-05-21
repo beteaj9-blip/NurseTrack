@@ -13,9 +13,15 @@ interface DashboardSchedule {
   id: number;
   hospital?: string;
   ward?: string;
+  area?: string;
   shiftDate: string;
+  date?: string;
   startTime?: string;
   endTime?: string;
+  rawStartTime?: string;
+  rawEndTime?: string;
+  instructorId?: number;
+  studentSection?: string;
   canceled?: boolean;
 }
 
@@ -26,6 +32,20 @@ const getScheduleEndpoint = (role?: string) => {
 };
 
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+const scheduleDate = (schedule: DashboardSchedule) => schedule.shiftDate ?? schedule.date;
+const scheduleWard = (schedule: DashboardSchedule) => schedule.ward ?? schedule.area ?? 'Assigned duty';
+const scheduleStart = (schedule: DashboardSchedule) => schedule.rawStartTime ?? schedule.startTime;
+const scheduleEnd = (schedule: DashboardSchedule) => schedule.rawEndTime ?? schedule.endTime;
+const scheduleSessionKey = (schedule: DashboardSchedule) => [
+  scheduleDate(schedule),
+  schedule.instructorId ?? 'instructor',
+  schedule.hospital ?? '',
+  scheduleWard(schedule),
+  scheduleStart(schedule) ?? '',
+  scheduleEnd(schedule) ?? '',
+  schedule.studentSection ?? 'section',
+].join('|');
 
 export const DashboardScreen = () => {
   const { user } = useAuth();
@@ -79,7 +99,18 @@ export const DashboardScreen = () => {
     ? 'Welcome back! Here is a quick look at your assigned students, duty sessions, and attendance tools.'
     : 'Welcome back! Here is a quick look at your clinical schedule and progress.';
   const todayKey = toDateKey(new Date());
-  const todaySchedule = useMemo(() => schedules.find((schedule) => schedule.shiftDate === todayKey && !schedule.canceled), [schedules, todayKey]);
+  const todaySchedules = useMemo(() => {
+    const sessions = new Map<string, DashboardSchedule>();
+    schedules
+      .filter((schedule) => scheduleDate(schedule) === todayKey && !schedule.canceled)
+      .forEach((schedule) => {
+        const key = scheduleSessionKey(schedule);
+        if (!sessions.has(key)) sessions.set(key, schedule);
+      });
+    return Array.from(sessions.values()).sort((first, second) => String(scheduleStart(first) ?? '').localeCompare(String(scheduleStart(second) ?? '')));
+  }, [schedules, todayKey]);
+  const todaySchedule = todaySchedules[0];
+  const hasMultipleSchedulesToday = todaySchedules.length > 1;
 
   const formatTime = (timeStr?: string) => {
     if (!timeStr) return 'Not set';
@@ -116,15 +147,17 @@ export const DashboardScreen = () => {
       {/* Stats Cards Section */}
       <View style={styles.statsSection}>
         {/* Today's Schedule Card */}
-        <View style={styles.statCard}>
+        <TouchableOpacity style={styles.statCard} onPress={() => navigation.navigate('Schedule')} activeOpacity={0.86}>
           <View style={styles.cardHeader}>
             <View style={[styles.iconContainer, { backgroundColor: 'rgba(138, 37, 44, 0.1)' }]}>
               <Calendar color="#8A252C" size={22} />
             </View>
           </View>
-          <Text style={styles.statTitle}>{todaySchedule ? 'Schedule Today' : 'No Schedule Today'}</Text>
+          <Text style={styles.statTitle}>{hasMultipleSchedulesToday ? `${todaySchedules.length} Schedules Today` : todaySchedule ? 'Schedule Today' : 'No Schedule Today'}</Text>
           <Text style={styles.statSubText}>
-            {todaySchedule ? `${todaySchedule.ward || 'Assigned duty'}${todaySchedule.hospital ? ` at ${todaySchedule.hospital}` : ''}` : 'No active clinical duty is assigned for today.'}
+            {hasMultipleSchedulesToday
+              ? 'Multiple duties are assigned today. Open schedule to choose one.'
+              : todaySchedule ? `${scheduleWard(todaySchedule)}${todaySchedule.hospital ? ` at ${todaySchedule.hospital}` : ''}` : 'No active clinical duty is assigned for today.'}
           </Text>
           
           <View style={styles.progressSection}>
@@ -132,11 +165,11 @@ export const DashboardScreen = () => {
               <View style={[styles.progressFill, { width: todaySchedule ? '100%' : '0%', backgroundColor: '#8A252C' }]} />
             </View>
             <View style={styles.statFooter}>
-              <Text style={styles.statTime}>{todaySchedule ? formatTime(todaySchedule.startTime) : 'No duty'}</Text>
-              <Text style={styles.statDuration}>{todaySchedule ? `${formatTime(todaySchedule.endTime)} end` : ''}</Text>
+              <Text style={styles.statTime}>{hasMultipleSchedulesToday ? `${todaySchedules.length} duties` : todaySchedule ? formatTime(scheduleStart(todaySchedule)) : 'No duty'}</Text>
+              <Text style={styles.statDuration}>{hasMultipleSchedulesToday ? 'View list' : todaySchedule ? `${formatTime(scheduleEnd(todaySchedule))} end` : ''}</Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Pending Items Card */}
         <View style={styles.statCard}>

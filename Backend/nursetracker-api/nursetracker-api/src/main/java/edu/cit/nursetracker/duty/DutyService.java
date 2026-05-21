@@ -217,6 +217,7 @@ public class DutyService {
 
         List<DutyAttendanceStudent> students = rosterSchedules.stream()
                 .map(Schedule::getStudent)
+                .filter(this::isStudent)
                 .collect(Collectors.toMap(User::getId, Function.identity(), (first, second) -> first))
                 .values()
                 .stream()
@@ -225,12 +226,16 @@ public class DutyService {
                 .toList();
 
         List<Long> rosterScheduleIds = rosterSchedules.stream().map(Schedule::getId).toList();
+        List<Long> studentIds = students.stream().map(DutyAttendanceStudent::studentId).toList();
         Map<Long, DutyRecord> presentRecords = dutyRepository.findByScheduleIdInOrderByTimeInAsc(rosterScheduleIds)
                 .stream()
+                .filter(record -> isStudent(record.getStudent()))
+                .filter(record -> studentIds.contains(record.getStudent().getId()))
                 .collect(Collectors.toMap(record -> record.getStudent().getId(), Function.identity(), (first, second) -> first));
 
         List<DutyAttendanceStudent> presentStudents = rosterSchedules.stream()
                 .map(Schedule::getStudent)
+                .filter(this::isStudent)
                 .filter(student -> presentRecords.containsKey(student.getId()))
                 .collect(Collectors.toMap(User::getId, Function.identity(), (first, second) -> first))
                 .values()
@@ -281,6 +286,7 @@ public class DutyService {
                 schedule.getEndTime()
         ).stream()
                 .map(Schedule::getStudent)
+                .filter(this::isStudent)
                 .collect(Collectors.toMap(User::getId, Function.identity(), (first, second) -> first))
                 .size();
 
@@ -295,5 +301,9 @@ public class DutyService {
                 schedule.getInstructor().getFullName(),
                 rosterCount
         );
+    }
+
+    private boolean isStudent(User user) {
+        return user != null && user.getRole() == UserRole.STUDENT;
     }
 }

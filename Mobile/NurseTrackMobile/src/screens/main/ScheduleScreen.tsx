@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
-import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock, List, MapPin, User, Users } from 'lucide-react-native';
+import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock, List, MapPin, Users } from 'lucide-react-native';
 import { api } from '../../api/axiosConfig';
 import { useAuth } from '../../context/AuthContext';
 
 interface ScheduleUser {
   id: number;
   fullName: string;
+  role?: string;
   schoolId?: string;
   sectionInfo?: string;
   groupInfo?: string;
@@ -17,9 +18,13 @@ interface ScheduleData {
   id: number;
   hospital: string;
   ward: string;
+  area?: string;
+  date?: string;
   shiftDate: string;
   startTime: string;
   endTime: string;
+  rawStartTime?: string;
+  rawEndTime?: string;
   groupName?: string;
   group?: string;
   student?: ScheduleUser;
@@ -52,26 +57,46 @@ const getScheduleEndpoint = (role?: string) => {
   return '/schedules/all';
 };
 
+const normalizeSchedule = (schedule: ScheduleData): ScheduleData => ({
+  ...schedule,
+  hospital: schedule.hospital ?? '',
+  ward: schedule.ward ?? schedule.area ?? '',
+  shiftDate: schedule.shiftDate ?? schedule.date ?? '',
+  startTime: schedule.rawStartTime ?? schedule.startTime,
+  endTime: schedule.rawEndTime ?? schedule.endTime,
+  studentId: schedule.studentId ?? schedule.student?.id,
+  studentName: schedule.studentName ?? schedule.student?.fullName,
+  studentSchoolId: schedule.studentSchoolId ?? schedule.student?.schoolId,
+  studentSection: schedule.studentSection ?? schedule.student?.sectionInfo,
+  instructorId: schedule.instructorId ?? schedule.instructor?.id,
+  instructorName: schedule.instructorName ?? schedule.instructor?.fullName,
+  canceled: schedule.canceled === true,
+});
+
 const scheduleSessionKey = (schedule: ScheduleData) => [
+  schedule.shiftDate,
   schedule.instructor?.id ?? schedule.instructorId ?? 'instructor',
   schedule.hospital,
   schedule.ward,
-  schedule.shiftDate,
   schedule.startTime,
   schedule.endTime,
+  schedule.student?.sectionInfo ?? schedule.studentSection ?? schedule.groupName ?? schedule.group ?? 'section',
 ].join('|');
 
-const getStudentFromSchedule = (schedule: ScheduleData, currentUser?: ScheduleUser | null): AssignedStudent | null => {
-  const id = schedule.student?.id ?? schedule.studentId ?? currentUser?.id;
-  const name = schedule.student?.fullName ?? schedule.studentName ?? currentUser?.fullName;
+const getStudentFromSchedule = (schedule: ScheduleData, currentUser?: ScheduleUser | null, role?: string): AssignedStudent | null => {
+  const canUseCurrentUser = role === 'STUDENT';
+  if (schedule.student?.role && schedule.student.role !== 'STUDENT') return null;
+  if ((schedule.student?.id ?? schedule.studentId) && (schedule.student?.id ?? schedule.studentId) === (schedule.instructor?.id ?? schedule.instructorId)) return null;
+  const id = schedule.student?.id ?? schedule.studentId ?? (canUseCurrentUser ? currentUser?.id : undefined);
+  const name = schedule.student?.fullName ?? schedule.studentName ?? (canUseCurrentUser ? currentUser?.fullName : undefined);
   if (!id || !name) return null;
 
   return {
     id,
     name,
-    schoolId: schedule.student?.schoolId ?? schedule.studentSchoolId ?? currentUser?.schoolId ?? 'N/A',
-    section: schedule.student?.sectionInfo ?? schedule.studentSection ?? currentUser?.sectionInfo ?? 'N/A',
-    profileImageUrl: schedule.student?.profileImageUrl ?? currentUser?.profileImageUrl,
+    schoolId: schedule.student?.schoolId ?? schedule.studentSchoolId ?? (canUseCurrentUser ? currentUser?.schoolId : undefined) ?? 'N/A',
+    section: schedule.student?.sectionInfo ?? schedule.studentSection ?? (canUseCurrentUser ? currentUser?.sectionInfo : undefined) ?? 'N/A',
+    profileImageUrl: schedule.student?.profileImageUrl ?? (canUseCurrentUser ? currentUser?.profileImageUrl : undefined),
   };
 };
 
@@ -100,7 +125,7 @@ export const ScheduleScreen = () => {
 
     try {
       const response = await api.get<ScheduleData[]>(getScheduleEndpoint(user?.role));
-      setSchedules(response.data);
+      setSchedules(response.data.map(normalizeSchedule));
     } catch (e) {
       console.log('Failed to fetch schedules from backend', e);
       setSchedules([]);
@@ -123,7 +148,7 @@ export const ScheduleScreen = () => {
     if (!selectedSchedule) return [];
     const roster = schedules
       .filter((schedule) => scheduleSessionKey(schedule) === scheduleSessionKey(selectedSchedule))
-      .map((schedule) => getStudentFromSchedule(schedule, user))
+      .map((schedule) => getStudentFromSchedule(schedule, user, user?.role))
       .filter((student): student is AssignedStudent => Boolean(student));
     return Array.from(new Map(roster.map((student) => [student.id, student])).values());
   }, [schedules, selectedSchedule, user]);
@@ -218,14 +243,12 @@ export const ScheduleScreen = () => {
 
   const selectedGroup = selectedSchedule?.groupName || selectedSchedule?.group || selectedRoster[0]?.section || 'Assigned Group';
   const selectedInstructorName = selectedSchedule?.instructor?.fullName || selectedSchedule?.instructorName || 'Clinical Instructor';
+  const selectedInstructorImage = selectedSchedule?.instructor?.profileImageUrl || (user?.role !== 'STUDENT' ? user?.profileImageUrl : undefined);
 
   const openScheduleCell = (cellSchedules: ScheduleData[]) => {
     if (cellSchedules.length === 0) return;
-    if (cellSchedules.length === 1) {
-      setSelectedSchedule(cellSchedules[0]);
-      return;
-    }
-    setSelectedDateSchedules(cellSchedules);
+    setSelectedDateSchedules(cellSchedules.length > 1 ? cellSchedules : null);
+    setSelectedSchedule(cellSchedules[0]);
   };
 
   if (isLoading) {
@@ -237,17 +260,48 @@ export const ScheduleScreen = () => {
   }
 
   if (selectedSchedule) {
+    const hasScheduleChoices = selectedDateSchedules && selectedDateSchedules.length > 1;
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.detailTitleRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => setSelectedSchedule(null)}>
+          <TouchableOpacity style={styles.backButton} onPress={() => {
+            setSelectedSchedule(null);
+            setSelectedDateSchedules(null);
+          }}>
             <ArrowLeft color="#344054" size={18} />
           </TouchableOpacity>
           <View>
             <Text style={styles.kicker}>ASSIGNED SCHEDULES</Text>
-            <Text style={styles.pageTitle}>Assigned Roster</Text>
+            <Text style={styles.pageTitle}>{hasScheduleChoices ? 'Choose Schedule' : 'Assigned Roster'}</Text>
           </View>
         </View>
+
+        {hasScheduleChoices && (
+          <View style={styles.multiSchedulePanelInline}>
+            <View style={styles.multiHeaderRow}>
+              <Text style={styles.multiDateText}>{formatDate(selectedSchedule.shiftDate)}</Text>
+              <View style={styles.activeStudentPill}>
+                <Text style={styles.activeStudentPillText}>{selectedDateSchedules.length} active schedule(s)</Text>
+              </View>
+            </View>
+
+            {selectedDateSchedules.map((schedule) => {
+              const isSelected = scheduleSessionKey(schedule) === scheduleSessionKey(selectedSchedule);
+              return (
+                <TouchableOpacity
+                  key={schedule.id}
+                  style={[styles.multiScheduleCard, isSelected && styles.multiScheduleCardSelected]}
+                  onPress={() => setSelectedSchedule(schedule)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.multiScheduleTitle}>{schedule.canceled ? 'Canceled' : `${schedule.ward} Duty`}</Text>
+                  <Text style={styles.multiScheduleHospital}>{schedule.hospital}</Text>
+                  <Text style={styles.multiScheduleMeta}>{schedule.ward} - {formatTime(schedule.startTime)} to {formatTime(schedule.endTime)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         <View style={styles.studentRosterCard}>
           <View style={styles.rosterTopRow}>
@@ -273,14 +327,11 @@ export const ScheduleScreen = () => {
           </View>
 
           <View style={styles.instructorRow}>
-            <View style={styles.avatarCircle}>
-              <User color="#8A252C" size={16} />
-            </View>
+            <StudentAvatar name={selectedInstructorName} imageUrl={selectedInstructorImage} size={40} />
             <View style={{ flex: 1 }}>
               <Text style={styles.instructorName}>{selectedInstructorName}</Text>
               <Text style={styles.instructorSubtext}>Clinical Instructor handling this schedule</Text>
             </View>
-            <View style={styles.statusPill} />
           </View>
 
           <View style={styles.tableHeaderRow}>
@@ -291,11 +342,11 @@ export const ScheduleScreen = () => {
 
           <View style={styles.studentListBox}>
             {selectedRoster.length === 0 ? (
-              <Text style={styles.emptyText}>No assigned students found for this schedule.</Text>
+              <Text style={styles.emptyRosterText}>No assigned students found for this schedule.</Text>
             ) : selectedRoster.map((student, index) => (
               <View key={student.id} style={styles.studentRow}>
                 <Text style={styles.rowNumber}>{index + 1}.</Text>
-                <StudentAvatar name={student.name} imageUrl={student.profileImageUrl} />
+                <StudentAvatar name={student.name} imageUrl={student.profileImageUrl} size={28} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.studentName}>{student.name}</Text>
                   <Text style={styles.studentMeta}>{student.schoolId}</Text>
@@ -304,48 +355,6 @@ export const ScheduleScreen = () => {
               </View>
             ))}
           </View>
-        </View>
-      </ScrollView>
-    );
-  }
-
-  if (selectedDateSchedules) {
-    const selectedDate = selectedDateSchedules[0]?.shiftDate;
-    return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.detailTitleRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => setSelectedDateSchedules(null)}>
-            <ArrowLeft color="#344054" size={18} />
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.kicker}>ASSIGNED SCHEDULES</Text>
-            <Text style={styles.pageTitle}>Choose Schedule</Text>
-          </View>
-        </View>
-
-        <View style={styles.multiSchedulePanel}>
-          <View style={styles.multiHeaderRow}>
-            <Text style={styles.multiDateText}>{selectedDate ? formatDate(selectedDate) : 'Selected date'}</Text>
-            <View style={styles.activeStudentPill}>
-              <Text style={styles.activeStudentPillText}>{selectedDateSchedules.length} active schedule(s)</Text>
-            </View>
-          </View>
-
-          {selectedDateSchedules.map((schedule) => (
-            <TouchableOpacity
-              key={schedule.id}
-              style={styles.multiScheduleCard}
-              onPress={() => {
-                setSelectedDateSchedules(null);
-                setSelectedSchedule(schedule);
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.multiScheduleTitle}>{schedule.canceled ? 'Canceled' : `${schedule.ward} Duty`}</Text>
-              <Text style={styles.multiScheduleHospital}>{schedule.hospital}</Text>
-              <Text style={styles.multiScheduleMeta}>{schedule.ward} - {formatTime(schedule.startTime)} to {formatTime(schedule.endTime)}</Text>
-            </TouchableOpacity>
-          ))}
         </View>
       </ScrollView>
     );
@@ -415,7 +424,7 @@ export const ScheduleScreen = () => {
                           primarySchedule && styles.dayCellAssigned,
                           hasMultipleSchedules && styles.dayCellMultiple,
                           primarySchedule?.canceled && styles.dayCellCanceled,
-                          cell.isToday && styles.dayCellToday,
+                          cell.isToday && !primarySchedule && styles.dayCellToday,
                         ]}
                         onPress={() => openScheduleCell(cell.schedules)}
                         disabled={!primarySchedule}
@@ -432,7 +441,6 @@ export const ScheduleScreen = () => {
                           <>
                             <Text style={styles.multipleCountText}>{cell.schedules.length}</Text>
                             <Text style={styles.multipleDutyText} numberOfLines={1}>Multiple Duties</Text>
-                            {cell.isToday && <Text style={styles.todayPillText}>Today</Text>}
                           </>
                         ) : (
                           primarySchedule.canceled ? (
@@ -511,13 +519,13 @@ const InfoBox = ({ label, value }: { label: string; value: string }) => (
   </View>
 );
 
-const StudentAvatar = ({ name, imageUrl }: { name: string; imageUrl?: string }) => {
+const StudentAvatar = ({ name, imageUrl, size = 28 }: { name: string; imageUrl?: string; size?: number }) => {
   if (imageUrl) {
-    return <Image source={{ uri: imageUrl }} style={styles.studentAvatarImage} />;
+    return <Image source={{ uri: imageUrl }} style={[styles.studentAvatarImage, { width: size, height: size, borderRadius: size / 2 }]} />;
   }
 
   return (
-    <View style={styles.studentAvatarFallback}>
+    <View style={[styles.studentAvatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
       <Text style={styles.studentAvatarFallbackText}>{firstInitialFor(name)}</Text>
     </View>
   );
@@ -863,6 +871,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
   },
+  emptyRosterText: {
+    color: '#667085',
+    fontSize: 13,
+    fontWeight: '800',
+    paddingVertical: 18,
+    paddingHorizontal: 12,
+    lineHeight: 19,
+  },
   scheduleListRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -924,6 +940,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF8D7',
     padding: 14,
   },
+  multiSchedulePanelInline: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    backgroundColor: '#FFF8D7',
+    padding: 14,
+    marginBottom: 14,
+  },
   multiHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -946,6 +970,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 14,
     marginBottom: 10,
+  },
+  multiScheduleCardSelected: {
+    borderColor: '#8A252C',
+    borderLeftColor: '#8A252C',
   },
   multiScheduleTitle: {
     color: '#111827',
