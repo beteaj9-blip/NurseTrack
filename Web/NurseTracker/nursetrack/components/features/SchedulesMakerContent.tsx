@@ -202,7 +202,7 @@ function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSecti
         <path d="M12 9v5" className="stroke-white" />
         <path d="M12 17h.01" className="stroke-white" />
       </svg>
-      <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-[260px] -translate-x-1/2 rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-3 py-2 !text-[0.75rem] !font-[800] leading-[1.35] !text-[#744b00] shadow-[0_12px_24px_rgba(15,23,42,0.14)] opacity-0 group-hover:opacity-100 transition-opacity">
+      <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 w-[260px] -translate-y-1/2 rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-3 py-2 !text-[0.75rem] !font-[800] leading-[1.35] !text-[#744b00] shadow-[0_12px_24px_rgba(15,23,42,0.14)] opacity-0 group-hover:opacity-100 transition-opacity">
         Uploaded section is {uploadedSection || "blank"}, but this student is currently in {studentSection || "blank"}. Publishing will update the student to the uploaded section.
       </span>
     </span>
