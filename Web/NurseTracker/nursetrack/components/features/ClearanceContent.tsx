@@ -19,6 +19,21 @@ function statusClass(status?: string) {
   return "bg-[#fef2f2] !text-[#991b1b]";
 }
 
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromRecord(record: any) {
+  const levels = new Set<number>();
+  (record.studentAssignedLevels ?? record.student?.assignedLevels ?? []).forEach((level: number) => Number.isFinite(level) && levels.add(level));
+  const text = String(record.studentSection ?? "");
+  const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+  if (numeric) levels.add(Number(numeric[1]));
+  if (/level\s*i\b/i.test(text)) levels.add(1);
+  if (/level\s*ii\b/i.test(text)) levels.add(2);
+  if (/level\s*iii\b/i.test(text)) levels.add(3);
+  if (/level\s*iv\b/i.test(text)) levels.add(4);
+  return Array.from(levels).sort((a, b) => a - b);
+}
+
 export function ClearanceContent({ basePath }: { basePath: string }) {
   const { data: clearances = [], isLoading } = useClearances();
   const { data: settings } = useClearanceSettings();
@@ -26,6 +41,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
   const { showToast } = useToast();
   const [search, setSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const PER_PAGE = 10;
@@ -37,6 +53,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
     const label = statusLabel(c.status);
     return (!search || `${c.studentName} ${c.studentSchoolId} ${c.studentSection} ${label}`.toLowerCase().includes(q))
       && (sectionFilter === "all" || c.studentSection === sectionFilter)
+      && (levelFilter === "all" || levelsFromRecord(c).includes(Number(levelFilter)))
       && (statusFilter === "all" || c.status === statusFilter);
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
@@ -68,9 +85,10 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
           <div><h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">All-Section Clearance List</h2><p className="m-[0.35rem_0_0] !text-[#64748b] !text-[0.86rem] !font-[700]">{clearanceEnabled ? "Student clearance submission is enabled." : "Student clearance submission is disabled."}</p></div>
           <div className="flex items-center gap-3 flex-wrap">{canToggleSubmissions && <button type="button" disabled={updateSettings.isPending} onClick={handleToggleClearance} className={`inline-flex items-center justify-center min-h-[42px] px-4 rounded-lg !text-[0.86rem] !font-[900] cursor-pointer disabled:opacity-60 ${clearanceEnabled ? "bg-white border border-[#fca5a5] !text-[#b91c1c] hover:bg-[#fef2f2]" : "bg-[#8A252C] border border-[#8A252C] !text-white hover:bg-[#6d1d23]"}`}>{clearanceEnabled ? "Disable Submissions" : "Enable Submissions"}</button>}<span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span></div>
         </div>
-        <div className="grid gap-[1rem] mb-[1rem] grid-cols-3 max-[980px]:grid-cols-1">
+        <div className="grid gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.35fr)_minmax(170px,1fr)_minmax(150px,0.75fr)_minmax(170px,1fr)] max-[1100px]:grid-cols-2 max-[680px]:grid-cols-1">
           <label className={labelCls} htmlFor="cl-search">Search<input className={inputCls} id="cl-search" type="search" placeholder="Search name, student ID, section, or status" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
           <label className={labelCls} htmlFor="cl-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
+          <label className={labelCls} htmlFor="cl-level">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={(value) => { setLevelFilter(value); setCurrentPage(1); }} /></label>
           <label className={labelCls} htmlFor="cl-status">Clearance<InlineSelect value={statusFilter} options={statusOptions} placeholder="All statuses" onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }} /></label>
         </div>
         <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>

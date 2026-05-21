@@ -29,7 +29,10 @@ function getProfileCompletion(user: User) {
 
 function getContext(user: User) {
   if (user.sectionInfo?.trim()) return user.sectionInfo;
-  if (user.assignedLevels?.length) return `Levels ${[...user.assignedLevels].sort((a, b) => a - b).join(", ")}`;
+  if (user.assignedLevels?.length) {
+    const levels = [...user.assignedLevels].sort((a, b) => a - b);
+    return levels.length === 1 ? `Level ${levels[0]}` : `Levels ${levels.join(", ")}`;
+  }
   return roleLabels[user.role] ?? user.role;
 }
 

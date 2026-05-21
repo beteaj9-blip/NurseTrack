@@ -16,11 +16,27 @@ type ProgressStudent = {
   name: string;
   profileImageUrl?: string;
   section: string;
+  levels: number[];
   cases: number;
   approvedCases: number;
   pending: number;
   standing: string;
 };
+
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromRecord(record: any) {
+  const levels = new Set<number>();
+  (record.assignedLevels ?? record.studentAssignedLevels ?? record.student?.assignedLevels ?? []).forEach((level: number) => Number.isFinite(level) && levels.add(level));
+  const text = String(record.sectionInfo ?? record.studentSection ?? "");
+  const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+  if (numeric) levels.add(Number(numeric[1]));
+  if (/level\s*i\b/i.test(text)) levels.add(1);
+  if (/level\s*ii\b/i.test(text)) levels.add(2);
+  if (/level\s*iii\b/i.test(text)) levels.add(3);
+  if (/level\s*iv\b/i.test(text)) levels.add(4);
+  return Array.from(levels).sort((a, b) => a - b);
+}
 
 const standingOptions = [
   { value: "all", label: "All" },
@@ -52,6 +68,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
   const isLoading = isAllSection ? isUsersLoading || isAllCasesLoading || isAllAttendanceLoading : isInstructorCasesLoading || isInstructorAttendanceLoading;
   const [search, setSearch] = useState("");
   const [section, setSection] = useState("all");
+  const [level, setLevel] = useState("all");
   const [standing, setStanding] = useState("all");
 
   const students = useMemo(() => {
@@ -66,6 +83,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
           name: student.fullName || "Nursing Student",
           profileImageUrl: student.profileImageUrl,
           section: student.sectionInfo || "No Section",
+          levels: levelsFromRecord(student),
           cases: 0,
           approvedCases: 0,
           pending: 0,
@@ -82,6 +100,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
         name: record.studentName || "Nursing Student",
         profileImageUrl: record.studentProfileImageUrl,
         section: record.studentSection || "No Section",
+        levels: levelsFromRecord(record),
         cases: 0,
         approvedCases: 0,
         pending: 0,
@@ -91,6 +110,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
         if (record.status === "APPROVED" || record.status === "VALIDATED") current.approvedCases += 1;
       }
       if (record.status === "PENDING") current.pending += 1;
+      levelsFromRecord(record).forEach((level) => current.levels.includes(level) || current.levels.push(level));
       source.set(key, current);
     });
 
@@ -112,8 +132,9 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
     const q = search.trim().toLowerCase();
     const matchesSearch = !q || `${student.name} ${student.schoolId ?? ""} ${student.section} ${student.standing}`.toLowerCase().includes(q);
     const matchesSection = section === "all" || student.section === section;
+    const matchesLevel = level === "all" || student.levels.includes(Number(level));
     const matchesStanding = standing === "all" || student.standing === standing;
-    return matchesSearch && matchesSection && matchesStanding;
+    return matchesSearch && matchesSection && matchesLevel && matchesStanding;
   });
 
   const title = isAllSection ? "All-Section Student List" : "Assigned Student List";
@@ -129,9 +150,10 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(190px,1fr)_minmax(190px,1fr)] gap-4 mb-5 max-[900px]:grid-cols-1" aria-label="Student progress search filters">
+        <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(170px,1fr)_minmax(150px,0.75fr)_minmax(170px,1fr)] gap-4 mb-5 max-[1100px]:grid-cols-2 max-[680px]:grid-cols-1" aria-label="Student progress search filters">
           <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="student-progress-search">Search<input className="w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-[700] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="student-progress-search" type="search" placeholder="Search name, student ID, section, or status" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
           <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Section<InlineSelect value={section} options={sectionOptions} placeholder="All" onChange={setSection} /></label>
+          <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Level<InlineSelect value={level} options={levelOptions} placeholder="All levels" onChange={setLevel} /></label>
           <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Standing<InlineSelect value={standing} options={standingOptions} placeholder="All" onChange={setStanding} /></label>
         </div>
 

@@ -436,24 +436,24 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
         <div className="mt-6 flex justify-end"><span title={publishBlockMessage || "Publish reviewed schedule"}><button className="inline-flex min-h-[52px] items-center justify-center rounded-lg bg-[#8A252C] px-8 !font-[900] !text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60" type="button" disabled={Boolean(publishBlockMessage)} onClick={publishSchedule}>{publishImport.isPending ? "Publishing..." : "Publish Schedule"}</button></span></div>
       </section>}
 
-      {selectedGroup && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f172a]/45 p-5">
-        <section className="max-h-[92vh] w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-xl bg-white shadow-[0_26px_68px_rgba(15,23,42,0.24)]">
-          <div className="flex items-start justify-between gap-4 p-6">
+      {selectedGroup && <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-[#0f172a]/45 p-3 sm:p-5">
+        <section className="flex max-h-[calc(100dvh-1.5rem)] w-[min(980px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-xl bg-white shadow-[0_26px_68px_rgba(15,23,42,0.24)] sm:max-h-[92vh] sm:w-[min(980px,calc(100vw-2rem))]">
+          <div className="flex shrink-0 items-start justify-between gap-4 p-4 sm:p-6">
             <div>
               <h2 className="m-0 !text-[1.35rem] !font-[900] !text-[#111827]">{selectedGroup.section}{selectedGroup.group ? ` ${selectedGroup.group}` : ""} Student(s)</h2>
             </div>
-            <div className="flex items-center gap-3">
-              <button className={`min-h-[44px] rounded-lg border px-6 !font-[900] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 ${modalChanged ? "border-[#8A252C]/35 bg-[#fff7d6] !text-[#8A252C] hover:bg-[#ffefad]" : "border-[#e2e8f0] bg-white !text-[#94a3b8]"}`} type="button" disabled={!modalChanged} onClick={() => { setModalRecords(modalOriginalRecords); setStudentSearch(""); }}>Undo</button>
-              <button className="relative grid h-[48px] w-[48px] place-items-center rounded-lg border border-[#dbe3ee] bg-white !text-transparent outline-none cursor-pointer transition-colors hover:border-[#8a252c] before:absolute before:h-[2px] before:w-[15px] before:rotate-45 before:rounded-full before:bg-[#0f172a] before:content-[''] after:absolute after:h-[2px] after:w-[15px] after:-rotate-45 after:rounded-full after:bg-[#0f172a] after:content-['']" type="button" onClick={closeStudentModal} aria-label="Close student roster">Close</button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button className={`min-h-[40px] rounded-lg border px-4 !font-[900] cursor-pointer disabled:cursor-not-allowed disabled:opacity-70 sm:min-h-[44px] sm:px-6 ${modalChanged ? "border-[#8A252C]/35 bg-[#fff7d6] !text-[#8A252C] hover:bg-[#ffefad]" : "border-[#e2e8f0] bg-white !text-[#94a3b8]"}`} type="button" disabled={!modalChanged} onClick={() => { setModalRecords(modalOriginalRecords); setStudentSearch(""); }}>Undo</button>
+              <button className="relative grid h-[42px] w-[42px] place-items-center rounded-lg border border-[#dbe3ee] bg-white !text-transparent outline-none cursor-pointer transition-colors hover:border-[#8a252c] before:absolute before:h-[2px] before:w-[15px] before:rotate-45 before:rounded-full before:bg-[#0f172a] before:content-[''] after:absolute after:h-[2px] after:w-[15px] after:-rotate-45 after:rounded-full after:bg-[#0f172a] after:content-[''] sm:h-[48px] sm:w-[48px]" type="button" onClick={closeStudentModal} aria-label="Close student roster">Close</button>
             </div>
           </div>
-          <div className="grid gap-[10px] px-6 pb-4">
+          <div className="grid shrink-0 gap-[10px] px-4 pb-3 sm:px-6 sm:pb-4">
             <label className="!font-[900] !text-[#14213d]" htmlFor="schedule-student-add-search">Search student to add</label>
             <div className="relative">
-              <input id="schedule-student-add-search" className="min-h-[58px] w-full rounded-lg border border-[#8a252c]/45 bg-white px-[18px] pr-12 !font-[800] !text-[#14213d] outline-none focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)]" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search by name, ID, section, or email" autoComplete="off" />
+              <input id="schedule-student-add-search" className="min-h-[48px] w-full rounded-lg border border-[#8a252c]/45 bg-white px-[18px] pr-12 !font-[800] !text-[#14213d] outline-none focus:border-[#8a252c] focus:shadow-[0_0_0_4px_rgba(138,37,44,0.1)] sm:min-h-[58px]" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} placeholder="Search by name, ID, section, or email" autoComplete="off" />
               {studentSearch && <button type="button" className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full !text-[#3f5f9f] !font-[900] cursor-pointer hover:bg-[#f1f5f9]" onClick={() => setStudentSearch("")}>x</button>}
             </div>
-            {studentSearch.trim() && <div className="max-h-[220px] overflow-y-auto rounded-lg border border-[#e2e8f0] bg-white">
+            {studentSearch.trim() && <div className="max-h-[150px] overflow-y-auto rounded-lg border border-[#e2e8f0] bg-white sm:max-h-[220px]">
               {studentSearchResults.length > 0 ? studentSearchResults.map((student) => <button key={student.id} type="button" className="block w-full p-5 text-left cursor-pointer hover:bg-[#f8fafc]" onClick={() => addStudent(student)}>
                 <strong className="block !font-[900] !text-[#14213d]">{student.fullName}</strong>
                 <span className="block !font-[800] !text-[#14213d]">Student | {student.schoolId} | {student.sectionInfo || "No section"}{student.groupInfo ? ` ${student.groupInfo}` : ""} | {formatStudentLevel(student)}</span>
@@ -461,7 +461,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
             </div>}
             <div className="rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-4 py-3 !text-[0.86rem] !font-[800] !text-[#744b00]">Double-check every matched student before saving. If the file only has a last name or student(s) share the same last name, the importer may leave it under Unmatched; use search to add the exact student.</div>
           </div>
-          <div className="grid max-h-[50vh] gap-5 overflow-y-auto px-6 pb-6">
+          <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
             <section className="grid gap-3">
               <div className="flex items-center justify-between gap-3"><h3 className="m-0 !text-[1rem] !font-[900] !text-[#111827]">Matched</h3><span className="rounded-full bg-[#e9f8ef] px-3 py-1 !text-[0.76rem] !font-[900] !text-[#03703c]">{matchedModalRecords.length} student(s)</span></div>
               <div className="overflow-x-auto rounded-lg border border-[#e2e8f0]">
@@ -487,7 +487,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
               </div>
             </section>}
           </div>
-          <div className="flex items-center justify-end gap-3 border-t border-[#e2e8f0] p-6 max-[720px]:flex-col max-[720px]:items-stretch">
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-[#e2e8f0] p-4 max-[720px]:flex-col max-[720px]:items-stretch sm:p-6">
             <button className="inline-flex min-h-[46px] min-w-[130px] items-center justify-center rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.95rem] !font-extrabold !text-[#334155] cursor-pointer hover:bg-[#f8fafc]" type="button" onClick={closeStudentModal}>Cancel</button>
             <button className="inline-flex min-h-[46px] min-w-[130px] items-center justify-center rounded-lg bg-[#8A252C] px-4 !text-[0.95rem] !font-extrabold !text-white shadow-[0_6px_14px_rgba(138,37,44,0.18)] cursor-pointer hover:bg-[#6d1d23]" type="button" onClick={saveStudentModal}>Save Changes</button>
           </div>

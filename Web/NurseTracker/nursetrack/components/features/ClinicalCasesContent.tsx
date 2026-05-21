@@ -7,6 +7,21 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromRecord(record: any) {
+    const levels = new Set<number>();
+    (record.studentAssignedLevels ?? record.student?.assignedLevels ?? []).forEach((level: number) => Number.isFinite(level) && levels.add(level));
+    const text = String(record.studentSection ?? record.section ?? "");
+    const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+    if (numeric) levels.add(Number(numeric[1]));
+    if (/level\s*i\b/i.test(text)) levels.add(1);
+    if (/level\s*ii\b/i.test(text)) levels.add(2);
+    if (/level\s*iii\b/i.test(text)) levels.add(3);
+    if (/level\s*iv\b/i.test(text)) levels.add(4);
+    return Array.from(levels).sort((a, b) => a - b);
+}
+
 export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const user = useAuthStore((state) => state.user);
     const isAllCaseScope = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
@@ -17,6 +32,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const isLoading = isAllCaseScope ? isAllLoading : isInstructorLoading;
     const [search, setSearch] = useState("");
     const [sectionFilter, setSectionFilter] = useState("all");
+    const [levelFilter, setLevelFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const PER_PAGE = 10;
 
@@ -29,8 +45,10 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
             name: clinicalCase.studentName || "Nursing Student",
             profileImageUrl: clinicalCase.studentProfileImageUrl,
             section: clinicalCase.studentSection || "Nursing Student",
+            levels: levelsFromRecord(clinicalCase),
             pending: 0,
         };
+        levelsFromRecord(clinicalCase).forEach((level) => current.levels?.includes(level) || current.levels?.push(level));
         current.pending += clinicalCase.status === "PENDING" ? 1 : 0;
         acc[key] = current;
         return acc;
@@ -41,7 +59,8 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const filtered = students.filter(s => {
         const q = search.toLowerCase();
         return (!search || String(s.name).toLowerCase().includes(q) || String(s.id).toLowerCase().includes(q) || String(s.section).toLowerCase().includes(q))
-            && (sectionFilter === "all" || s.section === sectionFilter);
+            && (sectionFilter === "all" || s.section === sectionFilter)
+            && (levelFilter === "all" || s.levels?.includes(Number(levelFilter)));
     });
     const totalPages = Math.ceil(filtered.length / PER_PAGE);
     const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
@@ -55,9 +74,10 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
                     <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-[800] tracking-[-0.03em]">Students with Clinical Case Records</h2>
                     <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{filtered.length} student(s)</span>
                 </div>
-                <div className="grid min-w-0 gap-[1rem] mb-[1rem] grid-cols-2 max-[680px]:grid-cols-1">
+                <div className="grid min-w-0 gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.5fr)_minmax(170px,1fr)_minmax(150px,0.75fr)] max-[900px]:grid-cols-1">
                     <label className={labelCls} htmlFor="cc-search">Search student<input className={inputCls} id="cc-search" type="search" placeholder="Search name, student ID, or section" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
                     <label className={labelCls} htmlFor="cc-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
+                    <label className={labelCls} htmlFor="cc-level">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={(value) => { setLevelFilter(value); setCurrentPage(1); }} /></label>
                 </div>
                 <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
                     {paged.map((s, i) => (

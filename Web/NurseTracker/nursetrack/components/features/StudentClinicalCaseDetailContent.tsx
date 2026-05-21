@@ -214,15 +214,15 @@ export function StudentClinicalCaseDetailContent() {
         <div className="fixed inset-0 z-[9998] bg-[rgba(0,0,0,0.45)] backdrop-blur-[4px]" onClick={() => !deleteCase.isPending && setShowDeleteModal(false)} />
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-[20px]">
           <section className="w-full max-w-[440px] rounded-[14px] bg-white p-[clamp(28px,4vw,38px)] shadow-[0_32px_80px_rgba(0,0,0,0.22)] animate-[fadeUp_320ms_ease_both]" role="dialog" aria-modal="true" aria-labelledby="delete-case-title">
-            <div className="mb-[18px] flex h-[56px] w-[56px] items-center justify-center rounded-full bg-[#fee2e2]">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v5" /><path d="M14 11v5" /></svg>
+            <div className="mb-[18px] flex h-[56px] w-[56px] items-center justify-center rounded-full bg-[#fff3f4]">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8A252C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v5" /><path d="M14 11v5" /></svg>
             </div>
-            <p className="!m-0 !mb-[8px] !text-[#b91c1c] !text-[0.8rem] !font-[900] uppercase tracking-wide">Delete Clinical Case</p>
+            <p className="!m-0 !mb-[8px] !text-[#8A252C] !text-[0.8rem] !font-[900] uppercase tracking-wide">Delete Clinical Case</p>
             <h2 id="delete-case-title" className="!m-0 !mb-[10px] !text-[#111827] !text-[1.4rem] !font-[850] !leading-[1.2]">Delete this pending case?</h2>
             <p className="!m-0 !mb-[32px] !text-[#475569] !text-[0.95rem] !font-[500] !leading-[1.5]">This will permanently remove the clinical case from your records. This action cannot be undone.</p>
             <div className="grid grid-cols-2 gap-3">
               <button type="button" disabled={deleteCase.isPending} className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg border border-[#dbe3ee] bg-white px-4 !text-[#344054] !text-[0.95rem] !font-[800] shadow-[0_1px_2px_rgba(16,24,40,0.05)] transition-all duration-200 cursor-pointer hover:border-[#cbd5e1] hover:bg-[#f8fafc] hover:!text-[#0f172a] disabled:opacity-60" onClick={() => setShowDeleteModal(false)}>Keep Case</button>
-              <button type="button" disabled={deleteCase.isPending} className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg border border-[#b91c1c] bg-[#b91c1c] px-4 !text-white !text-[0.95rem] !font-[800] shadow-[0_4px_12px_rgba(185,28,28,0.22)] transition-all duration-200 cursor-pointer hover:border-[#991b1b] hover:bg-[#991b1b] disabled:opacity-60" onClick={deleteClinicalCase}>{deleteCase.isPending ? "Deleting..." : "Delete Case"}</button>
+              <button type="button" disabled={deleteCase.isPending} className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg border border-[#8A252C] bg-[#8A252C] px-4 !text-white !text-[0.95rem] !font-[800] shadow-[0_4px_12px_rgba(138,37,44,0.22)] transition-all duration-200 cursor-pointer hover:border-[#681920] hover:bg-[#681920] disabled:opacity-60" onClick={deleteClinicalCase}>{deleteCase.isPending ? "Deleting..." : "Delete Case"}</button>
             </div>
           </section>
         </div>

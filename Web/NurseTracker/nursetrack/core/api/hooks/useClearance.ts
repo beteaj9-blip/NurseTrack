@@ -8,6 +8,7 @@ function normalizeClearance(record: any) {
     studentName: record.studentName ?? record.student?.fullName ?? '',
     studentSchoolId: record.studentSchoolId ?? record.student?.schoolId ?? '',
     studentSection: record.studentSection ?? record.student?.sectionInfo ?? '',
+    studentAssignedLevels: record.studentAssignedLevels ?? record.student?.assignedLevels ?? [],
     studentProfileImageUrl: record.studentProfileImageUrl ?? record.student?.profileImageUrl ?? '',
   };
 }

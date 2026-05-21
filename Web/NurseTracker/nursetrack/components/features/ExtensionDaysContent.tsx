@@ -82,7 +82,7 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
           <label className={labelCls} htmlFor="ext-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
           <label className={labelCls} htmlFor="ext-standing">Standing<InlineSelect value={statusFilter} options={standingOptions} placeholder="All standings" onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }} /></label>
         </div>
-        <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? '' : 'rounded-b-lg'}`}>
+        {filtered.length > 0 && <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? '' : 'rounded-b-lg'}`}>
           {paged.map((s, i) => {
             const c = s.statusClass === "status-pending" ? "bg-[#fff8e1] !text-[#6c4c00]" : s.statusClass === "status-verified" ? "bg-[#e9f8ef] !text-[#03703c]" : s.statusClass === "status-rejected" ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#f1f5f9] !text-[#475569]";
             return (
@@ -94,7 +94,7 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
               </Link>
             );
           })}
-        </div>
+        </div>}
         {totalPages > 1 && (
           <div className="flex justify-between items-center p-[1rem_1.5rem] gap-2 border border-[#e2e8f0] border-t-0 rounded-b-lg bg-[#f8fafc]">
             <button className={ghostBtn} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</button>
@@ -102,7 +102,7 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
             <button className={ghostBtn} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next</button>
           </div>
         )}
-        {filtered.length === 0 && (isLoading ? <LoadingState message="Loading assigned student(s)..." className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <p className="m-0 border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[700] text-center">No student(s) found.</p>)}
+        {filtered.length === 0 && (isLoading ? <LoadingState message="Loading assigned student(s)..." className="mt-[1rem] rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <p className="m-0 mt-[1rem] border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No student(s) found.</p>)}
       </section>
     </main>
   );
