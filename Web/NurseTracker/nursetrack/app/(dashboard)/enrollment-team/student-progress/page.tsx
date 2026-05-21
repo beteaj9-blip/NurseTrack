@@ -1,5 +1,5 @@
-import { StudentProgressContent } from "@/components/features/StudentProgressContent";
+import { InstructorStudentProgressContent } from "@/components/features/InstructorStudentProgressContent";
 
 export default function Page() {
-  return <StudentProgressContent basePath="/enrollment-team" />;
+  return <InstructorStudentProgressContent basePath="/enrollment-team" />;
 }

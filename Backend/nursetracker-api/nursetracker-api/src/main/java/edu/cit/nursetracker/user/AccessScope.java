@@ -10,7 +10,7 @@ public final class AccessScope {
     private AccessScope() {}
 
     public static boolean canViewAll(User viewer) {
-        return viewer != null && (viewer.getRole() == UserRole.ADMIN || viewer.getRole() == UserRole.COORDINATOR);
+        return viewer != null && (viewer.getRole() == UserRole.ADMIN || viewer.getRole() == UserRole.COORDINATOR || viewer.getRole() == UserRole.ENROLLMENT);
     }
 
     public static boolean canViewUser(User viewer, User target) {

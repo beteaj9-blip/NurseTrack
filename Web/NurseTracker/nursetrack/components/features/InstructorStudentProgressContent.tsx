@@ -56,7 +56,8 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
   const user = useAuthStore((state) => state.user);
   const isAllRole = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
-  const isAllSection = isAdmin || isAllRole;
+  const isEnrollment = basePath === "/enrollment-team";
+  const isAllSection = isAdmin || isAllRole || isEnrollment;
   const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
   const viewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: studentUsers = [], isLoading: isUsersLoading } = useUsers("STUDENT", isAllSection ? viewerId : undefined);
@@ -160,10 +161,12 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
 
         <div className="flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-lg">
           {isLoading ? <LoadingState message="Loading student progress..." /> : filtered.map((student, index) => (
-            <Link key={student.studentId ?? student.schoolId ?? student.name} href={`${basePath}/student-progress/detail?studentId=${student.studentId ?? ""}`} className="grid grid-cols-[42px_44px_minmax(0,1fr)] items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)] max-[680px]:gap-2.5 max-[680px]:p-3">
+            <Link key={student.studentId ?? student.schoolId ?? student.name} href={`${basePath}/student-progress/detail?studentId=${student.studentId ?? ""}`} className={`${isEnrollment ? "grid-cols-[42px_44px_minmax(0,1fr)_auto_auto] max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)_auto]" : "grid-cols-[42px_44px_minmax(0,1fr)] max-[680px]:grid-cols-[32px_38px_minmax(0,1fr)]"} grid items-center gap-[1.1rem] w-full p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[680px]:gap-2.5 max-[680px]:p-3`}>
               <div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{index + 1}.</div>
               <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={38} />
               <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{student.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{student.section} - {student.schoolId || "No student ID"}</small></span>
+              {isEnrollment && <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#e9f8ef] !text-[#03703c] max-[520px]:col-start-3 max-[520px]:mt-1">{student.standing}</span>}
+              {isEnrollment && <span className="grid h-9 w-9 place-items-center rounded-lg border border-[#dbe3ee] bg-white !text-[#078033] max-[680px]:col-start-4 max-[680px]:row-start-1" aria-label="Checked"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M9.55 17.35 4.9 12.7l1.8-1.8 2.85 2.85 7.75-7.75 1.8 1.8-9.55 9.55Z" /></svg></span>}
             </Link>
           ))}
         </div>

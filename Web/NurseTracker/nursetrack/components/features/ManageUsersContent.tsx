@@ -103,8 +103,9 @@ const resetPasswordValue = (user: DisplayUser) =>
   `${passwordInitials(user.name)}#${user.id}`;
 const roleApi = (value: string) =>
   roles.find((role) => role.value === value)?.api ?? "STUDENT";
+const hasAllLevels = (role: string) => ["ADMIN", "COORDINATOR", "ENROLLMENT"].includes(roleApi(role));
 const assignedLevelsForRole = (role: string, value: FormDataEntryValue | null) =>
-  roleApi(role) === "COORDINATOR" ? "1,2,3,4" : roleApi(role) === "INSTRUCTOR" ? String(value ?? "1").split(",")[0]?.trim() || "1" : String(value ?? "1");
+  hasAllLevels(role) ? "1,2,3,4" : roleApi(role) === "INSTRUCTOR" ? String(value ?? "1").split(",")[0]?.trim() || "1" : String(value ?? "1");
 const roleValue = (value: string) =>
   roles.find((role) => role.api === value)?.value ?? value.toLowerCase();
 const roleLabel = (value: string) =>
@@ -640,8 +641,8 @@ export function ManageUsersContent() {
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
                   Assigned levels
-                  <input type="hidden" name="assignedLevels" value={newUserRole === "coordinator" ? "1,2,3,4" : newUserLevel} />
-                  {newUserRole === "coordinator" ? <input className={inputClass} value="Levels 1, 2, 3, 4" readOnly /> : <InlineSelect value={newUserLevel} options={levelOptions} placeholder="Select level" onChange={setNewUserLevel} />}
+                  <input type="hidden" name="assignedLevels" value={hasAllLevels(newUserRole) ? "1,2,3,4" : newUserLevel} />
+                  {hasAllLevels(newUserRole) ? <input className={inputClass} value="Levels 1, 2, 3, 4" readOnly /> : <InlineSelect value={newUserLevel} options={levelOptions} placeholder="Select level" onChange={setNewUserLevel} />}
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
                   Mobile number
@@ -864,8 +865,8 @@ export function ManageUsersContent() {
                   </label>
                   <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
                     Assigned levels
-                    <input type="hidden" name="assignedLevels" value={editRole === "coordinator" ? "1,2,3,4" : editLevel} />
-                    {editRole === "coordinator" ? <input className={inputClass} value="Levels 1, 2, 3, 4" readOnly /> : <InlineSelect value={editLevel} options={levelOptions} placeholder="Select level" onChange={setEditLevel} />}
+                    <input type="hidden" name="assignedLevels" value={hasAllLevels(editRole) ? "1,2,3,4" : editLevel} />
+                    {hasAllLevels(editRole) ? <input className={inputClass} value="Levels 1, 2, 3, 4" readOnly /> : <InlineSelect value={editLevel} options={levelOptions} placeholder="Select level" onChange={setEditLevel} />}
                   </label>
                   <div
                     className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-[0.85rem] !font-bold border border-[#e2e8f0]"
