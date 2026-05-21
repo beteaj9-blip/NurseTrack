@@ -44,7 +44,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
   const handleReset = () => {
     setFullName(user.name);
     setEmail(user.email);
-                    setMobile(withoutLetters(user.mobile));
+    setMobile(withoutLetters(user.mobile));
     setProfileImageUrl(user.profileImageUrl ?? "");
     setMessage({ text: "Review your information before saving.", type: "" });
   };
@@ -52,7 +52,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
   const handleProfilePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || user.id == null) return;
-    const hasTextChanges = fullName !== user.name || email !== user.email || mobile !== user.mobile;
+    const hasTextChanges = fullName !== user.name || mobile !== user.mobile;
 
     try {
       setIsUploadingPhoto(true);
@@ -94,7 +94,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const hasChanges = fullName !== user.name || email !== user.email || mobile !== user.mobile || profileImageUrl !== (user.profileImageUrl ?? "");
+    const hasChanges = fullName !== user.name || mobile !== user.mobile || profileImageUrl !== (user.profileImageUrl ?? "");
     if (!hasChanges) {
       setMessage({ text: "No profile changes to save.", type: "is-error" });
       showToast({ variant: "info", title: "No changes", message: "There are no profile changes to save." });
@@ -103,7 +103,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
 
     try {
       if (user.id != null) {
-        const updatedUser = await updateUser.mutateAsync({ updates: { fullName, email, mobileNumber: mobile, profileImageUrl } });
+        const updatedUser = await updateUser.mutateAsync({ updates: { fullName, mobileNumber: mobile, profileImageUrl } });
         login(updatedUser);
       }
       setMessage({ text: "Review your information before saving.", type: "" });
@@ -240,7 +240,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 </div>
                 <div>
                   <label className={labelCls} htmlFor="schoolEmail">School Email</label>
-                  <input id="schoolEmail" className={inputCls} type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                  <input id="schoolEmail" className={`${inputCls} !bg-[#f1f5f9] !text-[#64748b] !border-[#cbd5e1] cursor-not-allowed shadow-inner opacity-80 focus:ring-0 focus:border-[#cbd5e1]`} type="email" value={email} readOnly disabled aria-disabled="true" />
                 </div>
                 <div>
                   <label className={labelCls} htmlFor="mobileNumber">Mobile Number</label>

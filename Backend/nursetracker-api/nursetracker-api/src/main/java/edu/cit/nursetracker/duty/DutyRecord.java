@@ -1,5 +1,7 @@
 package edu.cit.nursetracker.duty;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import edu.cit.nursetracker.schedule.Schedule;
 import edu.cit.nursetracker.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,6 +30,11 @@ public class DutyRecord {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instructor_id", nullable = false)
     private User instructor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "schedule_id")
+    @JsonIgnore
+    private Schedule schedule;
 
     @Column(nullable = false)
     private String hospital;

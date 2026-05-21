@@ -11,6 +11,16 @@ import java.time.LocalTime;
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     List<Schedule> findByStudentIdOrderByShiftDateAsc(Long studentId);
     List<Schedule> findByInstructorIdOrderByShiftDateAsc(Long instructorId);
+    List<Schedule> findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(Long studentId, LocalDate shiftDate);
+    List<Schedule> findByInstructorIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(Long instructorId, LocalDate shiftDate);
+    List<Schedule> findByInstructorIdAndHospitalIgnoreCaseAndWardIgnoreCaseAndShiftDateAndStartTimeAndEndTimeAndCanceledFalse(
+            Long instructorId,
+            String hospital,
+            String ward,
+            LocalDate shiftDate,
+            LocalTime startTime,
+            LocalTime endTime
+    );
     boolean existsByStudentIdAndInstructorIdAndHospitalIgnoreCaseAndWardIgnoreCaseAndShiftDateAndStartTimeAndEndTime(
             Long studentId,
             Long instructorId,

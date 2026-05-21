@@ -17,6 +17,21 @@ public class DutyController {
     private final DutyService dutyService;
     private final JwtService jwtService;
 
+    @GetMapping("/attendance/today")
+    public ResponseEntity<DutyAttendanceTodayResponse> getTodayAttendance(
+            @RequestParam(required = false) Long scheduleId,
+            HttpServletRequest request) {
+        return ResponseEntity.ok(dutyService.getTodayAttendance(jwtService.getUserId(request), scheduleId));
+    }
+
+    @PostMapping("/attendance/time-in")
+    public ResponseEntity<DutyAttendanceTodayResponse> timeInForToday(
+            @RequestBody(required = false) DutyAttendanceTimeInRequest timeInRequest,
+            HttpServletRequest request) {
+        Long scheduleId = timeInRequest != null ? timeInRequest.scheduleId() : null;
+        return ResponseEntity.ok(dutyService.timeInForToday(jwtService.getUserId(request), scheduleId));
+    }
+
     @PostMapping("/time-in")
     public ResponseEntity<DutyRecord> timeIn(@RequestBody DutyRecord dutyRecord) {
         return ResponseEntity.ok(dutyService.timeIn(dutyRecord));

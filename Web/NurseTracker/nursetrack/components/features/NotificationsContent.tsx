@@ -17,10 +17,9 @@ function formatNotificationDate(date?: string) {
 
 export default function NotificationsContent({ studentOnly = false }: { studentOnly?: boolean }) {
   const { showToast } = useToast();
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const user = useAuthStore((state) => state.user);
-  const { data: apiNotifications = [], isLoading, refetch } = useNotifications(undefined, true);
+  const { data: apiNotifications = [], isLoading } = useNotifications(undefined, true);
   const markRead = useMarkNotificationRead();
   const markUnread = useMarkNotificationUnread();
   const markAllRead = useMarkAllNotificationsRead();
@@ -53,20 +52,6 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
     });
   };
 
-  const refreshNotifications = async () => {
-    if (isRefreshing) return;
-
-    try {
-      setIsRefreshing(true);
-      await refetch();
-      showToast({ variant: "success", title: "Notifications refreshed", message: "Your notifications are up to date." });
-    } catch {
-      showToast({ variant: "error", title: "Refresh failed", message: "Notifications could not be refreshed." });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   return (
     <div className="p-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
@@ -77,9 +62,6 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
           <div className="flex items-center gap-3">
             <button onClick={markAll} className="h-[40px] px-4 rounded-lg border border-[#dbe3ee] bg-white text-[#344054] text-[0.92rem] font-bold hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] hover:-translate-y-px transition-all cursor-pointer">
               Mark all as read
-            </button>
-            <button onClick={refreshNotifications} disabled={isRefreshing} className="h-[40px] px-4 rounded-lg border border-[#dbe3ee] bg-white text-[#344054] text-[0.92rem] font-bold hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] hover:-translate-y-px transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0">
-              {isRefreshing ? "Refreshing..." : "Refresh"}
             </button>
           </div>
         </div>
