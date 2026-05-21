@@ -54,10 +54,11 @@ function standingFor(student: Omit<ProgressStudent, "standing">) {
 
 export function InstructorStudentProgressContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const isAllRole = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
-  const isAllSection = isAdmin || isChair;
-  const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
+  const isAllSection = isAdmin || isAllRole;
+  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+  const viewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: studentUsers = [], isLoading: isUsersLoading } = useUsers("STUDENT", isAllSection ? viewerId : undefined);
   const { data: instructorCases = [], isLoading: isInstructorCasesLoading } = useInstructorCases();
   const { data: allCases = [], isLoading: isAllCasesLoading } = useAllClinicalCases(isAllSection, viewerId);
@@ -132,7 +133,7 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
     const q = search.trim().toLowerCase();
     const matchesSearch = !q || `${student.name} ${student.schoolId ?? ""} ${student.section} ${student.standing}`.toLowerCase().includes(q);
     const matchesSection = section === "all" || student.section === section;
-    const matchesLevel = level === "all" || student.levels.includes(Number(level));
+    const matchesLevel = !canFilterByLevel || level === "all" || student.levels.includes(Number(level));
     const matchesStanding = standing === "all" || student.standing === standing;
     return matchesSearch && matchesSection && matchesLevel && matchesStanding;
   });
@@ -150,10 +151,10 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(170px,1fr)_minmax(150px,0.75fr)_minmax(170px,1fr)] gap-4 mb-5 max-[1100px]:grid-cols-2 max-[680px]:grid-cols-1" aria-label="Student progress search filters">
+        <div className={canFilterByLevel ? "grid grid-cols-[minmax(0,1.5fr)_minmax(170px,1fr)_minmax(150px,0.75fr)_minmax(170px,1fr)] gap-4 mb-5 max-[1100px]:grid-cols-2 max-[680px]:grid-cols-1" : "grid grid-cols-[minmax(0,1.6fr)_minmax(190px,1fr)_minmax(190px,1fr)] gap-4 mb-5 max-[900px]:grid-cols-1"} aria-label="Student progress search filters">
           <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="student-progress-search">Search<input className="w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-[700] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="student-progress-search" type="search" placeholder="Search name, student ID, section, or status" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
           <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Section<InlineSelect value={section} options={sectionOptions} placeholder="All" onChange={setSection} /></label>
-          <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Level<InlineSelect value={level} options={levelOptions} placeholder="All levels" onChange={setLevel} /></label>
+          {canFilterByLevel && <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Level<InlineSelect value={level} options={levelOptions} placeholder="All levels" onChange={setLevel} /></label>}
           <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Standing<InlineSelect value={standing} options={standingOptions} placeholder="All" onChange={setStanding} /></label>
         </div>
 

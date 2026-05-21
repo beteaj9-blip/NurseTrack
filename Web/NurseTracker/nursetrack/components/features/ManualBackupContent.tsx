@@ -6,6 +6,21 @@ import { useAllAttendance } from "@/core/api/hooks/useAttendance";
 import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
+import { InlineSelect } from "@/components/ui/InlineSelect";
+
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromText(value?: string) {
+  const text = String(value ?? "");
+  const levels = new Set<number>();
+  const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+  if (numeric) levels.add(Number(numeric[1]));
+  if (/level\s*i\b/i.test(text)) levels.add(1);
+  if (/level\s*ii\b/i.test(text)) levels.add(2);
+  if (/level\s*iii\b/i.test(text)) levels.add(3);
+  if (/level\s*iv\b/i.test(text)) levels.add(4);
+  return Array.from(levels).sort((a, b) => a - b);
+}
 
 type InstructorSummary = {
   id?: number | string;
@@ -23,11 +38,14 @@ function formatDate(value?: string) {
 
 export function ManualBackupContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
-  const { data: attendance = [], isLoading } = useAllAttendance(true, isChair && user?.id != null ? String(user.id) : undefined);
+  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+  const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
+  const { data: attendance = [], isLoading } = useAllAttendance(true, scopedViewerId);
   const [search, setSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
 
-  const instructors = Object.values((attendance as any[]).filter((record) => record.instructorFeedback).reduce<Record<string, InstructorSummary>>((acc, record) => {
+  const levelFilteredAttendance = (attendance as any[]).filter((record) => !canFilterByLevel || levelFilter === "all" || levelsFromText(record.studentSection).includes(Number(levelFilter)));
+  const instructors = Object.values(levelFilteredAttendance.filter((record) => record.instructorFeedback).reduce<Record<string, InstructorSummary>>((acc, record) => {
     const key = String(record.instructorId || record.instructorName);
     const current = acc[key] ?? {
       id: record.instructorId,
@@ -48,15 +66,15 @@ export function ManualBackupContent({ basePath }: { basePath: string }) {
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
       <section className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem]">
-        <div className="flex items-center justify-between gap-4 mb-[1.1rem] pb-0 border-b border-[#e5eaf1] flex-wrap">
+        <div className="flex items-start justify-between gap-4 mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap">
           <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">Clinical Instructor Manual Attendance</h2>
           {isLoading ? <span className="h-7 w-24 animate-pulse rounded-full bg-[#f1f5f9]" aria-hidden="true" /> : <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span>}
         </div>
 
-        <label className="flex flex-col gap-1.5 m-0 mb-[1rem] !text-sm !font-bold !text-[#344054]" htmlFor="mb-search">
-          Search
-          <input className="w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="mb-search" type="search" placeholder="Search CI name or attendance records" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </label>
+        <div className={canFilterByLevel ? "grid gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.6fr)_minmax(170px,0.75fr)] max-[680px]:grid-cols-1" : "grid gap-[1rem] mb-[1rem] grid-cols-1"}>
+          <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]" htmlFor="mb-search">Search<input className="w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-medium focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all" id="mb-search" type="search" placeholder="Search CI name or attendance records" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
+          {canFilterByLevel && <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={setLevelFilter} /></label>}
+        </div>
 
         <div className="flex flex-col border border-[#e2e8f0] rounded-lg overflow-hidden bg-white">
           {isLoading ? <LoadingState message="Loading manual attendance reviewers" /> : filtered.length === 0 ? <div className="p-[1.25rem] !text-[#64748b] !font-[800] text-center">No manual attendance records found.</div> : filtered.map((ci, i) => (

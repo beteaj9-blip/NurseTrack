@@ -9,14 +9,29 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromText(value?: string) {
+  const text = String(value ?? "");
+  const levels = new Set<number>();
+  const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+  if (numeric) levels.add(Number(numeric[1]));
+  if (/level\s*i\b/i.test(text)) levels.add(1);
+  if (/level\s*ii\b/i.test(text)) levels.add(2);
+  if (/level\s*iii\b/i.test(text)) levels.add(3);
+  if (/level\s*iv\b/i.test(text)) levels.add(4);
+  return Array.from(levels).sort((a, b) => a - b);
+}
+
 export function ExtensionDaysContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const isAllRole = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
-  const isAllSection = isAdmin || isChair;
-  const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
+  const isAllSection = isAdmin || isAllRole;
+  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+  const viewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: studentUsers = [], isLoading: isStudentsLoading } = useUsers("STUDENT", isAllSection ? viewerId : undefined, isAllSection);
-  const { data: instructorAttendance = [], isLoading: isInstructorLoading } = useInstructorAttendance(!isChair && user?.id != null ? String(user.id) : undefined);
+  const { data: instructorAttendance = [], isLoading: isInstructorLoading } = useInstructorAttendance(!isAllSection && user?.id != null ? String(user.id) : undefined);
   const { data: allAttendance = [], isLoading: isAllLoading } = useAllAttendance(isAllSection, viewerId);
   const { data: instructorExtensionDays = [], isLoading: isInstructorExtensionLoading } = useInstructorExtensionDays(!isAllSection && user?.id != null ? String(user.id) : undefined);
   const { data: allExtensionDays = [], isLoading: isAllExtensionLoading } = useAllExtensionDays(undefined, isAllSection, viewerId);
@@ -25,6 +40,7 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
   const isLoading = isAllSection ? isAllLoading || isAllExtensionLoading || isStudentsLoading : isInstructorLoading || isInstructorExtensionLoading;
   const [search, setSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const PER_PAGE = 10;
@@ -36,7 +52,7 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
     if (!key || key === "undefined") return acc;
     const rejectedCount = record.status === "REJECTED" ? 1 : 0;
     const activeExtensionCount = record.days && record.status === "ACTIVE" ? 1 : 0;
-    const current = acc[key] ?? { studentId: isUser ? record.id : record.studentId, id: isUser ? record.schoolId : record.studentSchoolId, name: record.fullName || record.studentName || "Nursing Student", profileImageUrl: record.profileImageUrl ?? record.studentProfileImageUrl, section: record.sectionInfo || record.studentSection || "No Section", rejected: 0, activeExtensions: 0 };
+    const current = acc[key] ?? { studentId: isUser ? record.id : record.studentId, id: isUser ? record.schoolId : record.studentSchoolId, name: record.fullName || record.studentName || "Nursing Student", profileImageUrl: record.profileImageUrl ?? record.studentProfileImageUrl, section: record.sectionInfo || record.studentSection || "No Section", levels: levelsFromText(record.sectionInfo || record.studentSection), rejected: 0, activeExtensions: 0 };
     if (isUser) {
       current.studentId = record.id;
       current.id = record.schoolId;
@@ -44,12 +60,14 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
       current.profileImageUrl = record.profileImageUrl || current.profileImageUrl;
       current.section = record.sectionInfo || current.section;
     }
+    levelsFromText(record.sectionInfo || record.studentSection).forEach((level) => current.levels.includes(level) || current.levels.push(level));
     current.rejected += rejectedCount;
     current.activeExtensions += activeExtensionCount;
     acc[key] = current;
     return acc;
   }, {})).map((student: any) => ({
-    ...student,
+      ...student,
+    levels: student.levels ?? levelsFromText(student.section),
     status: student.rejected > 0 || student.activeExtensions > 0 ? "Needs action" : "On track",
     statusClass: student.rejected > 0 || student.activeExtensions > 0 ? "status-rejected" : "status-verified",
   }));
@@ -60,6 +78,7 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
     const q = search.toLowerCase();
     return (!search || s.name.toLowerCase().includes(q) || String(s.id ?? "").toLowerCase().includes(q) || s.section.toLowerCase().includes(q) || s.status.toLowerCase().includes(q))
       && (sectionFilter === "all" || s.section === sectionFilter)
+      && (!canFilterByLevel || levelFilter === "all" || s.levels?.includes(Number(levelFilter)))
       && (statusFilter === "all" || s.status === statusFilter);
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
@@ -77,9 +96,10 @@ export function ExtensionDaysContent({ basePath }: { basePath: string }) {
           <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">Student List</h2>
           <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span>
         </div>
-        <div className="grid gap-[1rem] mb-[1rem] grid-cols-3 max-[980px]:grid-cols-1">
+        <div className={canFilterByLevel ? "grid gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.35fr)_minmax(170px,1fr)_minmax(150px,0.75fr)_minmax(170px,1fr)] max-[1100px]:grid-cols-2 max-[680px]:grid-cols-1" : "grid gap-[1rem] mb-[1rem] grid-cols-3 max-[980px]:grid-cols-1"}>
           <label className={labelCls} htmlFor="ext-search">Search<input className={inputCls} id="ext-search" type="search" placeholder="Search name, student ID, section, or standing" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
           <label className={labelCls} htmlFor="ext-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
+          {canFilterByLevel && <label className={labelCls} htmlFor="ext-level">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={(value) => { setLevelFilter(value); setCurrentPage(1); }} /></label>}
           <label className={labelCls} htmlFor="ext-standing">Standing<InlineSelect value={statusFilter} options={standingOptions} placeholder="All standings" onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }} /></label>
         </div>
         {filtered.length > 0 && <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? '' : 'rounded-b-lg'}`}>

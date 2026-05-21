@@ -59,6 +59,9 @@ public class StudentAppeal {
 
     private String instructorRemarks;
 
+    @Enumerated(EnumType.STRING)
+    private AppealStatus instructorDecision;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

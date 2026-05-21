@@ -71,8 +71,8 @@ function parseTimeParts(value: string) {
 function ScheduleTimePicker({ label, value, onChange, disabled }: { label: string; value: string; onChange: (value: string) => void; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const parts = parseTimeParts(value);
-  const hours = ["08", "09", "10", "11", "12", "01", "02"];
-  const minutes = ["00", "01", "02", "03", "04", "05", "06"];
+  const hours = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+  const minutes = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
   const periods = ["AM", "PM"];
 
   function setPart(updates: Partial<typeof parts>, close = false) {
@@ -94,11 +94,11 @@ function ScheduleTimePicker({ label, value, onChange, disabled }: { label: strin
         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
       </button>
       {open && !disabled && (
-        <div className="absolute left-0 top-[76px] z-30 grid w-[172px] grid-cols-3 border border-[#cbd5e1] bg-white p-1 shadow-[0_16px_34px_rgba(15,23,42,0.12)]">
-          <div className="grid gap-1">
+        <div className="absolute left-0 top-[76px] z-30 grid w-[min(260px,calc(100vw-3rem))] grid-cols-[1fr_1fr_1fr] gap-1 rounded-lg border border-[#cbd5e1] bg-white p-1 shadow-[0_16px_34px_rgba(15,23,42,0.12)]">
+          <div className="grid max-h-[238px] gap-1 overflow-y-auto pr-1">
             {hours.map((hour) => <button key={hour} type="button" onClick={() => setPart({ hour })} className={`min-h-[34px] px-3 !font-[800] cursor-pointer ${parts.hour === hour ? "bg-[#0d6efd] !text-white" : "bg-white !text-[#111827] hover:bg-[#f1f5f9]"}`}>{hour}</button>)}
           </div>
-          <div className="grid gap-1">
+          <div className="grid max-h-[238px] gap-1 overflow-y-auto pr-1">
             {minutes.map((minute) => <button key={minute} type="button" onClick={() => setPart({ minute })} className={`min-h-[34px] px-3 !font-[800] cursor-pointer ${parts.minute === minute ? "bg-[#0d6efd] !text-white" : "bg-white !text-[#111827] hover:bg-[#f1f5f9]"}`}>{minute}</button>)}
           </div>
           <div className="grid content-start gap-1">
@@ -201,7 +201,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const { canEdit: canUseScheduleMaker } = useCanEditFeature("scheduleMaker");
   const canEdit = basePath === "/admin" || basePath === "/chair" || basePath === "/assistant" || (basePath === "/coordinator" && canUseScheduleMaker);
   const { data: hospitals = [] } = useHospitals();
-  const scopedViewerId = (basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
+  const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: instructors = [] } = useInstructors(scopedViewerId);
   const { data: databaseStudents = [] } = useUsers("STUDENT", scopedViewerId);
   const { showToast } = useToast();
@@ -408,8 +408,8 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
               </div>
               <button className="mt-4 inline-flex min-h-[34px] w-fit items-center justify-center rounded-full border border-[#8a252c]/18 bg-[#fff7d6] px-[0.85rem] py-[0.45rem] !text-[0.86rem] !font-extrabold leading-none !text-[#8a252c] transition-all cursor-pointer hover:bg-[#ffefad]" type="button" onClick={() => openStudentModal(group)}>View student(s) ({getStudentRecords(group).length})</button>
             </div>
-            <div className="flex flex-wrap justify-end gap-[10px] max-[980px]:justify-start">
-              <button className="inline-flex min-h-[44px] w-auto items-center justify-center rounded-lg border border-[#c62828]/20 bg-white px-4 !text-[0.95rem] !font-extrabold !text-[#c62828] cursor-pointer hover:bg-[#fff5f5]" type="button" onClick={() => setGroups((current) => current.filter((item) => item.id !== group.id))}>Remove</button>
+            <div className="flex flex-wrap justify-end gap-[10px] pt-[1.45rem] max-[980px]:justify-start max-[980px]:pt-0">
+              <button className="inline-flex min-h-[44px] w-auto items-center justify-center rounded-lg border border-[#c62828]/20 bg-white px-4 !text-[0.95rem] !font-extrabold !text-[#c62828] cursor-pointer hover:bg-[#fff5f5] max-[720px]:w-full" type="button" onClick={() => setGroups((current) => current.filter((item) => item.id !== group.id))}>Remove</button>
             </div>
             <div className="col-span-full grid grid-cols-2 gap-[18px_22px] pt-[4px] max-[980px]:grid-cols-1">
               <label className="grid gap-2 !text-[0.88rem] !font-[800] !text-[#344054]">Start Date<input className="min-h-[48px] rounded-lg border border-[#dbe3ee] bg-white px-4 !font-[800] !text-[#111827]" type="date" value={group.startDate} onChange={(event) => updateGroup(group.id, { startDate: event.target.value })} /></label>

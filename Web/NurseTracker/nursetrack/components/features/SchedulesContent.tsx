@@ -120,16 +120,16 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
               </h2>
             </div>
 
-            <div className="flex items-center gap-4 flex-wrap ml-auto">
-              {showViewToggle && <div className="flex items-center gap-2">
-                <button onClick={() => setViewMode("calendar")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border ${viewMode === "calendar" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>Calendar</button>
-                <button onClick={() => setViewMode("list")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border ${viewMode === "list" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>List</button>
+            <div className="flex items-center gap-4 flex-wrap ml-auto max-[900px]:ml-0 max-[900px]:w-full max-[900px]:items-stretch">
+              {showViewToggle && <div className="flex items-center gap-2 max-[900px]:w-full">
+                <button onClick={() => setViewMode("calendar")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border max-[900px]:flex-1 ${viewMode === "calendar" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>Calendar</button>
+                <button onClick={() => setViewMode("list")} className={`h-[38px] px-6 rounded-lg !font-bold text-[0.9rem] transition-colors border max-[900px]:flex-1 ${viewMode === "list" ? "bg-[#8A252C] border-[#8A252C] text-white shadow-sm" : "bg-white border-[#e2e8f0] text-[#344054] hover:bg-[#f8fafc]"}`}>List</button>
               </div>}
 
               {canEdit && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Link href={`${basePath}/schedules/maker`} className="inline-flex items-center justify-center min-w-[160px] h-[38px] px-4 rounded-lg bg-[#8A252C] !text-white !font-extrabold !text-[0.9rem] transition-colors shadow-[0_4px_12px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] no-underline">Open Schedule Maker</Link>
-                  <Link href={`${basePath}/overtime-details`} className="inline-flex items-center justify-center min-w-[160px] h-[38px] px-4 rounded-lg bg-white !text-[#334155] !font-extrabold !text-[0.9rem] transition-colors border border-[#e2e8f0] hover:bg-[#f8fafc] hover:text-[#0f172a] no-underline">View Overtime Details</Link>
+                <div className="flex items-center gap-2 flex-wrap max-[900px]:w-full max-[900px]:flex-col max-[900px]:items-stretch">
+                  <Link href={`${basePath}/schedules/maker`} className="inline-flex items-center justify-center min-w-[160px] h-[38px] px-4 rounded-lg bg-[#8A252C] !text-white !font-extrabold !text-[0.9rem] transition-colors shadow-[0_4px_12px_rgba(138,37,44,0.18)] hover:bg-[#6d1d23] no-underline max-[900px]:w-full">Open Schedule Maker</Link>
+                  <Link href={`${basePath}/overtime-details`} className="inline-flex items-center justify-center min-w-[160px] h-[38px] px-4 rounded-lg bg-white !text-[#334155] !font-extrabold !text-[0.9rem] transition-colors border border-[#e2e8f0] hover:bg-[#f8fafc] hover:text-[#0f172a] no-underline max-[900px]:w-full">View Overtime Details</Link>
                 </div>
               )}
             </div>
@@ -216,9 +216,9 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                         {item.hospital} · {item.date} · {item.startTime} → {item.endTime}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 max-[600px]:w-full max-[600px]:flex-col max-[600px]:items-stretch">
                       <span className={`inline-flex items-center justify-center px-3 py-1 !text-[0.75rem] !font-[800] rounded-full whitespace-nowrap ${item.activeStudents?.length === 0 ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#fef3c7] !text-[#92400e]"}`}>{item.activeStudents?.length === 0 ? "Canceled" : item.status ?? "Scheduled"}</span>
-                      <button type="button" onClick={() => router.push(`${basePath}/schedules/day?date=${item.date}&schedule=${item.id}`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap">View roster</button>
+                      <button type="button" onClick={() => router.push(`${basePath}/schedules/day?date=${item.date}&schedule=${item.id}`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap max-[600px]:min-h-[38px] max-[600px]:w-full max-[600px]:rounded-lg max-[600px]:border max-[600px]:border-[#e2e8f0] max-[600px]:bg-white">View roster</button>
                     </div>
                   </div>
                 ))

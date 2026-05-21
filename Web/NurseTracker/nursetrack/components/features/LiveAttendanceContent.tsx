@@ -8,20 +8,38 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
-export function LiveAttendanceContent() {
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromText(value?: string) {
+  const text = String(value ?? "");
+  const levels = new Set<number>();
+  const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+  if (numeric) levels.add(Number(numeric[1]));
+  if (/level\s*i\b/i.test(text)) levels.add(1);
+  if (/level\s*ii\b/i.test(text)) levels.add(2);
+  if (/level\s*iii\b/i.test(text)) levels.add(3);
+  if (/level\s*iv\b/i.test(text)) levels.add(4);
+  return Array.from(levels).sort((a, b) => a - b);
+}
+
+export function LiveAttendanceContent({ basePath }: { basePath?: string } = {}) {
   const user = useAuthStore((state) => state.user);
-  const isChair = user?.role === "CHAIR" || user?.role === "COORDINATOR" || user?.role === "ASSISTANT";
-  const { data: instructorAttendance = [], isLoading: isInstructorAttendanceLoading } = useInstructorAttendance(!isChair && user?.id != null ? String(user.id) : undefined);
-  const { data: allAttendance = [], isLoading: isAllAttendanceLoading } = useAllAttendance(isChair, isChair && user?.id != null ? String(user.id) : undefined);
-  const attendance = isChair ? allAttendance : instructorAttendance;
+  const effectiveRole = basePath === "/admin" ? "ADMIN" : basePath === "/coordinator" ? "COORDINATOR" : basePath === "/chair" ? "CHAIR" : basePath === "/assistant" ? "ASSISTANT" : user?.role;
+  const isAllScope = effectiveRole === "ADMIN" || effectiveRole === "CHAIR" || effectiveRole === "COORDINATOR" || effectiveRole === "ASSISTANT";
+  const canFilterByLevel = effectiveRole === "ADMIN" || effectiveRole === "COORDINATOR";
+  const scopedViewerId = (effectiveRole === "CHAIR" || effectiveRole === "ASSISTANT") && user?.id != null ? String(user.id) : undefined;
+  const { data: instructorAttendance = [], isLoading: isInstructorAttendanceLoading } = useInstructorAttendance(!isAllScope && user?.id != null ? String(user.id) : undefined);
+  const { data: allAttendance = [], isLoading: isAllAttendanceLoading } = useAllAttendance(isAllScope, scopedViewerId);
+  const attendance = isAllScope ? allAttendance : instructorAttendance;
   const { data: hospitals = [], isLoading: isHospitalsLoading } = useHospitals();
-  const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(user?.id != null ? String(user.id) : undefined, isChair ? user?.role : "INSTRUCTOR");
+  const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(user?.id != null ? String(user.id) : undefined, isAllScope ? effectiveRole : "INSTRUCTOR");
   const [siteFilter, setSiteFilter] = useState("all");
   const [areaFilter, setAreaFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [search, setSearch] = useState("");
   const today = new Date().toISOString().slice(0, 10);
-  const todaySchedules = (schedules as any[]).filter((schedule: any) => schedule.date === today && (isChair || String(schedule.instructorId) === String(user?.id)));
-  const todayAttendance = (attendance as any[]).filter((record: any) => record.dutyDate === today && (isChair || String(record.instructorId) === String(user?.id)));
+  const todaySchedules = (schedules as any[]).filter((schedule: any) => schedule.date === today && (isAllScope || String(schedule.instructorId) === String(user?.id)));
+  const todayAttendance = (attendance as any[]).filter((record: any) => record.dutyDate === today && (isAllScope || String(record.instructorId) === String(user?.id)));
   const data = todaySchedules.map((schedule: any) => {
     const record = todayAttendance.find((duty: any) => String(duty.studentId) === String(schedule.studentId) && duty.hospital === schedule.hospital && duty.area === schedule.area);
     return {
@@ -31,7 +49,7 @@ export function LiveAttendanceContent() {
     section: schedule.studentSection || "Nursing Student",
     site: schedule.hospital || "Assigned Site",
     area: schedule.area || "Assigned Area",
-    ci: record?.instructorName || schedule.instructorName || (!isChair ? user?.fullName : undefined) || "Clinical Instructor",
+    ci: record?.instructorName || schedule.instructorName || (!isAllScope ? user?.fullName : undefined) || "Clinical Instructor",
     time: record?.timeInLabel || "Not timed in",
     liveMin: record?.timeOutLabel ? "Completed" : record?.timeInLabel ? "Active" : "Waiting",
     status: record?.status || "Not connected",
@@ -40,9 +58,10 @@ export function LiveAttendanceContent() {
   const filtered = data.filter((item: any) => {
     const matchSite = siteFilter === "all" || item.site.includes(siteFilter);
     const matchArea = areaFilter === "all" || item.area === areaFilter;
+    const matchLevel = !canFilterByLevel || levelFilter === "all" || levelsFromText(item.section).includes(Number(levelFilter));
     const q = search.toLowerCase();
     const matchSearch = !search || item.name.toLowerCase().includes(q) || item.section.toLowerCase().includes(q) || item.site.toLowerCase().includes(q) || item.area.toLowerCase().includes(q);
-    return matchSite && matchArea && matchSearch;
+    return matchSite && matchArea && matchLevel && matchSearch;
   });
   const selectedHospital = (hospitals as any[]).find((hospital: any) => hospital.name === siteFilter);
   const hospitalOptions = [{ value: "all", label: "All Hospitals" }, ...(hospitals as any[]).map((hospital: any) => ({ value: hospital.name, label: hospital.fullName ? `${hospital.name} - ${hospital.fullName}` : hospital.name }))];
@@ -58,18 +77,19 @@ export function LiveAttendanceContent() {
           <div className="flex items-center justify-between gap-4 mb-[1.1rem] pb-0 border-b border-[#e5eaf1] flex-wrap">
             <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">Student Attendance Feed</h2>
           </div>
-          <div className="grid gap-[18px] mb-[24px] grid-cols-3 max-[720px]:grid-cols-1">
+          <div className={canFilterByLevel ? "grid gap-[18px] mb-[24px] grid-cols-[minmax(170px,1fr)_minmax(170px,1fr)_minmax(140px,0.75fr)_minmax(0,1.35fr)] max-[1100px]:grid-cols-2 max-[720px]:grid-cols-1" : "grid gap-[18px] mb-[24px] grid-cols-3 max-[720px]:grid-cols-1"}>
             <label className={labelCls} htmlFor="la-site">Hospital
               <InlineSelect value={siteFilter} options={hospitalOptions} placeholder="All Hospitals" onChange={(value) => { setSiteFilter(value); setAreaFilter("all"); }} disabled={isHospitalsLoading} />
             </label>
             <label className={labelCls} htmlFor="la-area">Duty area
               <InlineSelect value={areaFilter} options={areaOptions} placeholder="All duty areas" onChange={setAreaFilter} />
             </label>
+            {canFilterByLevel && <label className={labelCls} htmlFor="la-level">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={setLevelFilter} /></label>}
             <label className={labelCls} htmlFor="la-search">Search
               <input className={inputCls} id="la-search" type="search" placeholder="Search student, section, area, or site" value={search} onChange={e => setSearch(e.target.value)} />
             </label>
           </div>
-          {isSchedulesLoading || (isChair ? isAllAttendanceLoading : isInstructorAttendanceLoading) ? (
+          {isSchedulesLoading || (isAllScope ? isAllAttendanceLoading : isInstructorAttendanceLoading) ? (
             <LoadingState message="Loading today's live attendance..." className="p-8" />
           ) : todaySchedules.length === 0 ? (
             <div className="p-8 text-center rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] !text-[#64748b] !text-[0.9rem] !font-bold">No schedule for today.</div>

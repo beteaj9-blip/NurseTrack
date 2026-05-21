@@ -29,14 +29,24 @@ function formatSubmitted(date?: string) {
   return `Submitted ${new Date(date).toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`;
 }
 
+function appealStageKey(appeal: any) {
+  if (appeal?.status === "ACCEPTED" || appeal?.status === "RETURNED") return appeal.status;
+  if (appeal?.instructorDecision === "ACCEPTED") return "CI_ACCEPTED";
+  if (appeal?.instructorDecision === "RETURNED") return "CI_RETURNED";
+  return "PENDING";
+}
+
 function statusLabel(status?: string) {
-  if (!status) return "Pending";
-  return status.charAt(0) + status.slice(1).toLowerCase();
+  if (status === "ACCEPTED") return "Accepted";
+  if (status === "RETURNED") return "Rejected";
+  if (status === "CI_ACCEPTED") return "CI Accepted";
+  if (status === "CI_RETURNED") return "CI Rejected";
+  return "CI Pending";
 }
 
 function statusClass(status?: string) {
-  if (status === "ACCEPTED") return "bg-[#e9f8ef] text-[#03703c]";
-  if (status === "RETURNED") return "bg-[#fef2f2] text-[#991b1b]";
+  if (status === "ACCEPTED" || status === "CI_ACCEPTED") return "bg-[#e9f8ef] text-[#03703c]";
+  if (status === "RETURNED" || status === "CI_RETURNED") return "bg-[#fef2f2] text-[#991b1b]";
   return "bg-[#fff8e1] text-[#6c4c00]";
 }
 
@@ -86,7 +96,7 @@ export function StudentAppealDetailContent() {
   const [message, setMessage] = React.useState("");
   const [form, setForm] = React.useState(emptyForm);
   const [selectedScheduleId, setSelectedScheduleId] = React.useState("");
-  const canEdit = appeal?.status !== "ACCEPTED";
+  const canEdit = appeal?.status === "PENDING" && !appeal?.instructorDecision;
   const isSaving = updateAppeal.isPending;
   const isUploading = uploadAppealFile.isPending;
 
@@ -242,7 +252,7 @@ export function StudentAppealDetailContent() {
 
         {/* Header Info */}
         <div className="mb-6 border-b border-[#e5eaf1] pb-6">
-          <p className="text-[#8A252C] text-[0.7rem] font-[900] tracking-wider uppercase m-0 mb-1">
+          <p className="text-[#8A252C] text-[0.82rem] font-[900] tracking-[0.02em] uppercase m-0 mb-1 leading-tight">
             {user?.sectionInfo ?? appeal?.sectionInfo ?? "Nursing Student"} - {user?.schoolId ?? appeal?.schoolId ?? ""}
           </p>
           <h2 className="text-[1.3rem] font-[800] text-[#111827] m-0">
@@ -259,8 +269,8 @@ export function StudentAppealDetailContent() {
               {appeal?.title ?? "Appeal details"}
             </h3>
           )}
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appeal?.status)}`}>
-            {statusLabel(appeal?.status)}
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appealStageKey(appeal))}`}>
+            {statusLabel(appealStageKey(appeal))}
           </span>
         </div>
 
@@ -393,7 +403,7 @@ export function StudentAppealDetailContent() {
               </button>
             ) : (
               <span className="inline-flex h-[42px] items-center rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-5 text-[0.85rem] font-[900] text-[#166534]">
-                Accepted appeal locked
+                Appeal locked
               </span>
             )}
           </div>

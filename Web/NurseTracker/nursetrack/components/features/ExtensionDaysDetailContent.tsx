@@ -29,10 +29,10 @@ export function ExtensionDaysDetailContent({ basePath, searchParams: searchParam
   const user = useAuthStore((state) => state.user);
   const { showToast } = useToast();
   const { canEdit } = useCanEditFeature("extensionDays");
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const isAllRole = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
-  const isAllSection = isAdmin || isChair;
-  const viewerId = isChair && user?.id != null ? String(user.id) : undefined;
+  const isAllSection = isAdmin || isAllRole;
+  const viewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const loggedInInstructorId = !isAllSection && user?.id != null ? String(user.id) : undefined;
   const { data: studentUsers = [] } = useUsers("STUDENT", isAllSection ? viewerId : undefined, isAllSection);
   const { data: instructorAttendance = [], isLoading: instructorAttendanceLoading } = useInstructorAttendance(loggedInInstructorId);

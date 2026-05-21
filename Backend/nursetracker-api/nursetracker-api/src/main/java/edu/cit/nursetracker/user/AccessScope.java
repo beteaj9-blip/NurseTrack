@@ -33,7 +33,11 @@ public final class AccessScope {
             return intersects(instructor == null ? null : instructor.getAssignedLevels(), viewer.getAssignedLevels());
         }
         if (viewer.getRole() == UserRole.INSTRUCTOR || viewer.getRole() == UserRole.STUDENT) {
-            return sameSection(viewer.getSectionInfo(), student == null ? null : student.getSectionInfo())
+            boolean directlyAssigned = instructor != null && instructor.getId() != null && instructor.getId().equals(viewer.getId());
+            boolean levelMatch = student != null && intersects(student.getAssignedLevels(), viewer.getAssignedLevels());
+            return directlyAssigned
+                    || levelMatch
+                    || sameSection(viewer.getSectionInfo(), student == null ? null : student.getSectionInfo())
                     || sameSection(viewer.getSectionInfo(), instructor == null ? null : instructor.getSectionInfo());
         }
         return false;

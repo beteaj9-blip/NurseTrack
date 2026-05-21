@@ -31,13 +31,24 @@ function getFileName(fileUrl?: string) {
   }
 }
 
+function appealStageKey(appeal: any) {
+  if (appeal?.status === "ACCEPTED" || appeal?.status === "RETURNED") return appeal.status;
+  if (appeal?.instructorDecision === "ACCEPTED") return "CI_ACCEPTED";
+  if (appeal?.instructorDecision === "RETURNED") return "CI_RETURNED";
+  return "PENDING";
+}
+
 function statusLabel(status: string) {
-  return status.charAt(0) + status.slice(1).toLowerCase();
+  if (status === "ACCEPTED") return "Accepted";
+  if (status === "RETURNED") return "Rejected";
+  if (status === "CI_ACCEPTED") return "CI Accepted";
+  if (status === "CI_RETURNED") return "CI Rejected";
+  return "CI Pending";
 }
 
 function statusClass(status: string) {
-  if (status === "ACCEPTED") return "bg-[#e9f8ef] text-[#03703c]";
-  if (status === "RETURNED") return "bg-[#fef2f2] text-[#991b1b]";
+  if (status === "ACCEPTED" || status === "CI_ACCEPTED") return "bg-[#e9f8ef] text-[#03703c]";
+  if (status === "RETURNED" || status === "CI_RETURNED") return "bg-[#fef2f2] text-[#991b1b]";
   return "bg-[#fff8e1] text-[#6c4c00]";
 }
 
@@ -134,10 +145,10 @@ export function StudentAppealsContent() {
   const instructorOptions = useMemo(() => [notApplicableOption, ...appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), form.instructorId === NOT_APPLICABLE_VALUE ? undefined : form.instructorId, selectedSchedule?.instructorName ?? editingAppeal?.instructorName)], [instructors, form.instructorId, selectedSchedule?.instructorName, editingAppeal?.instructorName]);
 
   const groupedAppeals = useMemo(() => {
-    return ["PENDING", "ACCEPTED", "RETURNED"]
+    return ["PENDING", "CI_ACCEPTED", "CI_RETURNED", "ACCEPTED", "RETURNED"]
       .map((status) => ({
         status,
-        records: appeals.filter((appeal: any) => appeal.status === status),
+        records: appeals.filter((appeal: any) => appealStageKey(appeal) === status),
       }))
       .filter((group) => group.records.length > 0);
   }, [appeals]);
@@ -377,7 +388,7 @@ export function StudentAppealsContent() {
             groupedAppeals.map((group) => (
               <div key={group.status}>
                 <div className="flex items-center justify-between border-b border-[#e5eaf1] pb-2 mb-4">
-                  <span className="text-[#64748b] text-[0.78rem] font-[800] tracking-wider uppercase">{group.status}</span>
+                  <span className="text-[#64748b] text-[0.78rem] font-[800] tracking-wider uppercase">{statusLabel(group.status)}</span>
                   <span className="text-[#64748b] text-[0.78rem] font-[800] tracking-wider uppercase">{group.records.length} RECORD{group.records.length === 1 ? "" : "S"}</span>
                 </div>
 
@@ -391,8 +402,8 @@ export function StudentAppealsContent() {
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-1">
                             <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 leading-[1.3] truncate">{appeal.title}</h3>
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appeal.status)}`}>
-                              {statusLabel(appeal.status)}
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appealStageKey(appeal))}`}>
+                              {statusLabel(appealStageKey(appeal))}
                             </span>
                           </div>
                           <p className="text-[#344054] text-[0.9rem] font-bold m-0 mb-1.5 truncate">

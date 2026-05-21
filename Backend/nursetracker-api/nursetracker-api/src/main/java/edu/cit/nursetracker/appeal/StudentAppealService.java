@@ -21,6 +21,7 @@ public class StudentAppealService {
     public StudentAppeal createAppeal(StudentAppeal appeal) {
         appeal.setAppealType(clean(appeal.getAppealType()));
         appeal.setStatus(AppealStatus.PENDING);
+        appeal.setInstructorDecision(null);
         return appealRepository.save(appeal);
     }
 
@@ -61,6 +62,8 @@ public class StudentAppealService {
         appeal.setEvidenceNotes(updatedAppeal.getEvidenceNotes());
         appeal.setSupportingFiles(updatedAppeal.getSupportingFiles());
         appeal.setStatus(AppealStatus.PENDING);
+        appeal.setInstructorDecision(null);
+        appeal.setInstructorRemarks(null);
         return appealRepository.save(appeal);
     }
 
@@ -78,6 +81,23 @@ public class StudentAppealService {
                 .type(status == AppealStatus.ACCEPTED ? NotificationType.APPROVAL : NotificationType.RETURNED)
                 .actionUrl("/nursing-student/appeals")
                 .build());
+        return saved;
+    }
+
+    public StudentAppeal updateInstructorRecommendation(Long id, AppealStatus instructorDecision, String instructorRemarks) {
+        StudentAppeal appeal = getAppeal(id);
+        appeal.setInstructorDecision(instructorDecision);
+        appeal.setInstructorRemarks(instructorRemarks == null ? "" : instructorRemarks.trim());
+        StudentAppeal saved = appealRepository.save(appeal);
+        if (instructorDecision == AppealStatus.RETURNED) {
+            notificationService.createNotification(Notification.builder()
+                    .user(saved.getStudent())
+                    .title("Appeal rejected by CI")
+                    .message("Your appeal \"" + saved.getTitle() + "\" was rejected by your Clinical Instructor.")
+                    .type(NotificationType.RETURNED)
+                    .actionUrl("/nursing-student/appeals")
+                    .build());
+        }
         return saved;
     }
 

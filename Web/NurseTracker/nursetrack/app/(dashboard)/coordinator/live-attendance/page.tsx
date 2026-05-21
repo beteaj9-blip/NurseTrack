@@ -1,5 +1,5 @@
 import { LiveAttendanceContent } from "@/components/features/LiveAttendanceContent";
 
 export default function Page() {
-  return <LiveAttendanceContent  />;
+  return <LiveAttendanceContent basePath="/coordinator" />;
 }

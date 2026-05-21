@@ -30,6 +30,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isAllCaseScope, scopedViewerId);
     const cases = isAllCaseScope ? allCases : instructorCases;
     const isLoading = isAllCaseScope ? isAllLoading : isInstructorLoading;
+    const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
     const [search, setSearch] = useState("");
     const [sectionFilter, setSectionFilter] = useState("all");
     const [levelFilter, setLevelFilter] = useState("all");
@@ -60,7 +61,7 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
         const q = search.toLowerCase();
         return (!search || String(s.name).toLowerCase().includes(q) || String(s.id).toLowerCase().includes(q) || String(s.section).toLowerCase().includes(q))
             && (sectionFilter === "all" || s.section === sectionFilter)
-            && (levelFilter === "all" || s.levels?.includes(Number(levelFilter)));
+            && (!canFilterByLevel || levelFilter === "all" || s.levels?.includes(Number(levelFilter)));
     });
     const totalPages = Math.ceil(filtered.length / PER_PAGE);
     const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
@@ -74,10 +75,10 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
                     <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-[800] tracking-[-0.03em]">Students with Clinical Case Records</h2>
                     <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{filtered.length} student(s)</span>
                 </div>
-                <div className="grid min-w-0 gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.5fr)_minmax(170px,1fr)_minmax(150px,0.75fr)] max-[900px]:grid-cols-1">
+                <div className={canFilterByLevel ? "grid min-w-0 gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.5fr)_minmax(170px,1fr)_minmax(150px,0.75fr)] max-[900px]:grid-cols-1" : "grid min-w-0 gap-[1rem] mb-[1rem] grid-cols-2 max-[680px]:grid-cols-1"}>
                     <label className={labelCls} htmlFor="cc-search">Search student<input className={inputCls} id="cc-search" type="search" placeholder="Search name, student ID, or section" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
                     <label className={labelCls} htmlFor="cc-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
-                    <label className={labelCls} htmlFor="cc-level">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={(value) => { setLevelFilter(value); setCurrentPage(1); }} /></label>
+                    {canFilterByLevel && <label className={labelCls} htmlFor="cc-level">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={(value) => { setLevelFilter(value); setCurrentPage(1); }} /></label>}
                 </div>
                 <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
                     {paged.map((s, i) => (

@@ -6,12 +6,14 @@ function normalizeAppeal(appeal: any) {
     ...appeal,
     studentId: appeal.studentId ?? appeal.student?.id,
     instructorId: appeal.instructorId ?? appeal.instructor?.id,
-    instructorName: appeal.instructor?.fullName ?? '',
-    studentName: appeal.student?.fullName ?? '',
-    studentProfileImageUrl: appeal.student?.profileImageUrl ?? '',
-    instructorProfileImageUrl: appeal.instructor?.profileImageUrl ?? '',
-    schoolId: appeal.student?.schoolId ?? '',
-    sectionInfo: appeal.student?.sectionInfo ?? '',
+    instructorName: appeal.instructorName ?? appeal.instructor?.fullName ?? '',
+    studentName: appeal.studentName ?? appeal.student?.fullName ?? '',
+    studentProfileImageUrl: appeal.studentProfileImageUrl ?? appeal.student?.profileImageUrl ?? '',
+    instructorProfileImageUrl: appeal.instructorProfileImageUrl ?? appeal.instructor?.profileImageUrl ?? '',
+    schoolId: appeal.schoolId ?? appeal.student?.schoolId ?? '',
+    sectionInfo: appeal.sectionInfo ?? appeal.student?.sectionInfo ?? '',
+    studentAssignedLevels: appeal.studentAssignedLevels ?? appeal.student?.assignedLevels ?? [],
+    instructorDecision: appeal.instructorDecision ?? '',
   };
 }
 
@@ -29,7 +31,7 @@ export const useInstructorAppeals = (instructorId?: string) => {
   return useQuery({
     queryKey: ['instructor-appeals', instructorId],
     queryFn: async () => {
-      const { data } = await apiClient.get('/appeals/instructor');
+      const { data } = await apiClient.get('/appeals', { params: instructorId ? { viewerId: instructorId } : undefined });
       return data.map(normalizeAppeal);
     },
   });
@@ -92,6 +94,25 @@ export const useUpdateAppealStatus = (instructorId?: string) => {
       const params = new URLSearchParams({ status });
       if (instructorRemarks) params.set('instructorRemarks', instructorRemarks);
       const { data } = await apiClient.put(`/appeals/${appealId}/status?${params.toString()}`);
+      return normalizeAppeal(data);
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['instructor-appeals'] });
+      queryClient.invalidateQueries({ queryKey: ['appeals'] });
+      queryClient.invalidateQueries({ queryKey: ['instructor-appeals', instructorId] });
+      queryClient.invalidateQueries({ queryKey: ['student-appeal', variables.appealId] });
+      queryClient.invalidateQueries({ queryKey: ['student-appeals', data.studentId != null ? String(data.studentId) : undefined] });
+    },
+  });
+};
+
+export const useUpdateAppealRecommendation = (instructorId?: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appealId, instructorDecision, instructorRemarks }: { appealId: string; instructorDecision: string; instructorRemarks?: string }) => {
+      const params = new URLSearchParams({ instructorDecision });
+      if (instructorRemarks) params.set('instructorRemarks', instructorRemarks);
+      const { data } = await apiClient.put(`/appeals/${appealId}/recommendation?${params.toString()}`);
       return normalizeAppeal(data);
     },
     onSuccess: (data, variables) => {

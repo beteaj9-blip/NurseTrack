@@ -8,6 +8,20 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromText(value?: string) {
+  const text = String(value ?? "");
+  const levels = new Set<number>();
+  const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+  if (numeric) levels.add(Number(numeric[1]));
+  if (/level\s*i\b/i.test(text)) levels.add(1);
+  if (/level\s*ii\b/i.test(text)) levels.add(2);
+  if (/level\s*iii\b/i.test(text)) levels.add(3);
+  if (/level\s*iv\b/i.test(text)) levels.add(4);
+  return Array.from(levels).sort((a, b) => a - b);
+}
+
 function fmt(hours: number) {
   const rounded = Math.round(Number(hours || 0) * 100) / 100;
   return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(2).replace(/0$/, "")} hrs`;
@@ -36,9 +50,11 @@ function hoursMatch(total: number, filter: string) {
 
 export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
-  const { data: attendance = [], isLoading } = useAllAttendance(true, isChair && user?.id != null ? String(user.id) : undefined);
+  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+  const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
+  const { data: attendance = [], isLoading } = useAllAttendance(true, scopedViewerId);
   const [search, setSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [hoursFilter, setHoursFilter] = useState("all");
   const [period, setPeriod] = useState(() => new Date());
@@ -56,6 +72,7 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
       profileImageUrl: record.studentProfileImageUrl,
       identifier: record.studentSchoolId,
       section: record.studentSection,
+      levels: levelsFromText(record.studentSection),
       site: record.hospital || record.area,
       total: 0,
     };
@@ -68,6 +85,7 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
     const q = search.toLowerCase();
     return (!search || `${p.name} ${p.identifier} ${p.section} ${p.role} ${p.site}`.toLowerCase().includes(q))
       && (typeFilter === "all" || p.role === typeFilter)
+      && (!canFilterByLevel || levelFilter === "all" || p.levels?.includes(Number(levelFilter)))
       && hoursMatch(Number(p.total || 0), hoursFilter);
   });
 
@@ -91,8 +109,9 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
           </div>
         </div>
 
-        <div className="grid gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.7fr)_minmax(220px,1fr)_minmax(220px,1fr)] max-[980px]:grid-cols-1">
+        <div className={canFilterByLevel ? "grid gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.5fr)_minmax(150px,0.75fr)_minmax(190px,1fr)_minmax(190px,1fr)] max-[1100px]:grid-cols-2 max-[680px]:grid-cols-1" : "grid gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.7fr)_minmax(220px,1fr)_minmax(220px,1fr)] max-[980px]:grid-cols-1"}>
           <label className={labelCls} htmlFor="ot-search">Search person<input className={inputCls} id="ot-search" type="search" placeholder="Search name, ID, section, role, or clinical site" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
+          {canFilterByLevel && <label className={labelCls}>Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={setLevelFilter} /></label>}
           <label className={labelCls}>Type<InlineSelect value={typeFilter} options={typeOptions} placeholder="Select type" onChange={setTypeFilter} /></label>
           <label className={labelCls}>OT Hours<InlineSelect value={hoursFilter} options={hourOptions} placeholder="Select OT hours" onChange={setHoursFilter} /></label>
         </div>

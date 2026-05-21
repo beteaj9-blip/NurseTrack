@@ -64,4 +64,12 @@ public class StudentAppealController {
             @RequestParam(required = false) String instructorRemarks) {
         return ResponseEntity.ok(appealService.updateAppealStatus(id, status, instructorRemarks));
     }
+
+    @PutMapping("/{id}/recommendation")
+    public ResponseEntity<StudentAppeal> updateInstructorRecommendation(
+            @PathVariable Long id,
+            @RequestParam AppealStatus instructorDecision,
+            @RequestParam(required = false) String instructorRemarks) {
+        return ResponseEntity.ok(appealService.updateInstructorRecommendation(id, instructorDecision, instructorRemarks));
+    }
 }

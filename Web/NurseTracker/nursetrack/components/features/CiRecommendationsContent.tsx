@@ -8,32 +8,78 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
+const levelOptions = [{ value: "all", label: "All levels" }, 1, 2, 3, 4].map((level) => typeof level === "number" ? { value: String(level), label: `Level ${level}` } : level);
+
+function levelsFromText(value?: string) {
+  const text = String(value ?? "");
+  const levels = new Set<number>();
+  const numeric = text.match(/(?:^|\b)(?:n|bsn|level)\s*([1-4])\b/i) ?? text.match(/\b([1-4])(?:st|nd|rd|th)\s*level\b/i);
+  if (numeric) levels.add(Number(numeric[1]));
+  if (/level\s*i\b/i.test(text)) levels.add(1);
+  if (/level\s*ii\b/i.test(text)) levels.add(2);
+  if (/level\s*iii\b/i.test(text)) levels.add(3);
+  if (/level\s*iv\b/i.test(text)) levels.add(4);
+  return Array.from(levels).sort((a, b) => a - b);
+}
+
+function levelsFromAppeal(appeal: any) {
+  const levels = new Set<number>();
+  (appeal.studentAssignedLevels ?? appeal.student?.assignedLevels ?? []).forEach((level: number) => Number.isFinite(level) && levels.add(level));
+  levelsFromText(appeal.sectionInfo).forEach((level) => levels.add(level));
+  return Array.from(levels).sort((a, b) => a - b);
+}
+
+function appealStageKey(appeal: any) {
+  if (appeal.status === "ACCEPTED" || appeal.status === "RETURNED") return appeal.status;
+  if (appeal.instructorDecision === "ACCEPTED") return "CI_ACCEPTED";
+  if (appeal.instructorDecision === "RETURNED") return "CI_RETURNED";
+  return "PENDING";
+}
+
+function statusLabel(status?: string) {
+  if (status === "ACCEPTED") return "ACCEPTED";
+  if (status === "RETURNED") return "REJECTED";
+  if (status === "CI_ACCEPTED") return "CI ACCEPTED";
+  if (status === "CI_RETURNED") return "CI REJECTED";
+  return "CI PENDING";
+}
+
 function statusClass(status?: string) {
-  if (status === "ACCEPTED") return "bg-[#e9f8ef] !text-[#03703c]";
-  if (status === "RETURNED") return "bg-[#fef2f2] !text-[#991b1b]";
+  if (status === "ACCEPTED" || status === "CI_ACCEPTED") return "bg-[#e9f8ef] !text-[#03703c]";
+  if (status === "RETURNED" || status === "CI_RETURNED") return "bg-[#fef2f2] !text-[#991b1b]";
   return "bg-[#fff8e1] !text-[#6c4c00]";
 }
 
 export function CiRecommendationsContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const isChair = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const isAllScope = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
+  const isReviewerQueue = isAllScope;
+  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+  const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: instructorAppeals = [], isLoading: isInstructorLoading } = useInstructorAppeals();
-  const { data: allAppeals = [], isLoading: isAllLoading } = useAllAppeals(isChair, isChair && user?.id != null ? String(user.id) : undefined);
-  const appeals = isChair ? allAppeals : instructorAppeals;
-  const isLoading = isChair ? isAllLoading : isInstructorLoading;
+  const { data: allAppeals = [], isLoading: isAllLoading } = useAllAppeals(isAllScope, scopedViewerId);
+  const appeals = isAllScope ? allAppeals : instructorAppeals;
+  const isLoading = isAllScope ? isAllLoading : isInstructorLoading;
   const [search, setSearch] = useState("");
   const [sectionFilter, setSectionFilter] = useState("all");
+  const [levelFilter, setLevelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const PER_PAGE = 10;
   const sections = Array.from(new Set((appeals as any[]).map((appeal: any) => appeal.sectionInfo).filter(Boolean))).sort() as string[];
   const sectionOptions = [{ value: "all", label: "All sections" }, ...sections.map((section) => ({ value: section, label: section }))];
-  const statusOptions = [{ value: "all", label: "All statuses" }, { value: "PENDING", label: "Pending review" }, { value: "ACCEPTED", label: "Accepted" }, { value: "RETURNED", label: "Rejected" }];
+  const statusOptions = isReviewerQueue
+    ? [{ value: "all", label: "All statuses" }, { value: "PENDING", label: "CI pending" }, { value: "CI_ACCEPTED", label: "CI accepted" }, { value: "ACCEPTED", label: "Accepted" }, { value: "RETURNED", label: "Rejected" }]
+    : [{ value: "all", label: "All statuses" }, { value: "PENDING", label: "Pending CI" }, { value: "CI_ACCEPTED", label: "CI accepted" }, { value: "CI_RETURNED", label: "CI rejected" }, { value: "ACCEPTED", label: "Accepted" }, { value: "RETURNED", label: "Rejected" }];
   const filtered = (appeals as any[]).filter((appeal: any) => {
     const q = search.toLowerCase();
+    const stage = appealStageKey(appeal);
+    const reachesReviewerQueue = !isReviewerQueue || appeal.status !== "PENDING" || appeal.instructorDecision !== "RETURNED";
     return (!search || String(appeal.studentName ?? "").toLowerCase().includes(q) || String(appeal.schoolId ?? "").toLowerCase().includes(q) || String(appeal.sectionInfo ?? "").toLowerCase().includes(q) || String(appeal.title ?? "").toLowerCase().includes(q))
+      && reachesReviewerQueue
       && (sectionFilter === "all" || appeal.sectionInfo === sectionFilter)
-      && (statusFilter === "all" || appeal.status === statusFilter);
+      && (!canFilterByLevel || levelFilter === "all" || levelsFromAppeal(appeal).includes(Number(levelFilter)))
+      && (statusFilter === "all" || stage === statusFilter);
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
@@ -48,9 +94,10 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
           <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-[800] tracking-[-0.03em]">Student Appeal List</h2>
           <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span>
         </div>
-        <div className="grid gap-[1rem] mb-[1rem] grid-cols-3 max-[980px]:grid-cols-1">
+        <div className={canFilterByLevel ? "grid gap-[1rem] mb-[1rem] grid-cols-[minmax(0,1.35fr)_minmax(170px,1fr)_minmax(150px,0.75fr)_minmax(170px,1fr)] max-[1100px]:grid-cols-2 max-[680px]:grid-cols-1" : "grid gap-[1rem] mb-[1rem] grid-cols-3 max-[980px]:grid-cols-1"}>
           <label className={labelCls} htmlFor="cir-search">Search<input className={inputCls} id="cir-search" type="search" placeholder="Search name, student ID, section, or appeal" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
           <label className={labelCls} htmlFor="cir-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
+          {canFilterByLevel && <label className={labelCls} htmlFor="cir-level">Level<InlineSelect value={levelFilter} options={levelOptions} placeholder="All levels" onChange={(value) => { setLevelFilter(value); setCurrentPage(1); }} /></label>}
           <label className={labelCls} htmlFor="cir-status">Status<InlineSelect value={statusFilter} options={statusOptions} placeholder="All statuses" onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }} /></label>
         </div>
         <div className={`flex flex-col border border-[#e2e8f0] overflow-hidden bg-white rounded-t-lg ${totalPages > 1 ? "" : "rounded-b-lg"}`}>
@@ -59,7 +106,7 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
               <div className="grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
               <ProfileAvatar name={appeal.studentName} imageUrl={appeal.studentProfileImageUrl} size={34} />
               <span className="min-w-0 flex flex-col gap-[0.125rem]"><strong className="truncate !text-[#0f172a] !text-[1rem] !font-[850] leading-[1.25] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.studentName}</strong><small className="truncate !text-[#64748b] !text-[0.875rem] !font-[700] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.sectionInfo || "No section"} - {appeal.schoolId || "No student ID"}</small><small className="truncate !text-[#475569] !text-[0.875rem] !font-[600] mt-[2px] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.title || "Student appeal"}</small></span>
-              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(appeal.status)} max-[520px]:col-start-3 max-[520px]:mt-1`}>{appeal.status === "RETURNED" ? "REJECTED" : appeal.status}</span>
+              <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(appealStageKey(appeal))} max-[520px]:col-start-3 max-[520px]:mt-1`}>{statusLabel(appealStageKey(appeal))}</span>
             </Link>
           ))}
         </div>
