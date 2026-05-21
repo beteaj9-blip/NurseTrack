@@ -717,13 +717,7 @@ export function ManageUsersContent() {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-[0.85rem] min-h-[76px] m-0 px-[1.35rem] py-[1.25rem] border-b border-[#e5eaf1] shrink-0">
-                <button
-                  className="relative grid place-items-center w-[44px] h-[44px] p-0 border border-[#dbe3ee] rounded-lg bg-white transition-colors cursor-pointer hover:border-[#8A252C]/40 focus-visible:border-[#8A252C]/40 before:content-[''] before:w-[11px] before:h-[11px] before:border-l-[2.5px] before:border-b-[2.5px] before:border-[#111827] before:translate-x-[2px] before:rotate-45 before:transition-colors hover:before:border-[#8A252C]"
-                  type="button"
-                  onClick={() => setActionStep("menu")}
-                  aria-label="Back"
-                />
+              <div className="grid grid-cols-[minmax(0,1fr)_44px] items-center gap-[0.85rem] min-h-[76px] m-0 px-[1.35rem] py-[1.25rem] border-b border-[#e5eaf1] shrink-0">
                 <div>
                   <p className="m-0 !text-[#8a252c] !text-[0.75rem] !font-extrabold uppercase tracking-[0.04em]">
                     {actionStep === "edit"
