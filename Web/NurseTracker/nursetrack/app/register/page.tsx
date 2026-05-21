@@ -91,7 +91,7 @@ export default function Register() {
           <form id="register-form" className="grid gap-[14px]" noValidate onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-[14px] max-[680px]:grid-cols-1">
               <InputField label="Full name" id="full-name" name="fullName" type="text" autoComplete="name" placeholder="Juan Dela Cruz" required />
-              <InputField label="School ID number" id="school-id" name="schoolId" type="text" inputMode="numeric" autoComplete="off" placeholder="12-3456-789" onInput={stripLettersFromInput} required />
+              <InputField label="School ID number" id="school-id" name="schoolId" type="text" inputMode="text" autoComplete="off" placeholder="12-3456-789" onInput={stripLettersFromInput} required />
             </div>
 
             <InputField label="School email" id="email" name="email" type="email" autoComplete="email" placeholder="student@cit.edu" required />

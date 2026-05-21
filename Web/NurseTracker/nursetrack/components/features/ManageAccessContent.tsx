@@ -29,7 +29,7 @@ const coordinatorPermissionItems = [
   { id: "ciRecommendations", title: "CI Recommendations", desc: "Allow accepting, rejecting, or editing decisions." },
 ];
 
-const assistantPermissionItems = coordinatorPermissionItems.filter((item) => item.id !== "scheduleMaker");
+const assistantPermissionItems = coordinatorPermissionItems;
 
 function LevelAssignments({ title, badge, users, isLoading, onLevelChange }: { title: string; badge: string; users: ApiUser[]; isLoading: boolean; onLevelChange: (user: ApiUser, level: number) => void }) {
   return (

@@ -8,6 +8,8 @@ import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
+const CASES_PER_PAGE = 5;
+
 function formatDate(date?: string) {
   if (!date) return "";
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -36,27 +38,42 @@ function isOperatingRoomCase(clinicalCase: any) {
 }
 
 function CaseSection({ title, subtitle, records, basePath }: { title: string; subtitle: string; records: any[]; basePath: string }) {
+  const [page, setPage] = React.useState(1);
+  const totalPages = Math.max(1, Math.ceil(records.length / CASES_PER_PAGE));
+  const currentPage = Math.min(page, totalPages);
+  const pageRecords = records.slice((currentPage - 1) * CASES_PER_PAGE, currentPage * CASES_PER_PAGE);
+  const hasPagination = records.length > CASES_PER_PAGE;
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [records.length]);
+
   return (
     <section className="grid min-w-0 gap-[10px] mt-[16px]" aria-label={`${subtitle} records`}>
       <div className="flex items-center justify-between gap-[12px] mt-[4px] max-[680px]:flex-col max-[680px]:items-start">
         <h3 className="m-0 !text-[#8A252C] !text-[1.05rem] !font-[800]">{title}</h3>
         <span className="!text-[#475569] !text-[0.85rem] !font-[800]">{subtitle}</span>
       </div>
-      <div className="overflow-hidden rounded-lg border border-[#e2e8f0]">
-        <div className="grid grid-cols-[minmax(92px,0.85fr)_minmax(180px,2.25fr)_minmax(88px,0.8fr)_minmax(86px,0.75fr)_minmax(74px,0.6fr)_minmax(58px,0.45fr)] items-center gap-3 bg-[#f8fafc] px-4 py-3 !text-[#4c5d7d] !text-[0.72rem] !font-[900] uppercase max-[760px]:hidden">
+      <div className={`overflow-hidden border border-[#e2e8f0] ${hasPagination ? "rounded-t-lg" : "rounded-lg"}`}>
+        <div className="grid grid-cols-[minmax(128px,1.1fr)_minmax(260px,2.4fr)_112px_108px_152px_96px] items-center gap-4 bg-[#f8fafc] px-4 py-3 !text-[#4c5d7d] !text-[0.68rem] !font-[900] uppercase max-[760px]:hidden">
           <span>Category</span><span>Procedure Performed</span><span>Status</span><span>Date</span><span>Time</span><span>Action</span>
         </div>
-        {records.map((record) => (
-          <div key={record.id} className="grid grid-cols-[minmax(92px,0.85fr)_minmax(180px,2.25fr)_minmax(88px,0.8fr)_minmax(86px,0.75fr)_minmax(74px,0.6fr)_minmax(58px,0.45fr)] items-center gap-3 border-t border-[#e2e8f0] bg-white px-4 py-4 max-[760px]:grid-cols-[minmax(0,1fr)_auto] max-[760px]:gap-2 max-[760px]:py-3 first:border-t-0 min-[761px]:first:border-t">
-            <span className="!text-[#111827] !text-[0.9rem] !font-[900] leading-[1.35] max-[760px]:col-span-2">{caseCategoryLabel(record.category)}</span>
-            <span className="min-w-0 !font-[850] !text-[0.88rem] leading-[1.4] !text-[#111827] max-[760px]:col-span-2">{record.procedurePerformed || record.procedureDetails || record.diagnosis || "Clinical case"}</span>
-            <span><span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[900] whitespace-nowrap ${statusClass(record.status)}`}>{record.status}</span></span>
-            <span className="!font-[900] !text-[0.86rem] leading-[1.25] !text-[#111827] max-[760px]:text-right">{formatDate(record.caseDate)}</span>
-            <span className="!font-[900] !text-[0.86rem] leading-[1.25] !text-[#111827] max-[760px]:hidden">{record.shiftTime}</span>
-            <span className="max-[760px]:justify-self-end"><Link className="!text-[#8A252C] !font-[900] !text-[0.86rem] cursor-pointer no-underline hover:underline" href={`${basePath}/clinical-cases/validation?caseId=${record.id}`}>Open</Link></span>
+        {pageRecords.map((record) => (
+          <div key={record.id} className="grid grid-cols-[minmax(128px,1.1fr)_minmax(260px,2.4fr)_112px_108px_152px_96px] items-center gap-4 border-t border-[#e2e8f0] bg-white px-4 py-4 max-[760px]:mx-0 max-[760px]:grid-cols-[minmax(0,1fr)_auto] max-[760px]:items-start max-[760px]:gap-x-3 max-[760px]:gap-y-2 max-[760px]:rounded-xl max-[760px]:border max-[760px]:border-[#e2e8f0] max-[760px]:p-4 max-[760px]:shadow-[0_10px_24px_rgba(15,23,42,0.05)] first:border-t-0 min-[761px]:first:border-t">
+            <span className="!text-[#111827] !text-[0.84rem] !font-[900] leading-[1.3] max-[760px]:col-span-2 max-[760px]:!text-[0.92rem]">{caseCategoryLabel(record.category)}</span>
+            <span className="min-w-0 truncate !font-[850] !text-[0.82rem] leading-[1.35] !text-[#111827] max-[760px]:col-span-2 max-[760px]:mb-2 max-[760px]:whitespace-normal">{record.procedurePerformed || record.procedureDetails || record.diagnosis || "Clinical case"}</span>
+            <span className="max-[760px]:col-start-1 max-[760px]:row-start-3"><span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[900] whitespace-nowrap ${statusClass(record.status)}`}>{record.status}</span></span>
+            <span className="whitespace-nowrap !font-[900] !text-[0.78rem] leading-[1.25] !text-[#111827] max-[760px]:col-start-1 max-[760px]:row-start-4 max-[760px]:mt-1">{formatDate(record.caseDate)}</span>
+            <span className="whitespace-nowrap !font-[900] !text-[0.74rem] leading-[1.25] !text-[#111827] max-[760px]:hidden">{record.shiftTime}</span>
+            <span className="justify-self-start max-[760px]:col-start-2 max-[760px]:row-start-3 max-[760px]:row-span-2 max-[760px]:self-end max-[760px]:justify-self-end"><Link className="inline-flex min-h-[34px] items-center justify-center rounded-lg border border-[#8A252C]/18 bg-white px-4 !text-[#8A252C] !font-[900] !text-[0.84rem] cursor-pointer no-underline hover:bg-[#fff7f7] hover:border-[#8A252C]/35 max-[760px]:min-h-[36px] max-[760px]:px-5" href={`${basePath}/clinical-cases/validation?caseId=${record.id}`}>Open</Link></span>
           </div>
         ))}
       </div>
+      {hasPagination && <div className="flex items-center justify-between gap-2 rounded-b-lg border border-t-0 border-[#e2e8f0] bg-[#f8fafc] p-[1rem_1.5rem]">
+        <button type="button" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="min-h-[38px] rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.84rem] !font-[900] !text-[#334155] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+        <span className="whitespace-nowrap !text-[0.875rem] !font-[600] !text-[#64748b]"><span className="hidden sm:inline">Page </span>{currentPage} of {totalPages}</span>
+        <button type="button" disabled={currentPage === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} className="min-h-[38px] rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.84rem] !font-[900] !text-[#334155] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+      </div>}
     </section>
   );
 }

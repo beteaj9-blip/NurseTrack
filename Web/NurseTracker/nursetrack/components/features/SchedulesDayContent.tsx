@@ -2,12 +2,12 @@
 
 import React from "react";
 import { useSearchParams } from "next/navigation";
-import { useDeleteSchedule, useSchedules, useUpdateSchedule } from "@/core/api/hooks/useSchedules";
+import { useCreateSchedule, useDeleteSchedule, useSchedules, useUpdateSchedule } from "@/core/api/hooks/useSchedules";
 import { useAllClinicalCases, useInstructorCases, useStudentCases } from "@/core/api/hooks/useClinicalCases";
 import { useHospitals } from "@/core/api/hooks/useHospitals";
-import { useInstructors } from "@/core/api/hooks/useUsers";
+import { useInstructors, useUsers } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
-import { UserRole } from "@/core/types/user";
+import { User, UserRole } from "@/core/types/user";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
@@ -141,10 +141,12 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const routeRole = routeRoleMap[basePath] ?? user?.role;
   const userId = user?.id != null ? String(user.id) : undefined;
   const { data: schedules = [], isLoading } = useSchedules(routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT" ? userId : undefined, routeRole);
+  const createSchedule = useCreateSchedule();
   const updateSchedule = useUpdateSchedule();
   const deleteSchedule = useDeleteSchedule();
   const { data: hospitals = [] } = useHospitals();
   const { data: instructors = [] } = useInstructors((routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT") && userId ? userId : undefined);
+  const { data: databaseStudents = [] } = useUsers("STUDENT", (routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT") && userId ? userId : undefined, routeRole === "ADMIN" || routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT");
   const { data: instructorCases = [] } = useInstructorCases();
   const { data: studentCases = [] } = useStudentCases();
   const { data: allCases = [] } = useAllClinicalCases(routeRole !== "STUDENT" && routeRole !== "INSTRUCTOR", userId);
@@ -172,7 +174,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const instructorName = selectedSchedule?.instructorName || "Clinical Instructor";
   const isStudentView = basePath === "/nursing-student";
   const isChairView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
-  const canEditChairSchedule = basePath === "/admin" || basePath === "/chair" || ((basePath === "/coordinator" || basePath === "/assistant") && canEditSchedules);
+  const canEditChairSchedule = basePath === "/admin" || basePath === "/chair" || basePath === "/assistant" || (basePath === "/coordinator" && canEditSchedules);
   const [reviewNotes, setReviewNotes] = React.useState("");
   const [studentSearch, setStudentSearch] = React.useState("");
   const [breakDate, setBreakDate] = React.useState("");
@@ -209,15 +211,21 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const dutyAreaOptions = React.useMemo(() => dutyAreas.map((area: string) => ({ value: area, label: area })), [dutyAreas]);
   const instructorOptions = React.useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), [instructors]);
   const groupOptions = React.useMemo(() => activeDayScheduleGroups.map((schedule: any) => ({ value: schedule.groupKey, label: schedule.studentSection || "Assigned Group" })), [activeDayScheduleGroups]);
-  const isSaving = updateSchedule.isPending || deleteSchedule.isPending;
+  const isSaving = createSchedule.isPending || updateSchedule.isPending || deleteSchedule.isPending;
   const editorDisabled = !isEditingChairSchedule || isSaving || !canEditChairSchedule;
   const displayedAssignedStudents = isEditingChairSchedule
     ? assignmentDrafts.filter((schedule: any) => !schedule.removed && schedule.draftGroupKey === selectedSchedule.groupKey)
     : activeAssignedStudents;
-  const filteredAssignedStudents = displayedAssignedStudents.filter((schedule: any) => {
-    const q = studentSearch.toLowerCase();
-    return !q || `${schedule.studentName} ${schedule.studentSchoolId} ${schedule.studentSection} ${schedule.hospital} ${schedule.area}`.toLowerCase().includes(q);
-  });
+  const filteredAssignedStudents = displayedAssignedStudents;
+  const studentSearchResults = React.useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query || !isEditingChairSchedule) return [];
+    const assignedIds = new Set(assignmentDrafts.filter((schedule: any) => !schedule.removed).map((schedule: any) => String(schedule.studentId ?? schedule.studentSchoolId)));
+    return (databaseStudents as User[])
+      .filter((student) => !assignedIds.has(String(student.id)) && !assignedIds.has(String(student.schoolId)))
+      .filter((student) => `${student.fullName} ${student.schoolId} ${student.sectionInfo ?? ""} ${student.groupInfo ?? ""} ${student.email}`.toLowerCase().includes(query))
+      .slice(0, 8);
+  }, [assignmentDrafts, databaseStudents, isEditingChairSchedule, studentSearch]);
 
   function cancelChairEdit() {
     setAssignmentDrafts(activeAssignedStudents.map((schedule: any) => ({ ...schedule, originalGroupKey: selectedSchedule.groupKey, draftGroupKey: selectedSchedule.groupKey, removed: false })));
@@ -258,14 +266,22 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
 
   async function saveSelectedSchedule() {
     if (!canEditChairSchedule) {
-      showToast({ variant: "error", title: "Action unavailable", message: "Schedule Maker access is not enabled for your role." });
+      showToast({ variant: "error", title: "Action unavailable", message: "Schedule editing is not enabled for your role." });
       return;
     }
     if (!draftSchedule || !selectedSchedule) return;
     try {
       const duplicateDeletes = duplicateAssignedStudents.map((schedule: any) => deleteSchedule.mutateAsync(String(schedule.id)));
       const assignmentSaves = assignmentDrafts.map((schedule: any) => {
-        if (schedule.removed) return deleteSchedule.mutateAsync(String(schedule.id));
+        if (schedule.removed) return schedule.isNew ? Promise.resolve() : deleteSchedule.mutateAsync(String(schedule.id));
+        if (schedule.isNew) return createSchedule.mutateAsync(schedulePayload(schedule, {
+          instructorId: Number(draftSchedule.instructorId || schedule.instructorId),
+          hospital: draftSchedule.hospital,
+          area: draftSchedule.area,
+          date: draftSchedule.startDate,
+          rawStartTime: draftSchedule.shiftStart,
+          rawEndTime: draftSchedule.shiftEnd,
+        }));
         if (schedule.draftGroupKey !== schedule.originalGroupKey) {
           const target = dayScheduleGroups.find((group: any) => group.groupKey === schedule.draftGroupKey);
           if (!target) return Promise.resolve();
@@ -303,8 +319,32 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
 
   function removeStudentSchedule(schedule: any) {
     if (!canEditChairSchedule || !isEditingChairSchedule) return;
-    setAssignmentDrafts((current) => current.map((item: any) => String(item.id) === String(schedule.id) ? { ...item, removed: true } : item));
+    setAssignmentDrafts((current) => schedule.isNew ? current.filter((item: any) => String(item.id) !== String(schedule.id)) : current.map((item: any) => String(item.id) === String(schedule.id) ? { ...item, removed: true } : item));
     showToast({ variant: "success", title: "Student marked for removal", message: "Click Save to apply this schedule change." });
+  }
+
+  function addStudentSchedule(student: User) {
+    if (!canEditChairSchedule || !isEditingChairSchedule || !selectedSchedule) return;
+    const duplicate = assignmentDrafts.some((schedule: any) => !schedule.removed && (String(schedule.studentId) === String(student.id) || String(schedule.studentSchoolId) === String(student.schoolId)));
+    if (duplicate) {
+      showToast({ variant: "error", title: "Already assigned", message: "This student is already in this schedule group." });
+      return;
+    }
+    setAssignmentDrafts((current) => [...current, {
+      ...selectedSchedule,
+      id: `new-${student.id}`,
+      isNew: true,
+      studentId: student.id,
+      studentName: student.fullName,
+      studentSchoolId: student.schoolId,
+      studentSection: student.sectionInfo,
+      studentProfileImageUrl: student.profileImageUrl,
+      originalGroupKey: selectedSchedule.groupKey,
+      draftGroupKey: selectedSchedule.groupKey,
+      removed: false,
+    }]);
+    setStudentSearch("");
+    showToast({ variant: "success", title: "Student added", message: "Click Save to publish this student schedule." });
   }
 
   function moveStudentSchedule(schedule: any, targetGroupKey: string) {
@@ -368,7 +408,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
             <div className="relative z-10 min-w-0 max-w-full">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 mb-5 max-[760px]:grid-cols-1">
                 <h2 className="m-0 min-w-0 !text-[#202124] !text-[1.25rem] !font-[900] tracking-[-0.03em] break-words max-[760px]:!text-[1.15rem]">{draftSchedule.title}</h2>
-                <div className="flex items-center justify-end gap-3 flex-wrap max-[760px]:w-full max-[760px]:justify-start"><span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] ${chairScheduleBadgeClass(displayedAssignedStudents.length === 0 ? "Canceled" : "Published")}`}>{displayedAssignedStudents.length === 0 ? "Canceled" : "Published"}</span>{activeAssignedStudents.length === 0 ? <button type="button" onClick={restoreSelectedSchedule} disabled={!canEditChairSchedule || isSaving} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#86efac] !text-[#15803d] !text-[0.86rem] !font-[900] cursor-pointer hover:bg-[#ecfdf3] transition-colors disabled:opacity-60 disabled:cursor-not-allowed max-[760px]:flex-1 max-[760px]:min-w-[150px]">Restore Schedule</button> : <button type="button" onClick={startChairEdit} disabled={!canEditChairSchedule || isEditingChairSchedule} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.86rem] !font-[900] cursor-pointer hover:border-[#cbd5e1] transition-colors disabled:opacity-60 disabled:cursor-not-allowed max-[760px]:flex-1 max-[760px]:min-w-[150px]">Edit Schedule</button>}</div>
+                <div className="flex items-center justify-end gap-3 flex-wrap max-[760px]:w-full max-[760px]:justify-start"><span className={`inline-flex items-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] ${chairScheduleBadgeClass(activeAssignedStudents.length === 0 ? "Canceled" : "Published")}`}>{activeAssignedStudents.length === 0 ? "Canceled" : "Published"}</span>{activeAssignedStudents.length === 0 ? <button type="button" onClick={restoreSelectedSchedule} disabled={!canEditChairSchedule || isSaving} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#86efac] !text-[#15803d] !text-[0.86rem] !font-[900] cursor-pointer hover:bg-[#ecfdf3] transition-colors disabled:opacity-60 disabled:cursor-not-allowed max-[760px]:flex-1 max-[760px]:min-w-[150px]">Restore Schedule</button> : <button type="button" onClick={isEditingChairSchedule ? cancelChairEdit : startChairEdit} disabled={!canEditChairSchedule || isSaving} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.86rem] !font-[900] cursor-pointer hover:border-[#cbd5e1] transition-colors disabled:opacity-60 disabled:cursor-not-allowed max-[760px]:flex-1 max-[760px]:min-w-[150px]">{isEditingChairSchedule ? "Cancel Edit" : "Edit Schedule"}</button>}</div>
               </div>
 
               <div className="grid min-w-0 grid-cols-1 gap-[16px] min-[1500px]:grid-cols-4">
@@ -403,15 +443,19 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
               </div>
 
               <label className="flex flex-col gap-2 mt-4 !text-[#4b5565] !text-[0.86rem] !font-[900]">Review Notes<textarea disabled={editorDisabled} className="w-full min-h-[104px] rounded-lg border border-[#dbe3ee] bg-[#f8fafc] px-4 py-3 !text-[#111827] !font-[800] resize-y disabled:!text-[#94a3b8]" placeholder="Add correction notes before republishing" value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} /></label>
-              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving || displayedAssignedStudents.length === 0} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">Deactivate Schedule</button><button type="button" disabled={isSaving} onClick={cancelChairEdit} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">Cancel Edit</button><button type="button" disabled={isSaving || !canEditChairSchedule} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
+              {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-6 flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving || activeAssignedStudents.length === 0} onClick={cancelSelectedSchedule} className="min-h-[48px] px-6 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">Deactivate Schedule</button><button type="button" disabled={isSaving || !canEditChairSchedule} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed max-[560px]:w-full">{isSaving ? "Saving..." : "Save Selected Schedule"}</button></div>}
             </div>
           </article>
 
           <article className="rounded-xl border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] p-[clamp(0.75rem,3vw,1.45rem)] min-w-0 max-w-full overflow-hidden">
             <div className="flex items-center justify-between gap-4 mb-5"><h2 className="m-0 !text-[#202124] !text-[1.15rem] !font-[900]">Assigned Student(s)</h2><span className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#fef3c7] !text-[#92400e] !text-[0.78rem] !font-[900]">{displayedAssignedStudents.length} active student(s)</span></div>
-            <label className="block rounded-xl border border-[#dbe3ee] p-4 !text-[#111827] !font-[900] mb-4">Search Student(s)<input className="mt-2 w-full min-h-[52px] rounded-lg border border-[#dbe3ee] bg-white px-4 !text-[#111827] !font-[800]" placeholder="Search by name, ID, section, or site" value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} /></label>
+            <div className="relative mb-4 rounded-xl border border-[#dbe3ee] p-4 !text-[#111827] !font-[900]">Search Student(s)<input className="mt-2 w-full min-h-[52px] rounded-lg border border-[#dbe3ee] bg-white px-4 !text-[#111827] !font-[800]" placeholder={isEditingChairSchedule ? "Search by name, ID, section, or email to add" : "Click Edit Schedule before adding students"} value={studentSearch} onChange={(event) => setStudentSearch(event.target.value)} disabled={!isEditingChairSchedule} />
+              {isEditingChairSchedule && studentSearch.trim() ? <div className="absolute left-4 right-4 top-[calc(100%_-_6px)] z-30 max-h-[240px] overflow-y-auto rounded-lg border border-[#e2e8f0] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                {studentSearchResults.length ? studentSearchResults.map((student) => <button key={student.id} type="button" className="block w-full border-b border-[#f1f5f9] p-4 text-left last:border-b-0 hover:bg-[#f8fafc]" onClick={() => addStudentSchedule(student)}><strong className="block !text-[#111827] !font-[900]">{student.fullName}</strong><small className="block mt-1 !text-[#64748b] !font-[800]">{student.schoolId} - {student.sectionInfo || "No section"}{student.groupInfo ? ` - Group: ${student.groupInfo}` : ""}</small></button>) : <div className="p-4 !text-[#64748b] !font-[800]">No matching student(s) found.</div>}
+              </div> : null}
+            </div>
             <div className="rounded-xl border border-[#e2e8f0] overflow-x-auto"><table className="w-full border-collapse text-left"><thead><tr className="bg-[#f8fafc] border-b border-[#e2e8f0] !text-[#111827] !text-[0.76rem] !font-[900] uppercase"><th className="p-4 w-[52px]">No.</th><th className="p-4">Student</th><th className="p-4 w-[180px] max-[640px]:hidden">Move To</th><th className="p-4 w-[110px]">Action</th></tr></thead><tbody>{filteredAssignedStudents.map((schedule: any, index: number) => <tr key={schedule.id} className="border-b border-[#e2e8f0] last:border-0"><td className="p-4 !font-[800]">{index + 1}.</td><td className="p-4"><div className="flex items-center gap-3"><ProfileAvatar name={schedule.studentName || "Nursing Student"} imageUrl={schedule.studentProfileImageUrl} size={42} /><strong className="!text-[#202124] !font-[900]">{schedule.studentName || "Nursing Student"}</strong></div></td><td className="p-4 max-[640px]:hidden"><InlineSelect value={schedule.draftGroupKey ?? selectedSchedule.groupKey} options={groupOptions} placeholder="Move to group" onChange={(value) => moveStudentSchedule(schedule, value)} disabled={!isEditingChairSchedule || !canEditChairSchedule || isSaving} /></td><td className="p-4"><button type="button" disabled={!isEditingChairSchedule || !canEditChairSchedule || isSaving} onClick={() => removeStudentSchedule(schedule)} className="min-h-[38px] px-4 rounded-lg bg-white border border-[#fca5a5] !text-[#c62828] !text-[0.82rem] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Remove</button></td></tr>)}</tbody></table></div>
-            {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-[#e2e8f0] flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving} onClick={cancelChairEdit} className="min-h-[48px] px-8 rounded-lg bg-white border border-[#e2e8f0] !text-[#475569] !font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Cancel Edit</button><button type="button" disabled={isSaving || !canEditChairSchedule} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{isSaving ? "Saving..." : "Save Assigned Student(s)"}</button></div>}
+            {isEditingChairSchedule && <div className="flex justify-end gap-3 mt-5 pt-5 border-t border-[#e2e8f0] flex-wrap max-[560px]:flex-col"><button type="button" disabled={isSaving || !canEditChairSchedule} onClick={saveSelectedSchedule} className="min-h-[48px] px-8 rounded-lg bg-[#a83a44] border border-[#a83a44] !text-white !font-[900] shadow-[0_12px_24px_rgba(138,37,44,0.22)] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{isSaving ? "Saving..." : "Save Assigned Student(s)"}</button></div>}
           </article>
         </>}
 

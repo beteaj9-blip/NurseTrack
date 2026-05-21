@@ -84,9 +84,9 @@ function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; i
 
   return (
     <div className="mb-8">
-      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap max-[640px]:items-start">
         <h3 className="text-[#8A252C] text-[1.1rem] font-[800] m-0">{title}</h3>
-        <div className="flex items-center gap-3 flex-wrap"><div className="min-w-[190px]"><InlineSelect value={statusFilter} options={caseStatusOptions} placeholder="All statuses" onChange={setStatusFilter} /></div><div className="min-w-[190px]"><InlineSelect value={submittedSort} options={submittedSortOptions} placeholder="Sort by submitted" onChange={setSubmittedSort} /></div></div>
+        <div className="flex items-center gap-3 flex-wrap max-[640px]:grid max-[640px]:w-full max-[640px]:grid-cols-1"><div className="min-w-[190px] max-[640px]:min-w-0"><InlineSelect value={statusFilter} options={caseStatusOptions} placeholder="All statuses" onChange={setStatusFilter} /></div><div className="min-w-[190px] max-[640px]:min-w-0"><InlineSelect value={submittedSort} options={submittedSortOptions} placeholder="Sort by submitted" onChange={setSubmittedSort} /></div></div>
       </div>
       <div className="w-full overflow-x-auto border border-[#e2e8f0] rounded-lg">
         <table className="w-full min-w-[980px] text-left border-collapse">
@@ -181,16 +181,16 @@ export default function StudentClinicalCaseContent() {
   };
 
   return (
-    <div className="p-10">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+    <div className="min-w-0 overflow-x-hidden p-[clamp(24px,4vw,42px)]">
+      <div className="min-w-0 rounded-xl border border-gray-100 bg-white p-[clamp(18px,3vw,32px)] shadow-sm">
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h2 className="text-[1.2rem] font-[800] text-[#111827] m-0">Student Information</h2>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 max-[640px]:w-full max-[640px]:items-stretch">
             <Link
               href="/nursing-student/clinical-cases/add"
-              className="inline-flex items-center justify-center min-w-[180px] h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] !font-[900] shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all no-underline"
+              className="inline-flex items-center justify-center min-w-[180px] h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] !font-[900] shadow-sm hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] transition-all no-underline max-[640px]:w-full"
             >
               Add clinical case
             </Link>
@@ -206,12 +206,12 @@ export default function StudentClinicalCaseContent() {
         </div>
 
         {/* Student Profile Info */}
-        <div className="flex items-center justify-between gap-4 p-4 mb-6 bg-white border border-[#e2e8f0] rounded-lg">
-          <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-[#e2e8f0] bg-white p-4 mb-6">
+          <div className="flex min-w-0 items-center gap-4">
             <ProfileAvatar name={user?.fullName || "Nursing Student"} imageUrl={user?.profileImageUrl} size={48} />
-            <div>
+            <div className="min-w-0">
               <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 mb-1">{user?.fullName ?? "Nursing Student"}</h3>
-              <p className="text-[#64748b] text-[0.9rem] font-semibold m-0">{user?.sectionInfo ?? ''} — Student ID {user?.schoolId ?? ''}</p>
+              <p className="m-0 break-words text-[#64748b] text-[0.9rem] font-semibold">{user?.sectionInfo ?? ''} - Student ID {user?.schoolId ?? ''}</p>
             </div>
           </div>
         </div>
@@ -226,11 +226,11 @@ export default function StudentClinicalCaseContent() {
             <InlineSelect value={activeTerm?.semester ?? ""} options={activeTerm?.semester ? [{ value: activeTerm.semester, label: activeTerm.semester }] : []} placeholder="Semester" onChange={() => {}} />
           </label>
           <div className="relative group">
-            <button className="relative h-[50px] px-5 pr-10 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
+            <button className="relative h-[50px] w-full px-5 pr-10 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" type="button" onClick={handleSubmitClearance} disabled={submitClearance.isPending || !canSubmitClearance}>{submitClearance.isPending ? "Submitting..." : "Submit for Clearance"}</button>
             {!canSubmitClearance && <span className="absolute right-2.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full bg-[#fff7d6] !text-[#92400e] pointer-events-none"><svg viewBox="0 0 24 24" className="h-[18px] w-[18px] fill-none stroke-current stroke-[2.4]" aria-hidden="true"><path d="M12 3 2.5 20.5h19L12 3Z" /><path d="M12 9v5" strokeLinecap="round" /><path d="M12 17.5h.01" strokeLinecap="round" /></svg></span>}
             {!canSubmitClearance && <span className="pointer-events-none absolute left-1/2 top-[58px] z-30 hidden w-[280px] -translate-x-1/2 rounded-lg border border-[#fde68a] bg-[#fffbeb] px-3 py-2 text-center !text-[0.76rem] !font-[850] leading-[1.35] !text-[#92400e] shadow-[0_14px_28px_rgba(15,23,42,0.14)] group-hover:block">{clearanceBlockReason}</span>}
           </div>
-          <button className="h-[50px] px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer" type="button" onClick={() => window.print()}>Print Clearance</button>
+          <button className="h-[50px] w-full px-5 rounded-lg border border-[#e2e8f0] bg-white text-[#344054] text-[0.85rem] font-[900] cursor-pointer" type="button" onClick={() => window.print()}>Print Clearance</button>
         </div>
 
           <CaseTable title="Delivery Room Cases" cases={deliveryRoomCases} isLoading={isLoading} />

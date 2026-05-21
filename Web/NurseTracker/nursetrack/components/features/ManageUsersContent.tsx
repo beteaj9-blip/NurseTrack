@@ -66,6 +66,7 @@ const accountStatusOptions = [
   { value: "Active", label: "Active" },
   { value: "Deactivated", label: "Deactivated" },
 ];
+const levelOptions = [1, 2, 3, 4].map((level) => ({ value: String(level), label: `Level ${level}` }));
 
 const sectionDefaults = [
   "BSN 1A",
@@ -138,6 +139,8 @@ export function ManageUsersContent() {
     "edit" | "status" | "reset"
   >("edit");
   const [editRole, setEditRole] = useState("student");
+  const [newUserLevel, setNewUserLevel] = useState("1");
+  const [editLevel, setEditLevel] = useState("1");
   const [nextStatus, setNextStatus] = useState("Active");
   const [userPage, setUserPage] = useState(1);
 
@@ -251,6 +254,7 @@ export function ManageUsersContent() {
         message: "The account was saved.",
       });
       setNewUserRole("student");
+      setNewUserLevel("1");
       setIsAddUserModalOpen(false);
     } catch {
       showToast({
@@ -462,20 +466,11 @@ export function ManageUsersContent() {
                         <span>{user.role}</span>
                       </span>
                       <span className="flex flex-col max-[1180px]:col-span-2 max-[1180px]:rounded-lg max-[1180px]:border max-[1180px]:border-[#e2e8f0] max-[1180px]:bg-[#f8fafc] max-[1180px]:px-3 max-[1180px]:py-2">
-                        <small className="hidden max-[1180px]:block !text-[#64748b] !text-[0.68rem] !font-[900] uppercase tracking-wide mb-1">ID / Section</small>
-                        <strong className="!text-[#111827] !text-[0.9rem] !font-bold">
-                          {user.id}
-                        </strong>
-                        {user.section && (
-                          <small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5">
-                            {user.section}
-                          </small>
-                        )}
-                        {user.group && (
-                          <small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5">
-                            Group: {user.group}
-                          </small>
-                        )}
+                          <small className="hidden max-[1180px]:block !text-[#64748b] !text-[0.68rem] !font-[900] uppercase tracking-wide mb-1">ID / Section</small>
+                          <strong className="!text-[#111827] !text-[0.9rem] !font-bold">
+                            {user.id}
+                          </strong>
+                        {(user.section || user.group) && <small className="!text-[#64748b] !text-[0.8rem] !font-medium mt-0.5 truncate">{[user.section, user.group ? `Group: ${user.group}` : ""].filter(Boolean).join(" - ")}</small>}
                       </span>
                       <span className="!text-[#4c5d7d] !text-[0.88rem] !font-bold max-[1180px]:col-span-2 max-[1180px]:grid max-[1180px]:gap-1 max-[1180px]:rounded-lg max-[1180px]:border max-[1180px]:border-[#e2e8f0] max-[1180px]:bg-[#f8fafc] max-[1180px]:px-3 max-[1180px]:py-2">
                         <small className="hidden max-[1180px]:block !text-[#64748b] !text-[0.68rem] !font-[900] uppercase tracking-wide">Level</small>
@@ -498,6 +493,7 @@ export function ManageUsersContent() {
                           onClick={() => {
                             setSelectedUserForAction(user);
                             setEditRole(user.roleValue);
+                            setEditLevel(String(user.api.assignedLevels?.[0] ?? 1));
                             setNextStatus(
                               user.status === "Pending"
                                 ? "Active"
@@ -606,7 +602,10 @@ export function ManageUsersContent() {
                     value={newUserRole}
                     options={roleOptions}
                     placeholder="Select role"
-                    onChange={setNewUserRole}
+                    onChange={(value) => {
+                      setNewUserRole(value);
+                      setNewUserLevel(value === "coordinator" ? "1" : newUserLevel);
+                    }}
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
@@ -615,7 +614,7 @@ export function ManageUsersContent() {
                     className={inputClass}
                     name="schoolId"
                     type="text"
-                    inputMode="numeric"
+                    inputMode="text"
                     placeholder="Student ID or staff ID"
                     onInput={stripLettersFromInput}
                     required
@@ -641,15 +640,8 @@ export function ManageUsersContent() {
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
                   Assigned levels
-                  <input
-                    className={inputClass}
-                    name="assignedLevels"
-                    type="text"
-                    key={newUserRole}
-                    defaultValue={newUserRole === "coordinator" ? "1,2,3,4" : "1"}
-                    readOnly={newUserRole === "coordinator"}
-                    placeholder="1 or 1,2"
-                  />
+                  <input type="hidden" name="assignedLevels" value={newUserRole === "coordinator" ? "1,2,3,4" : newUserLevel} />
+                  {newUserRole === "coordinator" ? <input className={inputClass} value="Levels 1, 2, 3, 4" readOnly /> : <InlineSelect value={newUserLevel} options={levelOptions} placeholder="Select level" onChange={setNewUserLevel} />}
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
                   Mobile number
@@ -846,7 +838,10 @@ export function ManageUsersContent() {
                       value={editRole}
                       options={roleOptions}
                       placeholder="Select role"
-                      onChange={setEditRole}
+                      onChange={(value) => {
+                        setEditRole(value);
+                        setEditLevel(value === "coordinator" ? "1" : editLevel);
+                      }}
                     />
                   </label>
                   <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
@@ -859,17 +854,18 @@ export function ManageUsersContent() {
                     />
                   </label>
                   <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                    Assigned levels
+                    Group
                     <input
                       className={inputClass}
-                      name="assignedLevels"
+                      name="groupInfo"
                       type="text"
-                      key={editRole}
-                      defaultValue={(
-                        editRole === "coordinator" ? [1, 2, 3, 4] : editRole === "instructor" ? [selectedUserForAction.api.assignedLevels?.[0] ?? 1] : selectedUserForAction.api.assignedLevels ?? [1]
-                      ).join(",")}
-                      readOnly={editRole === "coordinator"}
+                      defaultValue={selectedUserForAction.group}
                     />
+                  </label>
+                  <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
+                    Assigned levels
+                    <input type="hidden" name="assignedLevels" value={editRole === "coordinator" ? "1,2,3,4" : editLevel} />
+                    {editRole === "coordinator" ? <input className={inputClass} value="Levels 1, 2, 3, 4" readOnly /> : <InlineSelect value={editLevel} options={levelOptions} placeholder="Select level" onChange={setEditLevel} />}
                   </label>
                   <div
                     className="flex items-center min-h-[48px] px-4 rounded-lg bg-[#f8fafc] !text-[#4c5d7d] !text-[0.85rem] !font-bold border border-[#e2e8f0]"

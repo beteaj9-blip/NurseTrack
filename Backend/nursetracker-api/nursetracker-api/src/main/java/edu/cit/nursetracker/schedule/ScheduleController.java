@@ -85,6 +85,7 @@ public class ScheduleController {
         User viewer = userRepository.findById(userId).orElse(null);
         if (viewer == null) return false;
         if (viewer.getRole() == UserRole.ADMIN || viewer.getRole() == UserRole.CHAIR) return true;
+        if (viewer.getRole() == UserRole.ASSISTANT) return true;
         if (viewer.getRole() == UserRole.COORDINATOR) {
             return accessPermissionService.canEdit(viewer.getRole(), "scheduleMaker");
         }

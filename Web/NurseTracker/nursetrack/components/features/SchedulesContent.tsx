@@ -60,7 +60,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
   const router = useRouter();
   const [viewMode, setViewMode] = React.useState<"calendar" | "list">("calendar");
   const { canEdit: canEditSchedules } = useCanEditFeature("scheduleMaker");
-  const canEdit = (basePath === "/admin" || basePath === "/chair") || ((basePath === "/coordinator" || basePath === "/assistant") && canEditSchedules);
+  const canEdit = (basePath === "/admin" || basePath === "/chair" || basePath === "/assistant") || (basePath === "/coordinator" && canEditSchedules);
   const usesChairScheduleView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const showViewToggle = !usesChairScheduleView || (basePath === "/coordinator" && !canEditSchedules);
 
@@ -103,6 +103,11 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
     if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0); }
     else setCalMonth(m => m + 1);
   }
+  function goToCurrentMonth() {
+    setCalYear(today.getFullYear());
+    setCalMonth(today.getMonth());
+  }
+  const monthButtonLabel = calYear === today.getFullYear() && calMonth === today.getMonth() ? "This Month" : `${MONTHS[calMonth]} ${calYear}`;
 
   return (
     <main className="min-w-0 overflow-x-hidden p-[clamp(24px,4vw,42px)] content-start grid gap-4 w-full">
@@ -134,14 +139,11 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
             <>
               {/* Month navigator */}
               <div className="flex items-center justify-between gap-3 m-[4px_0_14px] p-[14px_16px] border border-[#e4e7ec]/90 rounded-lg bg-gradient-to-r from-[#fff8d6] to-[#fafafb] max-[760px]:flex-col max-[760px]:items-start">
-                <strong className="!text-[#111827] !text-[1.08rem] !font-[850] leading-[1.2]">
-                  {MONTHS[calMonth]} {calYear}
-                </strong>
                 <div className="flex items-center gap-2 ml-auto">
                   <button onClick={prevMonth} className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] transition-colors text-[#475467] cursor-pointer">
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><polyline points="15 18 9 12 15 6"/></svg>
                   </button>
-                  <button onClick={() => { setCalYear(today.getFullYear()); setCalMonth(today.getMonth()); }} className="h-[34px] px-3 rounded-lg border border-[#e2e8f0] bg-white !text-[0.8rem] !font-bold text-[#344054] hover:bg-[#f1f5f9] transition-colors cursor-pointer">Today</button>
+                   <button onClick={goToCurrentMonth} className="h-[34px] min-w-[108px] px-3 rounded-lg border border-[#e2e8f0] bg-white !text-[0.8rem] !font-bold text-[#344054] hover:bg-[#f1f5f9] transition-colors cursor-pointer">{monthButtonLabel}</button>
                   <button onClick={nextMonth} className="w-[34px] h-[34px] flex items-center justify-center rounded-lg border border-[#e2e8f0] bg-white hover:bg-[#f1f5f9] transition-colors text-[#475467] cursor-pointer">
                     <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-current stroke-2"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>

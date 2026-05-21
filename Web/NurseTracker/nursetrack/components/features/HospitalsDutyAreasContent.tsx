@@ -96,8 +96,9 @@ export function HospitalsDutyAreasContent() {
   const [hospitalPage, setHospitalPage] = useState(1);
   const [dutyAreaPage, setDutyAreaPage] = useState(1);
 
-  const activeHospitals = useMemo(() => hospitals.filter(hospital => isActive(hospital.active)), [hospitals]);
-  const hospitalOptions = useMemo(() => hospitals.map(hospital => ({ value: String(hospital.id), label: `${hospital.name}${isActive(hospital.active) ? "" : " (Deactivated)"}` })), [hospitals]);
+  const sortedHospitals = useMemo(() => [...hospitals].sort((a, b) => (a.fullName || a.name).localeCompare(b.fullName || b.name)), [hospitals]);
+  const activeHospitals = useMemo(() => sortedHospitals.filter(hospital => isActive(hospital.active)), [sortedHospitals]);
+  const hospitalOptions = useMemo(() => sortedHospitals.map(hospital => ({ value: String(hospital.id), label: `${hospital.name}${isActive(hospital.active) ? "" : " (Deactivated)"}` })), [sortedHospitals]);
   const dutyAreaHospitalOptions = useMemo(() => [{ value: "all", label: "All hospitals" }, ...hospitalOptions], [hospitalOptions]);
   const editHospitalOptions = useMemo(() => {
     const options = [...hospitalOptions];
@@ -107,19 +108,19 @@ export function HospitalsDutyAreasContent() {
     }
     return options;
   }, [editingDutyArea, hospitalOptions, hospitals]);
-  const dutyAreas = useMemo<DutyArea[]>(() => hospitals.flatMap(hospital => [
+  const dutyAreas = useMemo<DutyArea[]>(() => sortedHospitals.flatMap(hospital => [
     ...(hospital.wards ?? []).map(name => ({ name, hospitalId: hospital.id, hospital: hospital.name, active: isActive(hospital.active) })),
     ...(hospital.inactiveWards ?? []).map(name => ({ name, hospitalId: hospital.id, hospital: hospital.name, active: false })),
-  ]), [hospitals]);
+  ]).sort((a, b) => a.name.localeCompare(b.name) || a.hospital.localeCompare(b.hospital)), [sortedHospitals]);
   const filteredHospitals = useMemo(() => {
     const query = hospitalSearch.trim().toLowerCase();
-    return hospitals.filter(hospital => {
+    return sortedHospitals.filter(hospital => {
       const matchesSearch = !query || `${hospital.name} ${hospital.fullName ?? ""} ${hospital.label ?? ""}`.toLowerCase().includes(query);
       const active = isActive(hospital.active);
       const matchesStatus = hospitalStatus === "all" || (hospitalStatus === "active" ? active : !active);
       return matchesSearch && matchesStatus;
     });
-  }, [hospitalSearch, hospitals, hospitalStatus]);
+  }, [hospitalSearch, hospitalStatus, sortedHospitals]);
   const filteredDutyAreas = useMemo(() => {
     const query = dutyAreaSearch.trim().toLowerCase();
     return dutyAreas.filter(area => {

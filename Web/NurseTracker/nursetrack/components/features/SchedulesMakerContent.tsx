@@ -198,7 +198,8 @@ function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSecti
 
 export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
-  const { canEdit } = useCanEditFeature("scheduleMaker");
+  const { canEdit: canUseScheduleMaker } = useCanEditFeature("scheduleMaker");
+  const canEdit = basePath === "/admin" || basePath === "/chair" || basePath === "/assistant" || (basePath === "/coordinator" && canUseScheduleMaker);
   const { data: hospitals = [] } = useHospitals();
   const scopedViewerId = (basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: instructors = [] } = useInstructors(scopedViewerId);

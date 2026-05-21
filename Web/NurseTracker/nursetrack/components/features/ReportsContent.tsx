@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { apiClient } from "@/core/api/axios";
 import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useUsers } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -25,8 +26,9 @@ export function ReportsContent() {
   const viewerId = (user?.role === "CHAIR" || user?.role === "COORDINATOR" || user?.role === "ASSISTANT") && user?.id != null ? String(user.id) : undefined;
   const { data: instructorCases = [], isLoading: isInstructorCasesLoading } = useInstructorCases(undefined, !hasAllCaseAccess);
   const { data: allCases = [], isLoading: isAllCasesLoading } = useAllClinicalCases(hasAllCaseAccess, viewerId);
+  const { data: studentUsers = [], isLoading: isStudentsLoading } = useUsers("STUDENT", hasAllCaseAccess ? viewerId : undefined);
   const cases = hasAllCaseAccess ? allCases : instructorCases;
-  const isCasesLoading = hasAllCaseAccess ? isAllCasesLoading : isInstructorCasesLoading;
+  const isCasesLoading = (hasAllCaseAccess ? isAllCasesLoading : isInstructorCasesLoading) || isStudentsLoading;
   const [reportScope, setReportScope] = useState("person");
   const [isGenerating, setIsGenerating] = useState(false);
   const getDefaultReportRange = () => {
@@ -51,7 +53,20 @@ export function ReportsContent() {
   
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const reportPeople = Object.values((cases as any[]).reduce((acc: Record<string, Person>, clinicalCase: any) => {
+  const reportPeople = Object.values((studentUsers as any[]).reduce((acc: Record<string, Person>, student: any) => {
+      const key = String(student.id ?? student.schoolId ?? student.fullName);
+      if (!key) return acc;
+      acc[key] = {
+        name: student.fullName || "Nursing Student",
+        role: "Student",
+        id: student.schoolId || "",
+        userId: student.id,
+        section: student.sectionInfo || "Nursing Student",
+        site: student.hospital || "Assigned Site",
+        group: student.groupInfo || student.sectionInfo || "Assigned Group",
+      };
+      return acc;
+    }, (cases as any[]).reduce((acc: Record<string, Person>, clinicalCase: any) => {
       const key = String(clinicalCase.studentId ?? clinicalCase.studentSchoolId ?? clinicalCase.studentName);
       if (!key || acc[key]) return acc;
       acc[key] = {
@@ -64,7 +79,7 @@ export function ReportsContent() {
         group: clinicalCase.studentSection || "Assigned Group",
       };
       return acc;
-    }, {}));
+    }, {}))).sort((a, b) => a.name.localeCompare(b.name));
   const sections = Array.from(new Set(reportPeople.map((person) => person.section).filter(Boolean))).sort();
   const sites = Array.from(new Set(reportPeople.map((person) => person.site).filter(Boolean))).sort();
   const groups = Array.from(new Set(reportPeople.map((person) => person.group).filter(Boolean))).sort();

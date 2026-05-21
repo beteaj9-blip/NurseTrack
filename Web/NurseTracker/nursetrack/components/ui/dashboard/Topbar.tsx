@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useNotifications } from '@/core/api/hooks/useNotifications';
 import { useAuthStore } from '@/core/store/authStore';
+import { roleToBasePath } from '@/core/types/user';
 import { BackButton } from './BackButton';
 import { LogoutModal } from './LogoutModal';
 
@@ -24,9 +25,8 @@ export function Topbar({ titleKicker, title, onMenuClick, backHref }: TopbarProp
   const { data: notifications = [] } = useNotifications(undefined, !!user);
   const unreadCount = (notifications as any[]).filter((notification) => notification.read === false || notification.isRead === false).length;
   
-  // Calculate dynamic notification href based on current role base path
-  const roleBase = pathname.split('/')[1] || '';
-  const notifHref = roleBase ? `/${roleBase}/notifications` : '/notifications';
+  const roleBase = user?.role ? roleToBasePath[user.role] : `/${pathname.split('/')[1] || ''}`;
+  const notifHref = roleBase ? `${roleBase}/notifications` : '/notifications';
   const isNotifications = pathname.includes('/notifications');
 
   return (
@@ -72,7 +72,7 @@ export function Topbar({ titleKicker, title, onMenuClick, backHref }: TopbarProp
             )}
           </Link>
 
-          <Link className={`inline-flex items-center justify-center w-[42px] min-w-[42px] min-h-[38px] p-2 border rounded-lg cursor-pointer transition-all max-[760px]:w-[38px] max-[760px]:min-w-[38px] max-[760px]:min-h-[38px] max-[760px]:rounded-md ${pathname.includes('/profile') ? 'bg-[#8A252C] border-[#8A252C] !text-white hover:bg-[#681920]' : 'border-[#dbe3ee] bg-white !text-[#344054] hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:!text-[#0f172a] hover:shadow-sm hover:-translate-y-px'}`} href={roleBase ? `/${roleBase}/profile` : '#'} aria-label="Profile" title="Profile">
+          <Link className={`inline-flex items-center justify-center w-[42px] min-w-[42px] min-h-[38px] p-2 border rounded-lg cursor-pointer transition-all max-[760px]:w-[38px] max-[760px]:min-w-[38px] max-[760px]:min-h-[38px] max-[760px]:rounded-md ${pathname.includes('/profile') ? 'bg-[#8A252C] border-[#8A252C] !text-white hover:bg-[#681920]' : 'border-[#dbe3ee] bg-white !text-[#344054] hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:!text-[#0f172a] hover:shadow-sm hover:-translate-y-px'}`} href={roleBase ? `${roleBase}/profile` : '#'} aria-label="Profile" title="Profile">
             <svg className="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="8" r="4"></circle>
               <path d="M4 21a8 8 0 0 1 16 0"></path>

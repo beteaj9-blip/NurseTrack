@@ -49,13 +49,13 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const inputCls = "w-full min-h-[48px] px-3 py-2 border border-[#dbe3ee] rounded-lg bg-white !text-[#111827] !font-[500] focus:ring-2 focus:ring-[#8A252C]/20 focus:border-[#8A252C] outline-none transition-all";
     const labelCls = "flex flex-col gap-1.5 m-0 !text-[0.875rem] !font-[800] !text-[#344054]";
     return (
-        <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]">
-            <section className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem]">
-                <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap">
+        <main className="min-h-[calc(100vh-64px)] min-w-0 overflow-x-hidden p-[clamp(24px,4vw,42px)]">
+            <section className="min-w-0 rounded-xl border border-[#e2e8f0] bg-white p-[clamp(18px,3vw,28px)] shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
+                <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap max-[520px]:gap-3">
                     <h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-[800] tracking-[-0.03em]">Students with Clinical Case Records</h2>
                     <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{filtered.length} student(s)</span>
                 </div>
-                <div className="grid gap-[1rem] mb-[1rem] grid-cols-2 max-[680px]:grid-cols-1">
+                <div className="grid min-w-0 gap-[1rem] mb-[1rem] grid-cols-2 max-[680px]:grid-cols-1">
                     <label className={labelCls} htmlFor="cc-search">Search student<input className={inputCls} id="cc-search" type="search" placeholder="Search name, student ID, or section" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
                     <label className={labelCls} htmlFor="cc-section">Section<InlineSelect value={sectionFilter} options={sectionOptions} placeholder="All sections" onChange={(value) => { setSectionFilter(value); setCurrentPage(1); }} /></label>
                 </div>

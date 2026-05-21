@@ -6,6 +6,7 @@ import edu.cit.nursetracker.notification.NotificationType;
 import edu.cit.nursetracker.adminaccess.AdminAccessPermissionService;
 import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.UserRepository;
+import edu.cit.nursetracker.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -125,7 +126,8 @@ public class ClinicalCaseService {
         ClinicalCase clinicalCase = caseRepository.findById(caseId).orElse(null);
         if (clinicalCase == null) return false;
         return userRepository.findById(viewerId)
-                .filter(viewer -> AccessScope.canViewRecord(viewer, clinicalCase.getStudent(), clinicalCase.getInstructor()))
+                .filter(viewer -> viewer.getRole() == UserRole.INSTRUCTOR && clinicalCase.getInstructor() != null && clinicalCase.getInstructor().getId().equals(viewer.getId())
+                        || AccessScope.canViewRecord(viewer, clinicalCase.getStudent(), clinicalCase.getInstructor()))
                 .filter(viewer -> accessPermissionService.canEdit(viewer.getRole(), "clinicalCases"))
                 .isPresent();
     }
