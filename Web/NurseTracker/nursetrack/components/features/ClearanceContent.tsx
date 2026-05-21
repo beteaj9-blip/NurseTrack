@@ -45,6 +45,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
   const labelCls = "flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]";
   const ghostBtn = "inline-flex items-center justify-center min-h-[38px] px-[1rem] rounded-[8px] bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.84rem] !font-[800] hover:border-[rgba(138,37,44,0.32)] hover:!text-[#8A252C] hover:shadow-[0_10px_24px_rgba(32,33,36,0.08)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
   const clearanceEnabled = settings?.enabled !== false;
+  const canToggleSubmissions = basePath === "/admin" || basePath === "/chair";
 
   React.useEffect(() => {
     setCurrentPage(page => Math.min(page, totalPages));
@@ -65,7 +66,7 @@ export function ClearanceContent({ basePath }: { basePath: string }) {
       <section className="bg-white rounded-xl shadow-[0_14px_34px_rgba(15,23,42,0.06)] border border-[#e2e8f0] p-[1.6rem_1.75rem_1.75rem]">
         <div className="flex items-start justify-between gap-[22px] mb-[1.1rem] border-b border-[#e5eaf1] pb-[1.1rem] flex-wrap">
           <div><h2 className="m-0 !text-[#111827] !text-[1.15rem] !font-bold tracking-[-0.03em]">All-Section Clearance List</h2><p className="m-[0.35rem_0_0] !text-[#64748b] !text-[0.86rem] !font-[700]">{clearanceEnabled ? "Student clearance submission is enabled." : "Student clearance submission is disabled."}</p></div>
-          <div className="flex items-center gap-3 flex-wrap">{basePath === "/admin" && <button type="button" disabled={updateSettings.isPending} onClick={handleToggleClearance} className={`inline-flex items-center justify-center min-h-[42px] px-4 rounded-lg !text-[0.86rem] !font-[900] cursor-pointer disabled:opacity-60 ${clearanceEnabled ? "bg-white border border-[#fca5a5] !text-[#b91c1c] hover:bg-[#fef2f2]" : "bg-[#8A252C] border border-[#8A252C] !text-white hover:bg-[#6d1d23]"}`}>{clearanceEnabled ? "Disable clearance" : "Enable clearance"}</button>}<span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span></div>
+          <div className="flex items-center gap-3 flex-wrap">{canToggleSubmissions && <button type="button" disabled={updateSettings.isPending} onClick={handleToggleClearance} className={`inline-flex items-center justify-center min-h-[42px] px-4 rounded-lg !text-[0.86rem] !font-[900] cursor-pointer disabled:opacity-60 ${clearanceEnabled ? "bg-white border border-[#fca5a5] !text-[#b91c1c] hover:bg-[#fef2f2]" : "bg-[#8A252C] border border-[#8A252C] !text-white hover:bg-[#6d1d23]"}`}>{clearanceEnabled ? "Disable Submissions" : "Enable Submissions"}</button>}<span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold bg-[#e9f8ef] !text-[#03703c]">{filtered.length} visible</span></div>
         </div>
         <div className="grid gap-[1rem] mb-[1rem] grid-cols-3 max-[980px]:grid-cols-1">
           <label className={labelCls} htmlFor="cl-search">Search<input className={inputCls} id="cl-search" type="search" placeholder="Search name, student ID, section, or status" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} /></label>
