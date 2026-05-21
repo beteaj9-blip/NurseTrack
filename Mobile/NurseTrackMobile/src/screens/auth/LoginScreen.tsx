@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Switch, ScrollView, StatusBar } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Animated, Dimensions, Easing, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Switch, ScrollView, StatusBar } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { CitLogo } from '../../components/CitLogo';
+import { AppLoadingScreen } from '../../components/AppLoadingScreen';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 
@@ -10,12 +11,15 @@ type Props = {
 };
 
 const LoginScreen = ({ navigation }: Props) => {
+  const screenHeight = Dimensions.get('window').height;
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessTransition, setShowSuccessTransition] = useState(false);
   const [formMessage, setFormMessage] = useState("Enter your account details to continue.");
   const [isError, setIsError] = useState(false);
+  const transitionY = useRef(new Animated.Value(screenHeight)).current;
   
   const { login } = useAuth();
 
@@ -26,12 +30,28 @@ const LoginScreen = ({ navigation }: Props) => {
       return;
     }
 
+    const playSuccessTransition = async () => {
+      transitionY.setValue(screenHeight);
+      setShowSuccessTransition(true);
+      await new Promise<void>((resolve) => {
+        Animated.timing(transitionY, {
+          toValue: 0,
+          duration: 560,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start(() => resolve());
+      });
+      await new Promise((resolve) => setTimeout(resolve, 900));
+    };
+
     try {
       setIsLoading(true);
       setIsError(false);
       setFormMessage("Signing you in...");
-      await login({ userId, password });
+      await login({ userId, password }, playSuccessTransition);
     } catch (error: any) {
+      setShowSuccessTransition(false);
+      transitionY.setValue(screenHeight);
       setIsError(true);
       if (error.response?.status === 401) {
         setFormMessage("Invalid credentials. Please check your ID/email and password.");
@@ -148,6 +168,11 @@ const LoginScreen = ({ navigation }: Props) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {showSuccessTransition && (
+        <Animated.View style={[styles.successTransition, { transform: [{ translateY: transitionY }] }]}>
+          <AppLoadingScreen />
+        </Animated.View>
+      )}
     </View>
   );
 };
@@ -156,6 +181,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#8A252C',
+  },
+  successTransition: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#8A252C',
+    zIndex: 20,
+    elevation: 20,
   },
   keyboardView: {
     flex: 1,

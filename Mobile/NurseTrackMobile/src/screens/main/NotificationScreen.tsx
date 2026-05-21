@@ -11,6 +11,7 @@ import {
   DeviceEventEmitter
 } from 'react-native';
 import { api } from '../../api/axiosConfig';
+import { NotificationCardSkeleton } from '../../components/Skeleton';
 import { 
   ChevronDown, 
   RefreshCw, 
@@ -177,14 +178,6 @@ export const NotificationScreen = () => {
     }
   };
 
-  if (isLoading && notifications.length === 0) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8A252C" />
-      </View>
-    );
-  }
-
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
@@ -258,9 +251,9 @@ export const NotificationScreen = () => {
         {/* Search bar inside control panel */}
         <View style={styles.searchContainer}>
           <Search color="#98A2B3" size={18} style={{ marginRight: 8 }} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search keywords or teacher name..."
+            <TextInput
+              style={styles.searchInput}
+            placeholder="Search keywords or clinical instructor name..."
             placeholderTextColor="#98A2B3"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -274,7 +267,11 @@ export const NotificationScreen = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {filteredNotifications.length === 0 ? (
+        {isLoading && notifications.length === 0 ? (
+          <View style={styles.listContainer}>
+            {Array.from({ length: 5 }).map((_, index) => <NotificationCardSkeleton key={`notification-loading-${index}`} unread={index < 2} />)}
+          </View>
+        ) : filteredNotifications.length === 0 ? (
           <View style={styles.emptyCard}>
             <Inbox color="#98A2B3" size={48} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>Your inbox is clean</Text>

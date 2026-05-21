@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Bluetooth, CheckCircle, MapPin, Users } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
+import { SkeletonBlock } from '../../components/Skeleton';
 
 interface AttendanceStudent {
   studentId: number;
@@ -12,6 +12,7 @@ interface AttendanceStudent {
   sectionInfo?: string;
   profileImageUrl?: string;
   timeIn?: string;
+  timeOut?: string;
 }
 
 interface AttendanceScheduleOption {
@@ -38,7 +39,12 @@ interface AttendanceToday {
   instructorName: string | null;
   scheduledStudentCount: number;
   presentStudentCount: number;
+  timedOutStudentCount: number;
   checkedIn: boolean;
+  checkedOut: boolean;
+  timeOutOpen: boolean;
+  submitted: boolean;
+  sessionStartedAt: string | null;
   scheduleOptions: AttendanceScheduleOption[];
   students: AttendanceStudent[];
   presentStudents: AttendanceStudent[];
@@ -93,13 +99,18 @@ const formatTime = (time?: string | null) => {
   return `${displayHour}:${minutes} ${period}`;
 };
 
-const formatTimer = (seconds: number) => {
-  const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const remainingSeconds = String(seconds % 60).padStart(2, '0');
-  return `${minutes}:${remainingSeconds}`;
+const hasReachedScheduleEnd = (shiftDate?: string | null, endTime?: string | null) => {
+  if (!shiftDate || !endTime) return false;
+  const scheduledEnd = new Date(`${shiftDate}T${endTime}`);
+  if (Number.isNaN(scheduledEnd.getTime())) return false;
+  return Date.now() >= scheduledEnd.getTime();
 };
 
-const firstInitialFor = (name: string) => name.trim()[0]?.toUpperCase() || 'N';
+const initialsFor = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'NA';
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'NA';
+};
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const getScheduleEndpoint = (role?: string) => {
@@ -130,31 +141,42 @@ const toScheduleOption = (schedule: ScheduleData, scheduledStudentCount: number)
   scheduledStudentCount,
 });
 
+const mergeScheduleOptions = (fallbackOptions: AttendanceScheduleOption[], backendOptions: AttendanceScheduleOption[]) => {
+  const merged = new Map<number, AttendanceScheduleOption>();
+  fallbackOptions.forEach((option) => merged.set(option.scheduleId, option));
+  backendOptions.forEach((option) => merged.set(option.scheduleId, option));
+  return Array.from(merged.values()).sort((first, second) => first.startTime.localeCompare(second.startTime));
+};
+
+const isAttendanceForToday = (attendance: AttendanceToday) => !attendance.hasSchedule || attendance.shiftDate === toDateKey(new Date());
+
 export const DutyAttendanceScreen = () => {
   const { user } = useAuth();
   const isTeacher = user?.role !== 'STUDENT';
   const [attendance, setAttendance] = useState<AttendanceToday | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isBluetoothOn, setIsBluetoothOn] = useState(false);
-  const [sessionTimer, setSessionTimer] = useState(0);
   const [studentStatus, setStudentStatus] = useState<StudentStatus>('ready');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
   const [scheduleChoices, setScheduleChoices] = useState<AttendanceScheduleOption[]>([]);
   const [attendanceCache, setAttendanceCache] = useState<Record<number, AttendanceToday>>({});
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const refreshRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchAttendance = async (silent = false, scheduleId = selectedScheduleId) => {
-    if (silent) setIsRefreshing(true);
-    else setIsLoading(true);
+    if (!silent) setIsLoading(true);
 
     try {
       const response = await api.get<AttendanceToday>('/duties/attendance/today', {
         params: scheduleId ? { scheduleId } : undefined,
       });
+      if (!isAttendanceForToday(response.data)) {
+        setAttendance(null);
+        if (!scheduleId) setSelectedScheduleId(null);
+        return;
+      }
+
       setAttendance(response.data);
       if (response.data.scheduleId) {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
@@ -167,7 +189,6 @@ export const DutyAttendanceScreen = () => {
       setAttendance(null);
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
@@ -208,7 +229,7 @@ export const DutyAttendanceScreen = () => {
       const details = await Promise.allSettled(choices.map((choice) => fetchAttendanceDetail(choice.scheduleId)));
       const nextCache: Record<number, AttendanceToday> = {};
       details.forEach((detail) => {
-        if (detail.status === 'fulfilled' && detail.value.scheduleId) {
+        if (detail.status === 'fulfilled' && detail.value.scheduleId && isAttendanceForToday(detail.value)) {
           nextCache[detail.value.scheduleId] = detail.value;
         }
       });
@@ -227,25 +248,9 @@ export const DutyAttendanceScreen = () => {
     void fetchScheduleChoices();
   }, [user?.role]);
 
-  useEffect(() => {
-    if (!isBluetoothOn) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (refreshRef.current) clearInterval(refreshRef.current);
-      timerRef.current = null;
-      refreshRef.current = null;
-      setSessionTimer(0);
-      return;
-    }
-
-    setSessionTimer(0);
-    timerRef.current = setInterval(() => setSessionTimer((previous) => previous + 1), 1000);
-    if (isTeacher) refreshRef.current = setInterval(() => void fetchAttendance(true), 5000);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (refreshRef.current) clearInterval(refreshRef.current);
-    };
-  }, [isBluetoothOn, isTeacher]);
+  useEffect(() => () => {
+    if (refreshRef.current) clearInterval(refreshRef.current);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -258,7 +263,7 @@ export const DutyAttendanceScreen = () => {
       'Bluetooth Required',
       context === 'instructor'
         ? 'Turn on Bluetooth before hosting the attendance signal.'
-        : 'Turn on Bluetooth before scanning for your teacher.',
+        : 'Turn on Bluetooth before scanning for your clinical instructor.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Open Settings', onPress: () => void openBluetoothSettings() },
@@ -268,14 +273,36 @@ export const DutyAttendanceScreen = () => {
   };
 
   const attendanceOptions = attendance?.scheduleOptions ?? [];
-  const displayedScheduleOptions = attendanceOptions.length > 0 ? attendanceOptions : scheduleChoices;
-  const hasUsableSchedule = attendance?.hasSchedule || displayedScheduleOptions.length > 0;
+  const todayKey = toDateKey(new Date());
+  const displayedScheduleOptions = mergeScheduleOptions(scheduleChoices, attendanceOptions)
+    .filter((option) => option.shiftDate === todayKey);
+  const hasUsableSchedule = (attendance?.hasSchedule === true && attendance.shiftDate === todayKey) || displayedScheduleOptions.length > 0;
   const hasMultipleSchedules = displayedScheduleOptions.length > 1;
-  const effectiveScheduleId = selectedScheduleId ?? attendance?.scheduleId ?? displayedScheduleOptions[0]?.scheduleId ?? null;
+  const validSelectedScheduleId = selectedScheduleId && displayedScheduleOptions.some((option) => option.scheduleId === selectedScheduleId) ? selectedScheduleId : null;
+  const validAttendanceScheduleId = attendance?.scheduleId && attendance.shiftDate === todayKey ? attendance.scheduleId : null;
+  const effectiveScheduleId = validSelectedScheduleId ?? validAttendanceScheduleId ?? displayedScheduleOptions[0]?.scheduleId ?? null;
   const selectedOption = displayedScheduleOptions.find((option) => option.scheduleId === effectiveScheduleId) ?? displayedScheduleOptions[0];
   const selectedAttendance = effectiveScheduleId
-    ? attendanceCache[effectiveScheduleId] ?? (attendance?.scheduleId === effectiveScheduleId ? attendance : null)
+    ? attendanceCache[effectiveScheduleId] ?? (attendance?.scheduleId === effectiveScheduleId && attendance.shiftDate === todayKey ? attendance : null)
     : attendance;
+  const checkedIn = selectedAttendance?.checkedIn === true;
+  const checkedOut = selectedAttendance?.checkedOut === true;
+  const needsTimeOut = checkedIn && !checkedOut;
+  const localTimeOutOpen = selectedAttendance?.timeOutOpen === true || hasReachedScheduleEnd(selectedAttendance?.shiftDate ?? selectedOption?.shiftDate, selectedAttendance?.endTime ?? selectedOption?.endTime);
+  const canTimeOut = needsTimeOut && localTimeOutOpen;
+
+  useEffect(() => {
+    if (refreshRef.current) clearInterval(refreshRef.current);
+    if (!isTeacher || !effectiveScheduleId || !isBluetoothOn) {
+      refreshRef.current = null;
+      return;
+    }
+
+    refreshRef.current = setInterval(() => void fetchAttendance(true), 5000);
+    return () => {
+      if (refreshRef.current) clearInterval(refreshRef.current);
+    };
+  }, [effectiveScheduleId, isBluetoothOn, isTeacher]);
 
   const requireSchedule = () => {
     if (hasUsableSchedule) return true;
@@ -300,7 +327,12 @@ export const DutyAttendanceScreen = () => {
   };
 
   const handleScan = () => {
-    if (selectedAttendance?.checkedIn) {
+    if (checkedOut) {
+      setStudentStatus('connected');
+      return;
+    }
+    if (needsTimeOut && !canTimeOut) {
+      Alert.alert('Time Out Not Open', 'You can time out once the scheduled duty end time is reached.');
       setStudentStatus('connected');
       return;
     }
@@ -312,15 +344,45 @@ export const DutyAttendanceScreen = () => {
 
   const handleConnect = async () => {
     if (!ensureBluetoothEnabled('student') || !effectiveScheduleId) return;
+    if (needsTimeOut && !canTimeOut) {
+      Alert.alert('Time Out Not Open', 'You can time out once the scheduled duty end time is reached.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
-      const response = await api.post<AttendanceToday>('/duties/attendance/time-in', { scheduleId: effectiveScheduleId });
+      const response = await api.post<AttendanceToday>(needsTimeOut ? '/duties/attendance/time-out' : '/duties/attendance/time-in', { scheduleId: effectiveScheduleId });
       setAttendance(response.data);
+      if (response.data.scheduleId) {
+        setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
+      }
       setStudentStatus('connected');
     } catch (error) {
       console.log('Failed to record attendance', error);
-      Alert.alert('Attendance Not Recorded', 'Please make sure you are assigned to today\'s duty schedule and try again.');
+      Alert.alert('Attendance Not Recorded', needsTimeOut ? 'Please make sure time out is open and try again.' : 'Please make sure you are assigned to today\'s duty schedule and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitAttendance = async () => {
+    if (!effectiveScheduleId) return;
+    if (!localTimeOutOpen) {
+      Alert.alert('Submit Not Open', 'Submit attendance after the scheduled time out.');
+      return;
+    }
+    setIsSubmitting(true);
+
+    try {
+      const response = await api.post<AttendanceToday>('/duties/attendance/submit', { scheduleId: effectiveScheduleId });
+      setAttendance(response.data);
+      if (response.data.scheduleId) {
+        setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
+      }
+      Alert.alert('Attendance Submitted', 'Duty attendance was submitted.');
+    } catch (error) {
+      console.log('Failed to submit attendance', error);
+      Alert.alert('Submit Failed', 'Attendance could not be submitted yet.');
     } finally {
       setIsSubmitting(false);
     }
@@ -344,6 +406,7 @@ export const DutyAttendanceScreen = () => {
       setAttendance(attendanceCache[scheduleId]);
       return;
     }
+    setAttendance(null);
     void fetchAttendance(true, scheduleId);
   };
 
@@ -351,72 +414,89 @@ export const DutyAttendanceScreen = () => {
   const scheduleTime = hasUsableSchedule ? `${formatTime(selectedAttendance?.startTime ?? selectedOption?.startTime)} - ${formatTime(selectedAttendance?.endTime ?? selectedOption?.endTime)}` : '--';
   const scheduledCount = selectedAttendance?.scheduledStudentCount ?? selectedOption?.scheduledStudentCount ?? 0;
   const presentCount = selectedAttendance?.presentStudentCount ?? 0;
+  const timedOutCount = selectedAttendance?.timedOutStudentCount ?? 0;
   const presentStudents = selectedAttendance?.presentStudents ?? [];
   const progressPercent = scheduledCount > 0 ? Math.min(100, (presentCount / scheduledCount) * 100) : 0;
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8A252C" />
-      </View>
-    );
-  }
+  const teacherSubmitDisabled = isLoading || isSubmitting || !hasUsableSchedule || !hasChosenSchedule || presentCount === 0 || selectedAttendance?.submitted || !localTimeOutOpen;
+  const studentHeroLabel = isLoading
+    ? 'Scan for Clinical Instructor'
+    : !hasUsableSchedule
+    ? 'No Schedule Today'
+    : !hasChosenSchedule
+      ? 'Choose Schedule First'
+      : checkedOut
+        ? 'Time Out Recorded'
+        : needsTimeOut
+          ? canTimeOut ? 'Scan to Time Out' : 'Time In Recorded'
+          : 'Scan for Clinical Instructor';
 
   if (isTeacher) {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <LinearGradient colors={['#B54827', '#8A252C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
+        <View style={styles.heroCard}>
           <View style={styles.heroCircle} />
           <Text style={styles.heroKicker}>TEACHER VIEW</Text>
           <Text style={styles.heroTitle}>Host attendance{String.fromCharCode(10)}signal</Text>
-          <TouchableOpacity style={[styles.primaryHeroButton, !hasUsableSchedule && styles.disabledButton]} onPress={handleTeacherBluetooth}>
+          <TouchableOpacity style={[styles.primaryHeroButton, (isLoading || !hasUsableSchedule) && styles.disabledButton]} onPress={handleTeacherBluetooth} disabled={isLoading}>
             <Text style={styles.primaryHeroButtonText}>
-              {hasUsableSchedule ? (hasChosenSchedule ? (isBluetoothOn ? 'Turn Bluetooth Off' : 'Turn Bluetooth On') : 'Choose Schedule First') : 'No Schedule Today'}
+              {isLoading ? 'Turn Bluetooth On' : hasUsableSchedule ? (hasChosenSchedule ? (isBluetoothOn ? 'Turn Bluetooth Off' : 'Turn Bluetooth On') : 'Choose Schedule First') : 'No Schedule Today'}
             </Text>
           </TouchableOpacity>
           <Text style={styles.heroDescription}>
-            {hasUsableSchedule
-              ? 'Turn on Bluetooth to accept nearby student check-ins for today\'s assigned duty.'
+            {isLoading || hasUsableSchedule
+              ? 'Turn on Bluetooth to accept check-ins. Saved attendance keeps running even if Bluetooth is turned off.'
               : 'Attendance opens only when you have a scheduled duty assignment today.'}
           </Text>
-        </LinearGradient>
+        </View>
 
         {hasMultipleSchedules && <ScheduleChooser options={displayedScheduleOptions} selectedScheduleId={effectiveScheduleId} onSelect={handleSelectSchedule} formatTime={formatTime} />}
 
         <View style={styles.teacherStatusCard}>
           <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>STATUS</Text>
-            <Text style={styles.metricValue}>{hasUsableSchedule ? (hasChosenSchedule ? (isBluetoothOn ? 'Active' : 'Bluetooth Off') : 'Choose Schedule') : 'N/A'}</Text>
+            <Text style={styles.metricLabel}>TIME IN</Text>
+            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{presentCount}/{scheduledCount}</Text>}
           </View>
           <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>TIMER</Text>
-            <Text style={styles.metricValue}>{formatTimer(sessionTimer)}</Text>
-          </View>
-          <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>PRESENT</Text>
-            <Text style={styles.metricValue}>{presentCount}/{scheduledCount}</Text>
+            <Text style={styles.metricLabel}>TIME OUT</Text>
+            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{timedOutCount}/{presentCount}</Text>}
           </View>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
           </View>
         </View>
 
+        <TouchableOpacity style={[styles.submitAttendanceButton, teacherSubmitDisabled && styles.disabledButton]} onPress={handleSubmitAttendance} disabled={teacherSubmitDisabled}>
+          {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitAttendanceButtonText}>Submit Attendance</Text>}
+        </TouchableOpacity>
+
         <View style={styles.infoCard}>
           <View style={styles.infoHeaderRow}>
             <MapPin color="#8A252C" size={18} />
             <Text style={styles.infoKicker}>DUTY LOCATION</Text>
           </View>
-          <Text style={styles.infoTitle}>{locationLabel}</Text>
-          <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - ${scheduledCount} assigned student(s)` : 'No assigned duty schedule was found for today.'}</Text>
+          {isLoading ? <SkeletonBlock width="84%" height={22} radius={10} /> : <Text style={styles.infoTitle}>{locationLabel}</Text>}
+          {isLoading ? <SkeletonBlock width="72%" height={15} radius={7} style={{ marginTop: 14 }} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - ${scheduledCount} assigned student(s)` : 'No assigned duty schedule was found for today.'}</Text>}
         </View>
 
         <View style={styles.infoCard}>
           <View style={styles.infoHeaderRow}>
             <Users color="#8A252C" size={18} />
             <Text style={styles.infoKicker}>VERIFIED CHECK-INS</Text>
-            {isRefreshing && <ActivityIndicator color="#8A252C" size="small" />}
           </View>
-          {!hasUsableSchedule ? (
+          {isLoading ? (
+            <View>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <View key={`attendance-loading-${index}`} style={styles.studentRow}>
+                  <SkeletonBlock width={34} height={34} radius={17} />
+                  <View style={{ flex: 1 }}>
+                    <SkeletonBlock width="70%" height={13} />
+                    <SkeletonBlock width="44%" height={11} style={{ marginTop: 7 }} />
+                  </View>
+                  <SkeletonBlock width={18} height={18} radius={9} />
+                </View>
+              ))}
+            </View>
+          ) : !hasUsableSchedule ? (
             <Text style={styles.emptyStateText}>No roster available today.</Text>
           ) : presentStudents.length === 0 ? (
             <Text style={styles.emptyStateText}>{isBluetoothOn ? 'Waiting for nearby students...' : 'Turn on Bluetooth to start accepting check-ins.'}</Text>
@@ -426,7 +506,7 @@ export const DutyAttendanceScreen = () => {
                 <PersonAvatar name={student.fullName} imageUrl={student.profileImageUrl} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.studentName}>{student.fullName}</Text>
-                  <Text style={styles.studentMeta}>{student.sectionInfo || student.schoolId}</Text>
+                  <Text style={styles.studentMeta}>{student.timeOut ? 'Timed out' : 'Timed in'} - {student.sectionInfo || student.schoolId}</Text>
                 </View>
                 <CheckCircle color="#10B981" size={18} />
               </View>
@@ -439,25 +519,25 @@ export const DutyAttendanceScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <LinearGradient colors={['#B54827', '#8A252C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCard}>
+      <View style={styles.heroCard}>
         <View style={styles.heroCircle} />
         <Text style={styles.heroKicker}>STUDENT VIEW</Text>
         <Text style={styles.heroTitle}>Scan and mark{String.fromCharCode(10)}attendance</Text>
         <TouchableOpacity
-          style={[styles.primaryHeroButton, (!hasUsableSchedule || selectedAttendance?.checkedIn) && styles.disabledButton]}
+          style={[styles.primaryHeroButton, (isLoading || !hasUsableSchedule || checkedOut || (needsTimeOut && !canTimeOut)) && styles.disabledButton]}
           onPress={handleScan}
-          disabled={studentStatus === 'scanning'}
+          disabled={isLoading || studentStatus === 'scanning'}
         >
           {studentStatus === 'scanning'
             ? <ActivityIndicator color="#111827" />
-            : <Text style={styles.primaryHeroButtonText}>{selectedAttendance?.checkedIn ? 'Attendance Recorded' : hasUsableSchedule ? (hasChosenSchedule ? 'Scan for Teacher' : 'Choose Schedule First') : 'No Schedule Today'}</Text>}
+            : <Text style={styles.primaryHeroButtonText}>{studentHeroLabel}</Text>}
         </TouchableOpacity>
         <Text style={styles.heroDescription}>
-          {hasUsableSchedule
-            ? 'Scan for your teacher\'s Bluetooth signal and record attendance for today\'s assigned duty.'
+          {isLoading || hasUsableSchedule
+            ? 'Scan for your clinical instructor\'s Bluetooth signal and record attendance for today\'s assigned duty.'
             : 'Attendance scanning opens only when you have an assigned duty schedule today.'}
         </Text>
-      </LinearGradient>
+      </View>
 
       {hasMultipleSchedules && <ScheduleChooser options={displayedScheduleOptions} selectedScheduleId={effectiveScheduleId} onSelect={handleSelectSchedule} formatTime={formatTime} />}
 
@@ -471,22 +551,24 @@ export const DutyAttendanceScreen = () => {
 
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>
-          {!hasUsableSchedule && 'No schedule today'}
-          {hasUsableSchedule && studentStatus === 'ready' && 'Ready to scan'}
-          {hasUsableSchedule && studentStatus === 'scanning' && 'Scanning nearby'}
-          {hasUsableSchedule && studentStatus === 'found' && 'Teacher device found'}
-          {hasUsableSchedule && studentStatus === 'connected' && 'Attendance recorded'}
+          {!isLoading && !hasUsableSchedule && 'No schedule today'}
+          {isLoading && 'Ready to scan'}
+          {!isLoading && hasUsableSchedule && studentStatus === 'ready' && 'Ready to scan'}
+          {!isLoading && hasUsableSchedule && studentStatus === 'scanning' && 'Scanning nearby'}
+          {!isLoading && hasUsableSchedule && studentStatus === 'found' && 'Clinical instructor device found'}
+          {!isLoading && hasUsableSchedule && studentStatus === 'connected' && (checkedOut ? 'Time out recorded' : checkedIn ? 'Time in recorded' : 'Attendance recorded')}
         </Text>
         <Text style={styles.infoBody}>
-          {!hasUsableSchedule && 'There is no assigned duty schedule available for attendance today.'}
-          {hasUsableSchedule && studentStatus === 'ready' && 'Tap scan to find the active teacher device nearby.'}
-          {hasUsableSchedule && studentStatus === 'scanning' && 'Keep your phone nearby while NurseTrack searches for the active session.'}
-          {hasUsableSchedule && studentStatus === 'found' && 'A teacher session is available. Connect to record your attendance.'}
-          {hasUsableSchedule && studentStatus === 'connected' && 'Your duty attendance has been marked for this session.'}
+          {isLoading && 'Tap scan once your assigned duty schedule is ready.'}
+          {!isLoading && !hasUsableSchedule && 'There is no assigned duty schedule available for attendance today.'}
+          {!isLoading && hasUsableSchedule && studentStatus === 'ready' && (needsTimeOut ? 'Your time in is saved. Scan again after the scheduled end time to record time out.' : 'Tap scan to find the active clinical instructor device nearby.')}
+          {!isLoading && hasUsableSchedule && studentStatus === 'scanning' && 'Keep your phone nearby while NurseTrack searches for the active session.'}
+          {!isLoading && hasUsableSchedule && studentStatus === 'found' && (needsTimeOut ? 'A clinical instructor session is available. Connect to record your time out.' : 'A clinical instructor session is available. Connect to record your time in.')}
+          {!isLoading && hasUsableSchedule && studentStatus === 'connected' && (checkedOut ? 'Your duty time out has been saved for this session.' : 'Your duty time in has been saved for this session.')}
         </Text>
         {studentStatus === 'found' && (
           <TouchableOpacity style={styles.connectButton} onPress={handleConnect} disabled={isSubmitting}>
-            {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>Connect and Mark Attendance</Text>}
+            {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>{needsTimeOut ? 'Connect and Time Out' : 'Connect and Time In'}</Text>}
           </TouchableOpacity>
         )}
       </View>
@@ -496,8 +578,8 @@ export const DutyAttendanceScreen = () => {
           <MapPin color="#8A252C" size={18} />
           <Text style={styles.infoKicker}>DUTY LOCATION</Text>
         </View>
-        <Text style={styles.infoTitle}>{locationLabel}</Text>
-        <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>
+        {isLoading ? <SkeletonBlock width="84%" height={22} radius={10} /> : <Text style={styles.infoTitle}>{locationLabel}</Text>}
+        {isLoading ? <SkeletonBlock width="76%" height={15} radius={7} style={{ marginTop: 14 }} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>}
       </View>
     </ScrollView>
   );
@@ -549,7 +631,7 @@ const PersonAvatar = ({ name, imageUrl }: { name: string; imageUrl?: string }) =
 
   return (
     <View style={styles.personFallbackAvatar}>
-      <Text style={styles.personFallbackText}>{firstInitialFor(name)}</Text>
+      <Text style={styles.personFallbackText}>{initialsFor(name)}</Text>
     </View>
   );
 };
@@ -569,6 +651,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   heroCard: {
+    backgroundColor: '#8A252C',
     minHeight: 300,
     paddingHorizontal: 22,
     paddingTop: 26,
@@ -845,6 +928,20 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#8A252C',
     borderRadius: 99,
+  },
+  submitAttendanceButton: {
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#8A252C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginBottom: 14,
+  },
+  submitAttendanceButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
   },
   studentRow: {
     flexDirection: 'row',

@@ -6,7 +6,7 @@ import { User, LoginResponse } from '../types';
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (credentials: { userId: string; password: string }) => Promise<void>;
+  login: (credentials: { userId: string; password: string }, beforeCommit?: () => Promise<void>) => Promise<void>;
   register: (payload: any) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -38,10 +38,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const login = async (credentials: { userId: string; password: string }) => {
+  const login = async (credentials: { userId: string; password: string }, beforeCommit?: () => Promise<void>) => {
     const response = await api.post<LoginResponse>('/users/login', credentials);
     const { token, user: loggedInUser } = response.data;
     await SecureStore.setItemAsync('userToken', token);
+    if (beforeCommit) await beforeCommit();
     setUser(loggedInUser);
   };
 

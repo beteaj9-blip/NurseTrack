@@ -32,6 +32,22 @@ public class DutyController {
         return ResponseEntity.ok(dutyService.timeInForToday(jwtService.getUserId(request), scheduleId));
     }
 
+    @PostMapping("/attendance/time-out")
+    public ResponseEntity<DutyAttendanceTodayResponse> timeOutForToday(
+            @RequestBody(required = false) DutyAttendanceScheduleRequest timeOutRequest,
+            HttpServletRequest request) {
+        Long scheduleId = timeOutRequest != null ? timeOutRequest.scheduleId() : null;
+        return ResponseEntity.ok(dutyService.timeOutForToday(jwtService.getUserId(request), scheduleId));
+    }
+
+    @PostMapping("/attendance/submit")
+    public ResponseEntity<DutyAttendanceTodayResponse> submitAttendanceForToday(
+            @RequestBody(required = false) DutyAttendanceScheduleRequest submitRequest,
+            HttpServletRequest request) {
+        Long scheduleId = submitRequest != null ? submitRequest.scheduleId() : null;
+        return ResponseEntity.ok(dutyService.submitAttendanceForToday(jwtService.getUserId(request), scheduleId));
+    }
+
     @PostMapping("/time-in")
     public ResponseEntity<DutyRecord> timeIn(@RequestBody DutyRecord dutyRecord) {
         return ResponseEntity.ok(dutyService.timeIn(dutyRecord));

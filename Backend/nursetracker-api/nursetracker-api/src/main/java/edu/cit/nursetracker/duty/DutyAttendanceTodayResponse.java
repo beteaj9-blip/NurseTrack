@@ -16,12 +16,17 @@ public record DutyAttendanceTodayResponse(
         String instructorName,
         int scheduledStudentCount,
         int presentStudentCount,
+        int timedOutStudentCount,
         boolean checkedIn,
+        boolean checkedOut,
+        boolean timeOutOpen,
+        boolean submitted,
+        String sessionStartedAt,
         List<DutyAttendanceScheduleOption> scheduleOptions,
         List<DutyAttendanceStudent> students,
         List<DutyAttendanceStudent> presentStudents
 ) {
     public static DutyAttendanceTodayResponse empty() {
-        return new DutyAttendanceTodayResponse(false, null, null, null, null, null, null, null, null, 0, 0, false, List.of(), List.of(), List.of());
+        return new DutyAttendanceTodayResponse(false, null, null, null, null, null, null, null, null, 0, 0, 0, false, false, false, false, null, List.of(), List.of(), List.of());
     }
 }

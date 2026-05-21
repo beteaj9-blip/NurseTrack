@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
@@ -26,12 +27,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DutyService {
 
+    private static final ZoneId APP_ZONE = ZoneId.of("Asia/Manila");
+
     private final DutyRepository dutyRepository;
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
 
     public DutyRecord timeIn(DutyRecord record) {
-        record.setTimeIn(LocalDateTime.now());
+        record.setTimeIn(LocalDateTime.now(APP_ZONE));
         record.setStatus(DutyStatus.PENDING);
         return dutyRepository.save(record);
     }
@@ -66,7 +69,7 @@ public class DutyService {
         DutyRecord record = dutyRepository.findById(recordId)
                 .orElseThrow(() -> new RuntimeException("Duty log not found."));
         
-        record.setTimeOut(LocalDateTime.now());
+        record.setTimeOut(LocalDateTime.now(APP_ZONE));
         
         if (record.getTimeIn() != null) {
             long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
@@ -100,7 +103,7 @@ public class DutyService {
         User viewer = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(APP_ZONE);
         List<Schedule> schedules = getTodaySchedulesForViewer(viewer, today);
 
         List<Schedule> scheduleOptions = uniqueScheduleSessions(schedules);
@@ -117,7 +120,7 @@ public class DutyService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only students can check in.");
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(APP_ZONE);
         List<Schedule> todaysSchedules = scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(userId, today);
         Schedule schedule = findRequestedSchedule(todaysSchedules, scheduleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
@@ -131,12 +134,74 @@ public class DutyService {
                     .schedule(schedule)
                     .hospital(schedule.getHospital())
                     .ward(schedule.getWard())
-                    .timeIn(LocalDateTime.now())
+                    .timeIn(LocalDateTime.now(APP_ZONE))
                     .status(DutyStatus.PENDING)
                     .build());
         }
 
         return buildAttendanceResponse(schedule, userId, uniqueScheduleSessions(todaysSchedules));
+    }
+
+    public DutyAttendanceTodayResponse timeOutForToday(Long userId, Long scheduleId) {
+        User student = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+
+        if (student.getRole() != UserRole.STUDENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only students can time out.");
+        }
+
+        LocalDate today = LocalDate.now(APP_ZONE);
+        List<Schedule> todaysSchedules = scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(userId, today);
+        Schedule schedule = findRequestedSchedule(todaysSchedules, scheduleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
+
+        if (LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time out is not open yet.");
+        }
+
+        DutyRecord record = dutyRepository.findFirstByScheduleIdOrderByTimeInAsc(schedule.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time in first before timing out."));
+
+        if (record.getTimeOut() == null) {
+            record.setTimeOut(LocalDateTime.now(APP_ZONE));
+            long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
+            record.setTotalHours(minutes / 60.0);
+            dutyRepository.save(record);
+        }
+
+        return buildAttendanceResponse(schedule, userId, uniqueScheduleSessions(todaysSchedules));
+    }
+
+    public DutyAttendanceTodayResponse submitAttendanceForToday(Long userId, Long scheduleId) {
+        User viewer = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+
+        if (viewer.getRole() == UserRole.STUDENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only duty hosts can submit attendance.");
+        }
+
+        LocalDate today = LocalDate.now(APP_ZONE);
+        List<Schedule> schedules = getTodaySchedulesForViewer(viewer, today);
+        List<Schedule> scheduleOptions = uniqueScheduleSessions(schedules);
+        Schedule schedule = findRequestedSchedule(scheduleOptions, scheduleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
+
+        if (LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attendance can be submitted after the scheduled time out.");
+        }
+
+        List<Schedule> rosterSchedules = getRosterSchedules(schedule);
+        List<Long> rosterScheduleIds = rosterSchedules.stream().map(Schedule::getId).toList();
+        List<DutyRecord> records = dutyRepository.findByScheduleIdInOrderByTimeInAsc(rosterScheduleIds);
+        if (records.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No attendance records to submit.");
+        }
+
+        LocalDateTime submittedAt = LocalDateTime.now(APP_ZONE);
+        records.forEach(record -> record.setAttendanceSubmittedAt(submittedAt));
+        dutyRepository.saveAll(records);
+
+        return buildAttendanceResponse(schedule, null, scheduleOptions);
     }
 
     public DutyRecord validateDuty(Long recordId, DutyStatus status, String feedback) {
@@ -153,7 +218,7 @@ public class DutyService {
     private Optional<Schedule> selectCurrentSchedule(List<Schedule> schedules) {
         if (schedules.isEmpty()) return Optional.empty();
 
-        LocalTime now = LocalTime.now();
+        LocalTime now = LocalTime.now(APP_ZONE);
         return schedules.stream()
                 .filter(schedule -> !now.isBefore(schedule.getStartTime()) && !now.isAfter(schedule.getEndTime()))
                 .findFirst()
@@ -206,14 +271,7 @@ public class DutyService {
     }
 
     private DutyAttendanceTodayResponse buildAttendanceResponse(Schedule schedule, Long currentStudentId, List<Schedule> scheduleOptions) {
-        List<Schedule> rosterSchedules = scheduleRepository.findByInstructorIdAndHospitalIgnoreCaseAndWardIgnoreCaseAndShiftDateAndStartTimeAndEndTimeAndCanceledFalse(
-                schedule.getInstructor().getId(),
-                schedule.getHospital(),
-                schedule.getWard(),
-                schedule.getShiftDate(),
-                schedule.getStartTime(),
-                schedule.getEndTime()
-        );
+        List<Schedule> rosterSchedules = getRosterSchedules(schedule);
 
         List<DutyAttendanceStudent> students = rosterSchedules.stream()
                 .map(Schedule::getStudent)
@@ -222,7 +280,7 @@ public class DutyService {
                 .values()
                 .stream()
                 .sorted(Comparator.comparing(User::getFullName, String.CASE_INSENSITIVE_ORDER))
-                .map(student -> toStudentDto(student, null))
+                .map(student -> toStudentDto(student, (String) null))
                 .toList();
 
         List<Long> rosterScheduleIds = rosterSchedules.stream().map(Schedule::getId).toList();
@@ -233,6 +291,17 @@ public class DutyService {
                 .filter(record -> studentIds.contains(record.getStudent().getId()))
                 .collect(Collectors.toMap(record -> record.getStudent().getId(), Function.identity(), (first, second) -> first));
 
+        int timedOutStudentCount = (int) presentRecords.values().stream()
+                .filter(record -> record.getTimeOut() != null)
+                .count();
+        boolean submitted = !presentRecords.isEmpty() && presentRecords.values().stream()
+                .allMatch(record -> record.getAttendanceSubmittedAt() != null);
+        String sessionStartedAt = presentRecords.values().stream()
+                .map(DutyRecord::getTimeIn)
+                .min(Comparator.naturalOrder())
+                .map(LocalDateTime::toString)
+                .orElse(null);
+
         List<DutyAttendanceStudent> presentStudents = rosterSchedules.stream()
                 .map(Schedule::getStudent)
                 .filter(this::isStudent)
@@ -241,10 +310,12 @@ public class DutyService {
                 .values()
                 .stream()
                 .sorted(Comparator.comparing(User::getFullName, String.CASE_INSENSITIVE_ORDER))
-                .map(student -> toStudentDto(student, presentRecords.get(student.getId()).getTimeIn().toString()))
+                .map(student -> toStudentDto(student, presentRecords.get(student.getId())))
                 .toList();
 
         boolean checkedIn = currentStudentId != null && presentRecords.containsKey(currentStudentId);
+        boolean checkedOut = checkedIn && presentRecords.get(currentStudentId).getTimeOut() != null;
+        boolean timeOutOpen = !LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime());
 
         return new DutyAttendanceTodayResponse(
                 true,
@@ -258,10 +329,27 @@ public class DutyService {
                 schedule.getInstructor().getFullName(),
                 students.size(),
                 presentStudents.size(),
+                timedOutStudentCount,
                 checkedIn,
+                checkedOut,
+                timeOutOpen,
+                submitted,
+                sessionStartedAt,
                 scheduleOptions.stream().map(this::toScheduleOption).toList(),
                 students,
                 presentStudents
+        );
+    }
+
+    private DutyAttendanceStudent toStudentDto(User student, DutyRecord record) {
+        return new DutyAttendanceStudent(
+                student.getId(),
+                student.getSchoolId(),
+                student.getFullName(),
+                student.getSectionInfo(),
+                student.getProfileImageUrl(),
+                record != null && record.getTimeIn() != null ? record.getTimeIn().toString() : null,
+                record != null && record.getTimeOut() != null ? record.getTimeOut().toString() : null
         );
     }
 
@@ -272,7 +360,19 @@ public class DutyService {
                 student.getFullName(),
                 student.getSectionInfo(),
                 student.getProfileImageUrl(),
-                timeIn
+                timeIn,
+                null
+        );
+    }
+
+    private List<Schedule> getRosterSchedules(Schedule schedule) {
+        return scheduleRepository.findByInstructorIdAndHospitalIgnoreCaseAndWardIgnoreCaseAndShiftDateAndStartTimeAndEndTimeAndCanceledFalse(
+                schedule.getInstructor().getId(),
+                schedule.getHospital(),
+                schedule.getWard(),
+                schedule.getShiftDate(),
+                schedule.getStartTime(),
+                schedule.getEndTime()
         );
     }
 

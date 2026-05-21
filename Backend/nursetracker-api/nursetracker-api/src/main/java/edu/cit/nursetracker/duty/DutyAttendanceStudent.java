@@ -6,6 +6,7 @@ public record DutyAttendanceStudent(
         String fullName,
         String sectionInfo,
         String profileImageUrl,
-        String timeIn
+        String timeIn,
+        String timeOut
 ) {
 }

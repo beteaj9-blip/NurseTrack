@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock, List, MapPin, Users } from 'lucide-react-native';
 import { api } from '../../api/axiosConfig';
 import { useAuth } from '../../context/AuthContext';
+import { SkeletonBlock } from '../../components/Skeleton';
 
 interface ScheduleUser {
   id: number;
@@ -100,7 +102,11 @@ const getStudentFromSchedule = (schedule: ScheduleData, currentUser?: ScheduleUs
   };
 };
 
-const firstInitialFor = (name: string) => name.trim()[0]?.toUpperCase() || 'N';
+const initialsFor = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'NA';
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'NA';
+};
 
 export const ScheduleScreen = () => {
   const { user } = useAuth();
@@ -248,16 +254,8 @@ export const ScheduleScreen = () => {
   const openScheduleCell = (cellSchedules: ScheduleData[]) => {
     if (cellSchedules.length === 0) return;
     setSelectedDateSchedules(cellSchedules.length > 1 ? cellSchedules : null);
-    setSelectedSchedule(cellSchedules[0]);
+    setSelectedSchedule(cellSchedules.find((schedule) => !schedule.canceled) ?? cellSchedules[0]);
   };
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8A252C" />
-      </View>
-    );
-  }
 
   if (selectedSchedule) {
     const hasScheduleChoices = selectedDateSchedules && selectedDateSchedules.length > 1;
@@ -281,7 +279,7 @@ export const ScheduleScreen = () => {
             <View style={styles.multiHeaderRow}>
               <Text style={styles.multiDateText}>{formatDate(selectedSchedule.shiftDate)}</Text>
               <View style={styles.activeStudentPill}>
-                <Text style={styles.activeStudentPillText}>{selectedDateSchedules.length} active schedule(s)</Text>
+                <Text style={styles.activeStudentPillText}>{selectedDateSchedules.length} schedule(s)</Text>
               </View>
             </View>
 
@@ -307,7 +305,7 @@ export const ScheduleScreen = () => {
           <View style={styles.rosterTopRow}>
             <Text style={styles.rosterHeading}>CLINICAL DUTY</Text>
             <View style={styles.completedPill}>
-              <Text style={styles.completedPillText}>Assigned</Text>
+              <Text style={styles.completedPillText}>{selectedSchedule.canceled ? 'Cancelled' : 'Assigned'}</Text>
             </View>
           </View>
           <Text style={styles.rosterDate}>{formatDate(selectedSchedule.shiftDate)}</Text>
@@ -322,7 +320,7 @@ export const ScheduleScreen = () => {
           <View style={styles.rosterHeaderRow}>
             <Text style={styles.rosterSectionTitle}>Assigned Student(s)</Text>
             <View style={styles.activeStudentPill}>
-              <Text style={styles.activeStudentPillText}>{selectedRoster.length} active student(s)</Text>
+              <Text style={styles.activeStudentPillText}>{selectedRoster.length} {selectedSchedule.canceled ? 'assigned' : 'active'} student(s)</Text>
             </View>
           </View>
 
@@ -413,8 +411,11 @@ export const ScheduleScreen = () => {
               {calendarWeeks.map((week, weekIndex) => (
                 <View key={`week-${weekIndex}`} style={styles.weekRow}>
                   {week.map((cell) => {
-                    const primarySchedule = cell.schedules[0];
                     const hasMultipleSchedules = cell.schedules.length > 1;
+                    const hasCanceledSchedules = cell.schedules.some((schedule) => schedule.canceled);
+                    const allSchedulesCanceled = cell.schedules.length > 0 && cell.schedules.every((schedule) => schedule.canceled);
+                    const hasMixedCanceledSchedules = hasMultipleSchedules && hasCanceledSchedules && !allSchedulesCanceled;
+                    const primarySchedule = cell.schedules.find((schedule) => !schedule.canceled) ?? cell.schedules[0];
                     return (
                       <TouchableOpacity
                         key={cell.key}
@@ -423,37 +424,52 @@ export const ScheduleScreen = () => {
                           !cell.isCurrentMonth && styles.dayCellOutside,
                           primarySchedule && styles.dayCellAssigned,
                           hasMultipleSchedules && styles.dayCellMultiple,
-                          primarySchedule?.canceled && styles.dayCellCanceled,
+                          hasMixedCanceledSchedules && styles.dayCellMixedCanceled,
+                          allSchedulesCanceled && styles.dayCellCanceled,
                           cell.isToday && !primarySchedule && styles.dayCellToday,
                         ]}
                         onPress={() => openScheduleCell(cell.schedules)}
                         disabled={!primarySchedule}
                         activeOpacity={0.82}
                       >
+                      {hasMixedCanceledSchedules && (
+                        <LinearGradient
+                          colors={['#FFF8D7', '#FFF0B3', '#F5D9DD']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.dayCellMixedGradient}
+                          pointerEvents="none"
+                        />
+                      )}
                       <Text style={[
                         styles.dayNumber,
                         !cell.isCurrentMonth && styles.dayNumberOutside,
                         primarySchedule && styles.dayNumberDuty,
-                        primarySchedule?.canceled && styles.dayNumberCanceled,
+                        allSchedulesCanceled && styles.dayNumberCanceled,
                         cell.isToday && styles.dayNumberToday,
                       ]}>{cell.day}</Text>
-                        {primarySchedule ? hasMultipleSchedules ? (
+                        {isLoading && cell.isCurrentMonth ? (
+                          (cell.day % 4 === 0 || cell.day % 7 === 0) ? (
+                            <>
+                              <SkeletonBlock width="74%" height={8} radius={4} style={styles.calendarCellSkeletonLine} />
+                              <SkeletonBlock width="56%" height={8} radius={4} style={styles.calendarCellSkeletonLine} />
+                            </>
+                          ) : null
+                        ) : primarySchedule ? allSchedulesCanceled ? (
+                          <>
+                            <Text style={styles.canceledTitle} numberOfLines={1}>Canceled</Text>
+                            <Text style={styles.noActiveText} numberOfLines={1}>No active</Text>
+                          </>
+                        ) : hasMultipleSchedules ? (
                           <>
                             <Text style={styles.multipleCountText}>{cell.schedules.length}</Text>
                             <Text style={styles.multipleDutyText} numberOfLines={1}>Multiple Duties</Text>
                           </>
                         ) : (
-                          primarySchedule.canceled ? (
-                            <>
-                              <Text style={styles.canceledTitle} numberOfLines={1}>Canceled</Text>
-                              <Text style={styles.noActiveText} numberOfLines={1}>No active</Text>
-                            </>
-                          ) : (
-                            <>
-                              <Text style={styles.assignmentArea} numberOfLines={1}>{primarySchedule.ward}</Text>
-                              <Text style={styles.assignmentText} numberOfLines={1}>{primarySchedule.hospital}</Text>
-                            </>
-                          )
+                          <>
+                            <Text style={styles.assignmentArea} numberOfLines={1}>{primarySchedule.ward}</Text>
+                            <Text style={styles.assignmentText} numberOfLines={1}>{primarySchedule.hospital}</Text>
+                          </>
                         ) : null}
                       </TouchableOpacity>
                     );
@@ -467,6 +483,15 @@ export const ScheduleScreen = () => {
                 <Text style={styles.legendText}>Duty day</Text>
               </View>
               <View style={styles.legendItem}>
+                <LinearGradient
+                  colors={['#FFCF01', '#8A252C']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.mixedDot}
+                />
+                <Text style={styles.legendText}>Mixed</Text>
+              </View>
+              <View style={styles.legendItem}>
                 <View style={styles.canceledDot} />
                 <Text style={styles.legendText}>Canceled</Text>
               </View>
@@ -478,7 +503,21 @@ export const ScheduleScreen = () => {
           </View>
         ) : (
           <View style={styles.listPanel}>
-            {displaySchedules.length === 0 ? (
+            {isLoading ? (
+              <View>
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <View key={`schedule-list-skeleton-${index}`} style={styles.scheduleListRow}>
+                    <SkeletonBlock width={48} height={56} radius={12} />
+                    <View style={{ flex: 1 }}>
+                      <SkeletonBlock width="64%" height={14} radius={7} />
+                      <SkeletonBlock width="78%" height={11} radius={6} style={styles.listSkeletonLine} />
+                      <SkeletonBlock width="52%" height={11} radius={6} style={styles.listSkeletonLine} />
+                    </View>
+                    <SkeletonBlock width={42} height={12} radius={6} />
+                  </View>
+                ))}
+              </View>
+            ) : displaySchedules.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Users color="#667085" size={28} style={{ marginBottom: 10 }} />
                 <Text style={styles.emptyText}>No schedules assigned yet.</Text>
@@ -526,7 +565,7 @@ const StudentAvatar = ({ name, imageUrl, size = 28 }: { name: string; imageUrl?:
 
   return (
     <View style={[styles.studentAvatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Text style={styles.studentAvatarFallbackText}>{firstInitialFor(name)}</Text>
+      <Text style={styles.studentAvatarFallbackText}>{initialsFor(name)}</Text>
     </View>
   );
 };
@@ -713,6 +752,7 @@ const styles = StyleSheet.create({
     borderColor: '#D0D5DD',
     backgroundColor: '#FFFFFF',
     padding: 4,
+    overflow: 'hidden',
   },
   dayCellOutside: {
     opacity: 0.48,
@@ -729,6 +769,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderLeftWidth: 5,
     backgroundColor: '#FFF7C7',
+  },
+  dayCellMixedCanceled: {
+    borderColor: '#D89B16',
+    borderLeftColor: '#8A252C',
+    backgroundColor: '#FFF0B3',
+  },
+  dayCellMixedGradient: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
   },
   dayCellCanceled: {
     borderColor: '#FCA5A5',
@@ -791,6 +840,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     marginBottom: 3,
   },
+  calendarCellSkeletonLine: {
+    marginTop: 7,
+  },
   todayPillText: {
     alignSelf: 'flex-start',
     color: '#8A252C',
@@ -836,6 +888,11 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: '#FFCF01',
+  },
+  mixedDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   canceledDot: {
     width: 12,
@@ -892,6 +949,9 @@ const styles = StyleSheet.create({
   scheduleListRowCanceled: {
     borderColor: '#FCA5A5',
     backgroundColor: '#FEF2F2',
+  },
+  listSkeletonLine: {
+    marginTop: 8,
   },
   listDateBox: {
     width: 48,

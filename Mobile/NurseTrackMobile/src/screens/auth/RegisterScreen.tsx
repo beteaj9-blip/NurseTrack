@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, StatusBar } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { CitLogo } from '../../components/CitLogo';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 
@@ -60,8 +61,8 @@ const RegisterScreen = ({ navigation }: Props) => {
           {/* Top Maroon Section */}
           <View style={styles.topSection}>
             <View style={styles.logoContainer}>
-              <View style={styles.logoPlaceholder} />
-              <View>
+              <CitLogo size={42} />
+              <View style={{ marginLeft: 12 }}>
                 <Text style={styles.logoSuperText}>CIT-U NURSING PORTAL</Text>
                 <Text style={styles.logoText}>NurseTrack</Text>
               </View>
@@ -189,13 +190,6 @@ const styles = StyleSheet.create({
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  logoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
-    marginRight: 12,
   },
   logoSuperText: {
     color: '#FFD700',

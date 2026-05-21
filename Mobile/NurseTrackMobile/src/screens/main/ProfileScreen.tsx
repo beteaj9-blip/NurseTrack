@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
+import { SkeletonPage } from '../../components/Skeleton';
 import { 
   User as UserIcon, 
   Mail, 
@@ -158,16 +159,11 @@ export const ProfileScreen = () => {
 
   const getRoleLabel = () => {
     if (profileData?.role === 'STUDENT') return 'Nursing Student';
-    return 'Teacher';
+    return 'Clinical Instructor';
   };
 
   if (isLoading && !profileData) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8A252C" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
-      </View>
-    );
+    return <SkeletonPage variant="profile" />;
   }
 
   const initials = profileData?.fullName

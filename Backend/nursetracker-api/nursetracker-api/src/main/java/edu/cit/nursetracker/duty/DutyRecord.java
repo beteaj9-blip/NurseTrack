@@ -49,6 +49,8 @@ public class DutyRecord {
 
     private Double totalHours;
 
+    private LocalDateTime attendanceSubmittedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

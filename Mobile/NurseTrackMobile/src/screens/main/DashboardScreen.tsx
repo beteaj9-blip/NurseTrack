@@ -6,6 +6,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { MainDrawerParamList } from '../../navigation/MainNavigator';
 import { Calendar, AlertCircle, ArrowRight, Bell, Award } from 'lucide-react-native';
 import { api } from '../../api/axiosConfig';
+import { SkeletonBlock } from '../../components/Skeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -94,7 +95,7 @@ export const DashboardScreen = () => {
 
   const firstName = user?.fullName ? user.fullName.split(' ')[0] : 'Student';
   const isInstructor = user?.role !== 'STUDENT';
-  const roleLabel = isInstructor ? 'Teacher' : 'Student';
+  const roleLabel = isInstructor ? 'Clinical Instructor' : 'Student';
   const heroDescription = isInstructor
     ? 'Welcome back! Here is a quick look at your assigned students, duty sessions, and attendance tools.'
     : 'Welcome back! Here is a quick look at your clinical schedule and progress.';
@@ -153,20 +154,30 @@ export const DashboardScreen = () => {
               <Calendar color="#8A252C" size={22} />
             </View>
           </View>
-          <Text style={styles.statTitle}>{hasMultipleSchedulesToday ? `${todaySchedules.length} Schedules Today` : todaySchedule ? 'Schedule Today' : 'No Schedule Today'}</Text>
-          <Text style={styles.statSubText}>
-            {hasMultipleSchedulesToday
-              ? 'Multiple duties are assigned today. Open schedule to choose one.'
-              : todaySchedule ? `${scheduleWard(todaySchedule)}${todaySchedule.hospital ? ` at ${todaySchedule.hospital}` : ''}` : 'No active clinical duty is assigned for today.'}
-          </Text>
+          {isDashboardLoading ? (
+            <>
+              <SkeletonBlock width="68%" height={18} style={styles.statSkeletonLine} />
+              <SkeletonBlock width="92%" height={13} style={styles.statSkeletonSubLine} />
+              <SkeletonBlock width="76%" height={13} style={styles.statSkeletonSubLine} />
+            </>
+          ) : (
+            <>
+              <Text style={styles.statTitle}>{hasMultipleSchedulesToday ? `${todaySchedules.length} Schedules Today` : todaySchedule ? 'Schedule Today' : 'No Schedule Today'}</Text>
+              <Text style={styles.statSubText}>
+                {hasMultipleSchedulesToday
+                  ? 'Multiple duties are assigned today. Open schedule to choose one.'
+                  : todaySchedule ? `${scheduleWard(todaySchedule)}${todaySchedule.hospital ? ` at ${todaySchedule.hospital}` : ''}` : 'No active clinical duty is assigned for today.'}
+              </Text>
+            </>
+          )}
           
           <View style={styles.progressSection}>
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: todaySchedule ? '100%' : '0%', backgroundColor: '#8A252C' }]} />
             </View>
             <View style={styles.statFooter}>
-              <Text style={styles.statTime}>{hasMultipleSchedulesToday ? `${todaySchedules.length} duties` : todaySchedule ? formatTime(scheduleStart(todaySchedule)) : 'No duty'}</Text>
-              <Text style={styles.statDuration}>{hasMultipleSchedulesToday ? 'View list' : todaySchedule ? `${formatTime(scheduleEnd(todaySchedule))} end` : ''}</Text>
+              {isDashboardLoading ? <SkeletonBlock width={82} height={13} /> : <Text style={styles.statTime}>{hasMultipleSchedulesToday ? `${todaySchedules.length} duties` : todaySchedule ? formatTime(scheduleStart(todaySchedule)) : 'No duty'}</Text>}
+              {isDashboardLoading ? <SkeletonBlock width={64} height={13} /> : <Text style={styles.statDuration}>{hasMultipleSchedulesToday ? 'View list' : todaySchedule ? `${formatTime(scheduleEnd(todaySchedule))} end` : ''}</Text>}
             </View>
           </View>
         </TouchableOpacity>
@@ -178,16 +189,26 @@ export const DashboardScreen = () => {
               <AlertCircle color="#D4A017" size={22} />
             </View>
           </View>
-          <Text style={styles.statTitle}>{isInstructor ? 'Unread Updates' : 'Pending Updates'}</Text>
-          <Text style={styles.statSubText}>{unreadCount > 0 ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'} need your attention.` : 'No unread notifications right now.'}</Text>
+          {isDashboardLoading ? (
+            <>
+              <SkeletonBlock width="64%" height={18} style={styles.statSkeletonLine} />
+              <SkeletonBlock width="88%" height={13} style={styles.statSkeletonSubLine} />
+              <SkeletonBlock width="62%" height={13} style={styles.statSkeletonSubLine} />
+            </>
+          ) : (
+            <>
+              <Text style={styles.statTitle}>{isInstructor ? 'Unread Updates' : 'Pending Updates'}</Text>
+              <Text style={styles.statSubText}>{unreadCount > 0 ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'} need your attention.` : 'No unread notifications right now.'}</Text>
+            </>
+          )}
           
           <View style={styles.progressSection}>
             <View style={styles.progressTrack}>
               <View style={[styles.progressFill, { width: unreadCount > 0 ? '100%' : '0%', backgroundColor: '#FFD700' }]} />
             </View>
             <View style={styles.statFooter}>
-              <Text style={styles.statValue}>{isDashboardLoading ? '...' : `${unreadCount} Unread`}</Text>
-              <Text style={styles.statPercentage}>{isDashboardLoading ? 'Syncing' : ''}</Text>
+              {isDashboardLoading ? <SkeletonBlock width={84} height={13} /> : <Text style={styles.statValue}>{`${unreadCount} Unread`}</Text>}
+              {isDashboardLoading ? <SkeletonBlock width={58} height={13} /> : <Text style={styles.statPercentage} />}
             </View>
           </View>
         </View>
@@ -229,13 +250,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   scrollContent: {
-    padding: 16,
     paddingBottom: 32,
   },
   heroCard: {
     backgroundColor: '#8A252C',
-    borderRadius: 16,
-    padding: 20,
+    paddingHorizontal: 22,
+    paddingTop: 26,
+    paddingBottom: 24,
     marginBottom: 20,
     position: 'relative',
     overflow: 'hidden',
@@ -302,6 +323,7 @@ const styles = StyleSheet.create({
   statsSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
     marginBottom: 20,
     gap: 12,
   },
@@ -345,6 +367,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     minHeight: 32,
   },
+  statSkeletonLine: {
+    marginBottom: 8,
+  },
+  statSkeletonSubLine: {
+    marginBottom: 7,
+  },
   progressSection: {
     marginTop: 'auto',
   },
@@ -385,6 +413,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sectionHeader: {
+    paddingHorizontal: 16,
     marginBottom: 12,
   },
   sectionHeading: {
@@ -394,6 +423,7 @@ const styles = StyleSheet.create({
   },
   quickActionsGrid: {
     flexDirection: 'row',
+    paddingHorizontal: 16,
     gap: 12,
   },
   actionButton: {

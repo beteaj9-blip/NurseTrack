@@ -11,7 +11,7 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   const { state, navigation } = props;
   const { user } = useAuth();
   const isTeacher = user?.role !== 'STUDENT';
-  const displayRole = isTeacher ? 'Teacher' : 'Nursing Student';
+  const displayRole = isTeacher ? 'Clinical Instructor' : 'Nursing Student';
 
   const currentRoute = state.routeNames[state.index];
 
