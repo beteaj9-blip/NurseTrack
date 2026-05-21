@@ -121,10 +121,9 @@ public class StudentClearanceController {
         if (viewer == null || !AccessScope.canViewRecord(viewer, clearance.getStudent(), null) || !accessPermissionService.canEdit(viewer.getRole(), "clearance")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        if ((status == ClearanceStatus.CLEARED || status == ClearanceStatus.APPROVED) 
+        if (status == ClearanceStatus.CLEARED 
                 && clearance.getStatus() != ClearanceStatus.IN_REVIEW 
-                && clearance.getStatus() != ClearanceStatus.CLEARED 
-                && clearance.getStatus() != ClearanceStatus.APPROVED) {
+                && clearance.getStatus() != ClearanceStatus.CLEARED) {
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot approve a clearance that has not been submitted.");
         }
         clearance.setStatus(status);
