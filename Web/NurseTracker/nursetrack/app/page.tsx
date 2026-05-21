@@ -11,6 +11,7 @@ import { apiClient } from "@/core/api/axios";
 import { consumeSessionExpiredFlag } from "@/core/auth/session";
 import { useAuthStore } from "@/core/store/authStore";
 import { User, roleToBasePath } from "@/core/types/user";
+import { roleNavConfigs } from "@/core/config/navConfig";
 
 type LoginResponse = { user: User; token: string };
 
@@ -92,7 +93,10 @@ function LoginContent() {
       // Redirect to the correct dashboard based on role
       const basePath = roleToBasePath[data.user.role];
       if (!basePath) throw new Error(`Unsupported user role: ${data.user.role}`);
-      router.replace(`${basePath}/dashboard`);
+      
+      const roleKey = basePath.replace('/', '');
+      const firstNavPath = roleNavConfigs[roleKey]?.[0]?.href;
+      router.replace(firstNavPath || `${basePath}/dashboard`);
     } catch (error) {
       console.error("Login succeeded but session setup failed", error);
       setIsError(true);

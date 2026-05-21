@@ -43,7 +43,6 @@ const standingOptions = [
   { value: "Checked", label: "Checked" },
   { value: "Unchecked", label: "Unchecked" },
   { value: "Cleared", label: "Cleared" },
-  { value: "Not cleared", label: "Not cleared" },
 ];
 
 function standingFor(student: Omit<ProgressStudent, "standing">) {
@@ -52,26 +51,49 @@ function standingFor(student: Omit<ProgressStudent, "standing">) {
   return "Checked";
 }
 
+import { useClearances } from "@/core/api/hooks/useClearance";
+
 export function InstructorStudentProgressContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
   const isAllRole = basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
   const isAdmin = basePath === "/admin";
   const isEnrollment = basePath === "/enrollment-team";
   const isAllSection = isAdmin || isAllRole || isEnrollment;
-  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
+  const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator" || basePath === "/enrollment-team";
   const viewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: studentUsers = [], isLoading: isUsersLoading } = useUsers("STUDENT", isAllSection ? viewerId : undefined);
+  const { data: clearances = [], isLoading: isClearanceLoading } = useClearances();
   const { data: instructorCases = [], isLoading: isInstructorCasesLoading } = useInstructorCases();
   const { data: allCases = [], isLoading: isAllCasesLoading } = useAllClinicalCases(isAllSection, viewerId);
   const { data: instructorAttendance = [], isLoading: isInstructorAttendanceLoading } = useInstructorAttendance();
   const { data: allAttendance = [], isLoading: isAllAttendanceLoading } = useAllAttendance(isAllSection, viewerId);
   const cases = isAllSection ? allCases : instructorCases;
   const attendance = isAllSection ? allAttendance : instructorAttendance;
-  const isLoading = isAllSection ? isUsersLoading || isAllCasesLoading || isAllAttendanceLoading : isInstructorCasesLoading || isInstructorAttendanceLoading;
+  const isLoading = isAllSection ? isUsersLoading || isAllCasesLoading || isAllAttendanceLoading || isClearanceLoading : isInstructorCasesLoading || isInstructorAttendanceLoading;
   const [search, setSearch] = useState("");
   const [section, setSection] = useState("all");
   const [level, setLevel] = useState("all");
   const [standing, setStanding] = useState("all");
+  const [manualChecks, setManualChecks] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem("enrollment-manual-checks");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("enrollment-manual-checks", JSON.stringify(manualChecks));
+    } catch {}
+  }, [manualChecks]);
+
+  const toggleCheck = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setManualChecks((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const students = useMemo(() => {
     const source = new Map<string, Omit<ProgressStudent, "standing">>();
@@ -116,10 +138,26 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
       source.set(key, current);
     });
 
+    const clearanceByStudentId = new Map((clearances as any[]).map((c) => [String(c.studentId), c.status]));
+
     return Array.from(source.values())
-      .map((student) => ({ ...student, standing: standingFor(student) }))
+      .map((student) => {
+        const cStatus = clearanceByStudentId.get(String(student.studentId));
+        const isApproved = cStatus === "CLEARED" || cStatus === "APPROVED";
+        const isManuallyChecked = manualChecks[String(student.studentId)] || false;
+        
+        // If approved by chair, standing is always Cleared. Otherwise it's Checked if manually toggled, else Unchecked.
+        let studentStanding = "Unchecked";
+        if (isApproved) {
+          studentStanding = "Cleared";
+        } else if (isManuallyChecked) {
+          studentStanding = "Checked";
+        }
+        
+        return { ...student, standing: studentStanding };
+      })
       .sort((a, b) => a.section.localeCompare(b.section) || a.name.localeCompare(b.name));
-  }, [attendance, cases, isAllSection, studentUsers]);
+  }, [attendance, cases, isAllSection, studentUsers, clearances, manualChecks]);
 
   const sectionOptions = useMemo(() => [
     { value: "all", label: "All" },
@@ -165,8 +203,16 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
               <div className="grid place-items-center w-[30px] h-[30px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.78rem] !font-[900]">{index + 1}.</div>
               <ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={38} />
               <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{student.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{student.section} - {student.schoolId || "No student ID"}</small></span>
-              {isEnrollment && <span className="inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap bg-[#e9f8ef] !text-[#03703c] max-[520px]:col-start-3 max-[520px]:mt-1">{student.standing}</span>}
-              {isEnrollment && <span className="grid h-9 w-9 place-items-center rounded-lg border border-[#dbe3ee] bg-white !text-[#078033] max-[680px]:col-start-4 max-[680px]:row-start-1" aria-label="Checked"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M9.55 17.35 4.9 12.7l1.8-1.8 2.85 2.85 7.75-7.75 1.8 1.8-9.55 9.55Z" /></svg></span>}
+              {isEnrollment && <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[520px]:col-start-3 max-[520px]:mt-1 ${student.standing === 'Cleared' ? 'bg-[#e9f8ef] !text-[#03703c]' : student.standing === 'Checked' ? 'bg-[#e9f8ef] !text-[#03703c]' : 'bg-[#fff1f0] !text-[#b42318]'}`}>{student.standing}</span>}
+              {isEnrollment && (
+                student.standing === 'Cleared' ? (
+                  <span className="grid h-9 w-9 place-items-center rounded-lg border border-[#86efac] bg-[#ecfdf3] !text-[#15803d] max-[680px]:col-start-4 max-[680px]:row-start-1" aria-label="Cleared"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M9.55 17.35 4.9 12.7l1.8-1.8 2.85 2.85 7.75-7.75 1.8 1.8-9.55 9.55Z" /></svg></span>
+                ) : (
+                  <button type="button" onClick={(e) => toggleCheck(e, String(student.studentId))} className={`grid h-9 w-9 place-items-center rounded-lg border max-[680px]:col-start-4 max-[680px]:row-start-1 cursor-pointer transition-colors ${student.standing === 'Checked' ? 'border-[#03703c] bg-[#03703c] !text-white' : 'border-[#dbe3ee] bg-white !text-transparent hover:border-[#03703c]'}`} aria-label="Toggle Check">
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M9.55 17.35 4.9 12.7l1.8-1.8 2.85 2.85 7.75-7.75 1.8 1.8-9.55 9.55Z" /></svg>
+                  </button>
+                )
+              )}
             </Link>
           ))}
         </div>
