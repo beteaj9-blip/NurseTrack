@@ -142,8 +142,11 @@ function inferDraftLevel(groups: DraftGroup[]) {
   const levels = new Set<number>();
   groups.forEach((group) => {
     const groupLevel = levelFromSection(group.section);
-    if (groupLevel) levels.add(groupLevel);
-    getStudentRecords(group).forEach((student) => student.levels?.forEach((level) => Number.isFinite(level) && levels.add(level)));
+    if (groupLevel) {
+      levels.add(groupLevel);
+    } else {
+      getStudentRecords(group).forEach((student) => student.levels?.forEach((level) => Number.isFinite(level) && levels.add(level)));
+    }
   });
   return levels.size === 1 ? Array.from(levels)[0] : undefined;
 }
@@ -151,8 +154,8 @@ function inferDraftLevel(groups: DraftGroup[]) {
 function publishDisabledReason(groups: DraftGroup[], preview: ScheduleImportPreview | null, isPublishing: boolean) {
   if (isPublishing) return "Schedule is currently being published.";
   if (groups.length === 0) return "Create a manual schedule or upload a schedule file first.";
-  const incompleteGroup = groups.find((group) => !group.startDate || !group.endDate || !group.shiftStart || !group.shiftEnd || !group.hospitalArea || !group.instructor);
-  if (incompleteGroup) return "Complete date range, shift time, hospital/area, and supervising CI before publishing.";
+  const incompleteGroup = groups.find((group) => !group.startDate || !group.endDate || !group.shiftStart || !group.shiftEnd || !group.hospitalArea || !group.instructor || !group.section?.trim() || (!group.noCasePresentation && (!group.casePresentationDate || !group.casePresentationTime)));
+  if (incompleteGroup) return "Complete section, date range, shift time, hospital/area, case presentation, and supervising CI before publishing.";
   if (groups.some((group) => getStudentRecords(group).filter((student) => student.matched).length === 0)) return "Add at least one matched database student to every schedule group.";
   if (!preview && !inferDraftLevel(groups)) return "Manual schedules need one clear level. Add students from one level or include the level in the section name.";
   if (preview && !preview.level) return "The uploaded file did not detect a valid level.";
@@ -188,12 +191,22 @@ function buildPublishPayload(groups: DraftGroup[], preview: ScheduleImportPrevie
 }
 
 function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSection?: string; uploadedSection?: string }) {
-  return <span className="group relative inline-flex items-center align-middle">
-    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-[#f59e0b] stroke-[#92400e] stroke-[1.8]" aria-label="Section mismatch warning"><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v5" className="stroke-white" /><path d="M12 17h.01" className="stroke-white" /></svg>
-    <span className="pointer-events-none absolute left-1/2 top-6 z-20 hidden w-[260px] -translate-x-1/2 rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-3 py-2 !text-[0.75rem] !font-[800] leading-[1.35] !text-[#744b00] shadow-[0_12px_24px_rgba(15,23,42,0.14)] group-hover:block">
-      Uploaded section is {uploadedSection || "blank"}, but this student is currently in {studentSection || "blank"}. Publishing will update the student to the uploaded section.
+  return (
+    <span className="group relative inline-flex items-center align-middle ml-1">
+      <svg 
+        viewBox="0 0 24 24" 
+        className="h-4 w-4 fill-[#f59e0b] stroke-[#92400e] stroke-[1.8]" 
+        aria-label="Section mismatch warning"
+      >
+        <path d="M12 3 2.5 20h19L12 3Z" />
+        <path d="M12 9v5" className="stroke-white" />
+        <path d="M12 17h.01" className="stroke-white" />
+      </svg>
+      <span className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-[260px] -translate-x-1/2 rounded-lg border border-[#f1d38a] bg-[#fffaf0] px-3 py-2 !text-[0.75rem] !font-[800] leading-[1.35] !text-[#744b00] shadow-[0_12px_24px_rgba(15,23,42,0.14)] opacity-0 group-hover:opacity-100 transition-opacity">
+        Uploaded section is {uploadedSection || "blank"}, but this student is currently in {studentSection || "blank"}. Publishing will update the student to the uploaded section.
+      </span>
     </span>
-  </span>;
+  );
 }
 
 export function SchedulesMakerContent({ basePath }: { basePath: string }) {
@@ -224,10 +237,6 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const unmatchedModalRecords = selectedStudentRecords.filter((student) => !student.matched);
   const modalChanged = modalRecords.length !== modalOriginalRecords.length || modalRecords.some((student, index) => student.name !== modalOriginalRecords[index]?.name || student.matched !== modalOriginalRecords[index]?.matched);
 
-  if (!canEdit) {
-    return <main className="grid w-full content-start gap-6 p-[clamp(24px,4vw,42px)]"><section className="rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]"><h2 className="m-0 !text-[1.25rem] !font-bold !text-[#111827]">Schedule Maker</h2><p className="mb-0 mt-3 !text-sm !font-bold !text-[#64748b]">You can view schedules, but schedule publishing is not enabled for your role.</p></section></main>;
-  }
-
   const hospitalAreaOptions = useMemo(() => (hospitals as any[]).flatMap((hospital: any) => (hospital.wards?.length ? hospital.wards : [""]).map((ward: string) => {
     const value = ward ? `${hospital.name} - ${ward}` : hospital.name;
     return { value, label: value };
@@ -244,6 +253,10 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
       .filter((student) => `${student.fullName} ${student.schoolId} ${student.sectionInfo ?? ""} ${student.groupInfo ?? ""} ${student.email}`.toLowerCase().includes(query))
       .slice(0, 8);
   }, [databaseStudents, modalRecords, studentSearch]);
+
+  if (!canEdit) {
+    return <main className="grid w-full content-start gap-6 p-[clamp(24px,4vw,42px)]"><section className="rounded-lg border border-[#e2e8f0] bg-white p-[1.45rem] shadow-[0_16px_44px_rgba(32,33,36,0.07)]"><h2 className="m-0 !text-[1.25rem] !font-bold !text-[#111827]">Schedule Maker</h2><p className="mb-0 mt-3 !text-sm !font-bold !text-[#64748b]">You can view schedules, but schedule publishing is not enabled for your role.</p></section></main>;
+  }
 
   function updateGroup(id: string, updates: Partial<DraftGroup>) {
     setGroups((current) => current.map((group) => group.id === id ? { ...group, ...updates } : group));
@@ -469,7 +482,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
                   <colgroup><col className="w-[76px]" /><col /><col className="w-[180px]" /><col className="w-[120px]" /><col className="w-[150px]" /><col className="w-[150px]" /></colgroup>
                   <thead className="bg-[#f8fafc]"><tr><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">No.</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Student</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Section</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Group</th><th className="px-4 py-4 text-left !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Level</th><th className="px-4 py-4 text-right !text-[0.8rem] !font-[900] uppercase !text-[#111827]">Action</th></tr></thead>
                   <tbody>
-                    {matchedModalRecords.length > 0 ? matchedModalRecords.map((student, index) => <tr key={`matched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={40} /><div><span className="block !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</span>{student.schoolId && <span className="block !text-[0.78rem] !font-[850] !text-[#64748b]">{student.schoolId}</span>}</div></div></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]"><span className="inline-flex items-center gap-2">{selectedGroup.section}{hasSectionMismatch(student, selectedGroup) && <SectionMismatchIcon studentSection={student.section} uploadedSection={selectedGroup.section} />}</span></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{selectedGroup.group || student.group || ""}</td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{formatLevels(student.levels)}</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>) : <tr><td colSpan={6} className="px-4 py-8 text-center !font-[800] !text-[#64748b]">No matched student(s) added.</td></tr>}
+                    {matchedModalRecords.length > 0 ? matchedModalRecords.map((student, index) => <tr key={`matched-${student.name}-${index}`} className="border-t border-[#e2e8f0]"><td className="px-4 py-4 !text-[0.95rem] !text-[#14213d]">{index + 1}.</td><td className="px-4 py-4"><div className="flex items-center gap-3"><ProfileAvatar name={student.name} imageUrl={student.profileImageUrl} size={40} /><div><span className="block !text-[0.95rem] !font-[900] !text-[#111827]">{student.name}</span>{student.schoolId && <span className="block !text-[0.78rem] !font-[850] !text-[#64748b]">{student.schoolId}</span>}</div></div></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]"><span className="inline-flex items-center gap-2">{student.section || ""}{hasSectionMismatch(student, selectedGroup) && <SectionMismatchIcon studentSection={student.section} uploadedSection={selectedGroup.section} />}</span></td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{student.group || ""}</td><td className="px-4 py-4 !text-[0.95rem] !font-[700] !text-[#14213d]">{formatLevels(student.levels)}</td><td className="px-4 py-4 text-right"><button type="button" className="min-h-[38px] rounded-lg border border-[#c62828]/30 bg-white px-6 !text-[0.85rem] !font-[900] !text-[#b42318] cursor-pointer hover:bg-[#fff1f0]" onClick={() => removeStudent(student.name)}>Remove</button></td></tr>) : <tr><td colSpan={6} className="px-4 py-8 text-center !font-[800] !text-[#64748b]">No matched student(s) added.</td></tr>}
                   </tbody>
                 </table>
               </div>
