@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, StatusBar } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { CitLogo } from '../../components/CitLogo';
+import { SlideUpView } from '../../components/SlideUpView';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 
@@ -12,12 +13,12 @@ type Props = {
 const RegisterScreen = ({ navigation }: Props) => {
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
-    mobileNumber: '',
     schoolId: '',
-    sectionInfo: '',
+    email: '',
     password: '',
+    confirmPassword: '',
   });
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formMessage, setFormMessage] = useState("Enter your details to create an account.");
   const [isError, setIsError] = useState(false);
@@ -25,9 +26,21 @@ const RegisterScreen = ({ navigation }: Props) => {
   const { register } = useAuth();
 
   const handleRegister = async () => {
-    if (Object.values(formData).some((value) => value.trim() === '')) {
+    if (Object.values(formData).some((value) => typeof value === 'string' && value.trim() === '')) {
       setIsError(true);
       setFormMessage("Please fill in all fields to continue.");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setIsError(true);
+      setFormMessage("Passwords do not match. Please try again.");
+      return;
+    }
+
+    if (!termsAccepted) {
+      setIsError(true);
+      setFormMessage("Please confirm that the account details are correct before creating an account.");
       return;
     }
 
@@ -35,7 +48,13 @@ const RegisterScreen = ({ navigation }: Props) => {
       setIsLoading(true);
       setIsError(false);
       setFormMessage("Creating your account...");
-      await register(formData);
+      await register({
+        fullName: formData.fullName,
+        schoolId: formData.schoolId,
+        email: formData.email,
+        password: formData.password,
+        role: "STUDENT",
+      });
     } catch (error: any) {
       setIsError(true);
       setFormMessage(error.response?.data?.message || 'Could not create account. Please try again later.');
@@ -59,34 +78,48 @@ const RegisterScreen = ({ navigation }: Props) => {
         <ScrollView contentContainerStyle={styles.scrollContent} bounces={false} showsVerticalScrollIndicator={false}>
           
           {/* Top Maroon Section */}
-          <View style={styles.topSection}>
-            <View style={styles.logoContainer}>
-              <CitLogo size={42} />
-              <View style={{ marginLeft: 12 }}>
-                <Text style={styles.logoSuperText}>CIT-U NURSING PORTAL</Text>
-                <Text style={styles.logoText}>NurseTrack</Text>
+          <SlideUpView delay={0} duration={520}>
+            <View style={styles.topSection}>
+              <View style={styles.logoContainer}>
+                <CitLogo size={42} />
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={styles.logoSuperText}>CIT-U NURSING PORTAL</Text>
+                  <Text style={styles.logoText}>NurseTrack</Text>
+                </View>
               </View>
             </View>
-          </View>
+          </SlideUpView>
 
           {/* Bottom White Sheet */}
-          <View style={styles.bottomSheet}>
-            <View style={styles.headerContainer}>
-              <Text style={styles.superTitle}>GET STARTED</Text>
-              <Text style={styles.title}>Create your account</Text>
-            </View>
+          <SlideUpView delay={200} duration={680}>
+            <View style={styles.bottomSheet}>
+              <View style={styles.headerContainer}>
+                <Text style={styles.superTitle}>GET STARTED</Text>
+                <Text style={styles.title}>Create your account</Text>
+              </View>
 
             <View style={styles.formContainer}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>Full name</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Jane Doe"
+                placeholder="Juan Dela Cruz"
                 placeholderTextColor="#9CA3AF"
                 value={formData.fullName}
                 onChangeText={(text) => updateForm('fullName', text)}
               />
 
-              <Text style={styles.label}>School Email</Text>
+              <Text style={styles.label}>School ID number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="12-3456-789"
+                placeholderTextColor="#9CA3AF"
+                value={formData.schoolId}
+                onChangeText={(text) => updateForm('schoolId', text.replace(/[^0-9-]/g, ''))}
+                autoCapitalize="none"
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>School email</Text>
               <TextInput
                 style={styles.input}
                 placeholder="student@cit.edu"
@@ -95,36 +128,6 @@ const RegisterScreen = ({ navigation }: Props) => {
                 onChangeText={(text) => updateForm('email', text)}
                 autoCapitalize="none"
                 keyboardType="email-address"
-              />
-
-              <Text style={styles.label}>Mobile Number</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="09123456789"
-                placeholderTextColor="#9CA3AF"
-                value={formData.mobileNumber}
-                onChangeText={(text) => updateForm('mobileNumber', text)}
-                keyboardType="phone-pad"
-              />
-
-              <Text style={styles.label}>School ID</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="12-3456-789"
-                placeholderTextColor="#9CA3AF"
-                value={formData.schoolId}
-                onChangeText={(text) => updateForm('schoolId', text)}
-                autoCapitalize="none"
-              />
-
-              <Text style={styles.label}>Section (e.g. N1)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="N1"
-                placeholderTextColor="#9CA3AF"
-                value={formData.sectionInfo}
-                onChangeText={(text) => updateForm('sectionInfo', text)}
-                autoCapitalize="characters"
               />
 
               <Text style={styles.label}>Password</Text>
@@ -136,6 +139,27 @@ const RegisterScreen = ({ navigation }: Props) => {
                 onChangeText={(text) => updateForm('password', text)}
                 secureTextEntry
               />
+
+              <Text style={styles.label}>Confirm password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Re-enter password"
+                placeholderTextColor="#9CA3AF"
+                value={formData.confirmPassword}
+                onChangeText={(text) => updateForm('confirmPassword', text)}
+                secureTextEntry
+              />
+
+              <TouchableOpacity 
+                style={styles.termsContainer} 
+                onPress={() => setTermsAccepted(!termsAccepted)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+                  {termsAccepted && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={styles.termsText}>I confirm that the account details are correct.</Text>
+              </TouchableOpacity>
 
               <View style={[styles.statusBox, isError ? styles.statusBoxError : styles.statusBoxInfo, { marginTop: 18 }]}>
                 <Text style={[styles.statusText, isError ? styles.statusTextError : styles.statusTextInfo]}>
@@ -161,8 +185,9 @@ const RegisterScreen = ({ navigation }: Props) => {
                   <Text style={styles.loginLink}>Sign in</Text>
                 </TouchableOpacity>
               </View>
+              </View>
             </View>
-          </View>
+          </SlideUpView>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -253,6 +278,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#101828',
     backgroundColor: '#ffffff',
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 4,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 1.5,
+    borderColor: '#D0D5DD',
+    borderRadius: 4,
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  checkboxChecked: {
+    backgroundColor: '#8A252C',
+    borderColor: '#8A252C',
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  termsText: {
+    color: '#667085',
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
   },
   statusBox: {
     minHeight: 42,

@@ -12,6 +12,7 @@ import {
 import { api } from '../../api/axiosConfig';
 import { Clock, CheckCircle } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
+import { SlideUpView } from '../../components/SlideUpView';
 
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
@@ -93,7 +94,8 @@ export const ManualBackupScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <SlideUpView delay={0} duration={600} style={{ flex: 1 }}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Title Header */}
       <View style={styles.headerPanel}>
         <Text style={styles.subTitle}>DUTY ENTRY BACKUP</Text>
@@ -233,7 +235,8 @@ export const ManualBackupScreen = () => {
           </TouchableOpacity>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </SlideUpView>
   );
 };
 

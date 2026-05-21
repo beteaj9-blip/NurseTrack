@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -8,10 +8,12 @@ import {
   TouchableOpacity, 
   TextInput, 
   Modal,
-  DeviceEventEmitter
+  DeviceEventEmitter,
+  Animated
 } from 'react-native';
 import { api } from '../../api/axiosConfig';
 import { NotificationCardSkeleton } from '../../components/Skeleton';
+import { SlideUpView } from '../../components/SlideUpView';
 import { 
   ChevronDown, 
   RefreshCw, 
@@ -55,9 +57,37 @@ export const NotificationScreen = () => {
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const [statusModalVisible, setStatusModalVisible] = useState(false);
 
+  // Transition Animation States/Refs
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const skeletonOpacity = useRef(new Animated.Value(1)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     fetchNotifications();
   }, []);
+
+  useEffect(() => {
+    if (isLoading) {
+      setShowSkeleton(true);
+      skeletonOpacity.setValue(1);
+      contentOpacity.setValue(0);
+    } else {
+      Animated.parallel([
+        Animated.timing(skeletonOpacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(contentOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowSkeleton(false);
+      });
+    }
+  }, [isLoading]);
 
   const fetchNotifications = async () => {
     setIsLoading(true);
@@ -183,7 +213,8 @@ export const NotificationScreen = () => {
   return (
     <View style={styles.container}>
       {/* Filters & Control Panel at top */}
-      <View style={styles.controlPanelCard}>
+      <SlideUpView delay={0} duration={480}>
+        <View style={styles.controlPanelCard}>
         <View style={styles.panelHeaderRow}>
           <View>
             <Text style={styles.panelKicker}>CIT-U ACADEMIC INBOX</Text>
@@ -209,8 +240,8 @@ export const NotificationScreen = () => {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryActionBtn} onPress={handleRefresh} disabled={isRefreshing}>
-            {isRefreshing ? (
+          <TouchableOpacity style={styles.secondaryActionBtn} onPress={handleRefresh} disabled={isRefreshing || isLoading}>
+            {isRefreshing || isLoading ? (
               <ActivityIndicator size="small" color="#475467" />
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -259,67 +290,90 @@ export const NotificationScreen = () => {
             onChangeText={setSearchQuery}
           />
         </View>
-      </View>
+        </View>
+      </SlideUpView>
 
       {/* Notifications List */}
+      <SlideUpView delay={140} duration={520} style={{ flex: 1 }}>
       <ScrollView 
         style={styles.scrollContainer} 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {isLoading && notifications.length === 0 ? (
-          <View style={styles.listContainer}>
-            {Array.from({ length: 5 }).map((_, index) => <NotificationCardSkeleton key={`notification-loading-${index}`} unread={index < 2} />)}
-          </View>
-        ) : filteredNotifications.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Inbox color="#98A2B3" size={48} style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyTitle}>Your inbox is clean</Text>
-            <Text style={styles.emptySubtitle}>No notifications found matching your filter criteria.</Text>
-          </View>
-        ) : (
-          <View style={styles.listContainer}>
-            {filteredNotifications.map((item) => (
-              <View 
-                key={item.id} 
-                style={[
-                  styles.notificationCard,
-                  !item.isRead && styles.unreadCard
-                ]}
-              >
-                {/* Left Side Icon */}
-                <View style={[styles.iconBg, { backgroundColor: getNotificationIconBg(item.type) }]}>
-                  {getNotificationIcon(item.type)}
-                </View>
+        <View style={{ position: 'relative' }}>
+          {showSkeleton && (
+            <Animated.View 
+              style={[
+                styles.listContainer, 
+                { 
+                  opacity: skeletonOpacity, 
+                  position: isLoading ? 'relative' : 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  right: 0,
+                  zIndex: 10,
+                  backgroundColor: '#F3F4F6',
+                }
+              ]}
+              pointerEvents={isLoading ? 'auto' : 'none'}
+            >
+              {Array.from({ length: 5 }).map((_, index) => <NotificationCardSkeleton key={`notification-loading-${index}`} unread={index < 2} />)}
+            </Animated.View>
+          )}
 
-                {/* Content details */}
-                <View style={styles.cardContent}>
-                  <View style={styles.cardHeaderRow}>
-                    <Text style={styles.notificationTitle}>{item.title}</Text>
-                    <Text style={styles.timeText}>{formatTimeAgo(item.createdAt)}</Text>
-                  </View>
-                  
-                  <Text style={styles.messageText}>{item.message}</Text>
-
-                  {!item.isRead && (
-                    <TouchableOpacity 
-                      style={[styles.cardMarkReadBtn, markingReadIds.has(item.id) && styles.cardMarkReadBtnDisabled]} 
-                      onPress={() => markAsRead(item.id)}
-                      disabled={markingReadIds.has(item.id)}
-                    >
-                      {markingReadIds.has(item.id) ? (
-                        <ActivityIndicator size="small" color="#8A252C" />
-                      ) : (
-                        <Text style={styles.cardMarkReadBtnText}>Mark as read</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </View>
+          <Animated.View style={{ opacity: contentOpacity, zIndex: 1, display: isLoading ? 'none' : 'flex' }}>
+            {filteredNotifications.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Inbox color="#98A2B3" size={48} style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyTitle}>Your inbox is clean</Text>
+                <Text style={styles.emptySubtitle}>No notifications found matching your filter criteria.</Text>
               </View>
-            ))}
-          </View>
-        )}
+            ) : (
+              <View style={styles.listContainer}>
+                {filteredNotifications.map((item) => (
+                  <View 
+                    key={item.id} 
+                    style={[
+                      styles.notificationCard,
+                      !item.isRead && styles.unreadCard
+                    ]}
+                  >
+                    {/* Left Side Icon */}
+                    <View style={[styles.iconBg, { backgroundColor: getNotificationIconBg(item.type) }]}>
+                      {getNotificationIcon(item.type)}
+                    </View>
+
+                    {/* Content details */}
+                    <View style={styles.cardContent}>
+                      <View style={styles.cardHeaderRow}>
+                        <Text style={styles.notificationTitle}>{item.title}</Text>
+                        <Text style={styles.timeText}>{formatTimeAgo(item.createdAt)}</Text>
+                      </View>
+                      
+                      <Text style={styles.messageText}>{item.message}</Text>
+
+                      {!item.isRead && (
+                        <TouchableOpacity 
+                          style={[styles.cardMarkReadBtn, markingReadIds.has(item.id) && styles.cardMarkReadBtnDisabled]} 
+                          onPress={() => markAsRead(item.id)}
+                          disabled={markingReadIds.has(item.id)}
+                        >
+                          {markingReadIds.has(item.id) ? (
+                            <ActivityIndicator size="small" color="#8A252C" />
+                          ) : (
+                            <Text style={styles.cardMarkReadBtnText}>Mark as read</Text>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </Animated.View>
+        </View>
       </ScrollView>
+      </SlideUpView>
 
       {/* Type Dropdown Modal */}
       <Modal

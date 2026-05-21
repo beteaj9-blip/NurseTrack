@@ -3,6 +3,7 @@ import { Animated, Dimensions, Easing, View, Text, TextInput, TouchableOpacity, 
 import { useAuth } from '../../context/AuthContext';
 import { CitLogo } from '../../components/CitLogo';
 import { AppLoadingScreen } from '../../components/AppLoadingScreen';
+import { SlideUpView } from '../../components/SlideUpView';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 
@@ -74,33 +75,36 @@ const LoginScreen = ({ navigation }: Props) => {
         <ScrollView contentContainerStyle={styles.scrollContent} bounces={false} showsVerticalScrollIndicator={false}>
           
           {/* Top Maroon Section */}
-          <View style={styles.topSection}>
-            <View style={styles.logoContainer}>
-              <CitLogo size={42} />
-              <View style={{ marginLeft: 12 }}>
-                <Text style={styles.logoSuperText}>CIT-U NURSING PORTAL</Text>
-                <Text style={styles.logoText}>NurseTrack</Text>
+          <SlideUpView delay={0} duration={520}>
+            <View style={styles.topSection}>
+              <View style={styles.logoContainer}>
+                <CitLogo size={42} />
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={styles.logoSuperText}>CIT-U NURSING PORTAL</Text>
+                  <Text style={styles.logoText}>NurseTrack</Text>
+                </View>
+              </View>
+
+              <Text style={styles.heroTitle}>Clinical tracking made organized and secure.</Text>
+              <Text style={styles.heroSubtitle}>Manage duty hours, case records, schedules, approvals, and student progress from one reliable portal.</Text>
+              
+              <View style={styles.pillsContainer}>
+                {['Duty hours', 'Case logs', 'Schedules', 'Approvals'].map((item) => (
+                  <View key={item} style={styles.pill}>
+                    <Text style={styles.pillText}>{item}</Text>
+                  </View>
+                ))}
               </View>
             </View>
-
-            <Text style={styles.heroTitle}>Clinical tracking made organized and secure.</Text>
-            <Text style={styles.heroSubtitle}>Manage duty hours, case records, schedules, approvals, and student progress from one reliable portal.</Text>
-            
-            <View style={styles.pillsContainer}>
-              {['Duty hours', 'Case logs', 'Schedules', 'Approvals'].map((item) => (
-                <View key={item} style={styles.pill}>
-                  <Text style={styles.pillText}>{item}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          </SlideUpView>
 
           {/* Bottom White Sheet */}
-          <View style={styles.bottomSheet}>
-            <View style={styles.headerContainer}>
-              <Text style={styles.superTitle}>WELCOME BACK</Text>
-              <Text style={styles.title}>Login to your account</Text>
-            </View>
+          <SlideUpView delay={240} duration={680}>
+            <View style={styles.bottomSheet}>
+              <View style={styles.headerContainer}>
+                <Text style={styles.superTitle}>WELCOME BACK</Text>
+                <Text style={styles.title}>Login to your account</Text>
+              </View>
 
             <View style={styles.formContainer}>
               <Text style={styles.label}>School email or ID number</Text>
@@ -164,8 +168,9 @@ const LoginScreen = ({ navigation }: Props) => {
                   <Text style={styles.registerLink}>Create account</Text>
                 </TouchableOpacity>
               </View>
+              </View>
             </View>
-          </View>
+          </SlideUpView>
         </ScrollView>
       </KeyboardAvoidingView>
       {showSuccessTransition && (

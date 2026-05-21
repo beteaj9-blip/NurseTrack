@@ -7,6 +7,7 @@ import { MainDrawerParamList } from '../../navigation/MainNavigator';
 import { Calendar, AlertCircle, ArrowRight, Bell, Award } from 'lucide-react-native';
 import { api } from '../../api/axiosConfig';
 import { SkeletonBlock } from '../../components/Skeleton';
+import { SlideUpView } from '../../components/SlideUpView';
 
 const { width } = Dimensions.get('window');
 
@@ -129,117 +130,123 @@ export const DashboardScreen = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Welcome Hero Card */}
-      <View style={styles.heroCard}>
-        <View style={styles.heroLeft}>
-          <Text style={styles.heroSubText}>{roleLabel.toUpperCase()} WORKSPACE</Text>
-          <Text style={styles.heroTitle}>{getGreeting()}, {firstName}.</Text>
-          <Text style={styles.heroDesc}>{heroDescription}</Text>
-          <TouchableOpacity 
-            style={styles.heroButton}
-            onPress={() => navigation.navigate('Schedule')}
-          >
-            <Text style={styles.heroButtonText}>View schedule</Text>
-            <ArrowRight color="#111827" size={16} style={{ marginLeft: 6 }} />
-          </TouchableOpacity>
+      <SlideUpView delay={0} duration={520}>
+        <View style={styles.heroCard}>
+          <View style={styles.heroLeft}>
+            <Text style={styles.heroSubText}>{roleLabel.toUpperCase()} WORKSPACE</Text>
+            <Text style={styles.heroTitle}>{getGreeting()}, {firstName}.</Text>
+            <Text style={styles.heroDesc}>{heroDescription}</Text>
+            <TouchableOpacity 
+              style={styles.heroButton}
+              onPress={() => navigation.navigate('Schedule')}
+            >
+              <Text style={styles.heroButtonText}>View schedule</Text>
+              <ArrowRight color="#111827" size={16} style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.heroBgAccent} />
         </View>
-        <View style={styles.heroBgAccent} />
-      </View>
+      </SlideUpView>
 
       {/* Stats Cards Section */}
-      <View style={styles.statsSection}>
-        {/* Today's Schedule Card */}
-        <TouchableOpacity style={styles.statCard} onPress={() => navigation.navigate('Schedule')} activeOpacity={0.86}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: 'rgba(138, 37, 44, 0.1)' }]}>
-              <Calendar color="#8A252C" size={22} />
+      <SlideUpView delay={120} duration={620}>
+        <View style={styles.statsSection}>
+          {/* Today's Schedule Card */}
+          <TouchableOpacity style={styles.statCard} onPress={() => navigation.navigate('Schedule')} activeOpacity={0.86}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: 'rgba(138, 37, 44, 0.1)' }]}>
+                <Calendar color="#8A252C" size={22} />
+              </View>
             </View>
-          </View>
-          {isDashboardLoading ? (
-            <>
-              <SkeletonBlock width="68%" height={18} style={styles.statSkeletonLine} />
-              <SkeletonBlock width="92%" height={13} style={styles.statSkeletonSubLine} />
-              <SkeletonBlock width="76%" height={13} style={styles.statSkeletonSubLine} />
-            </>
-          ) : (
-            <>
-              <Text style={styles.statTitle}>{hasMultipleSchedulesToday ? `${todaySchedules.length} Schedules Today` : todaySchedule ? 'Schedule Today' : 'No Schedule Today'}</Text>
-              <Text style={styles.statSubText}>
-                {hasMultipleSchedulesToday
-                  ? 'Multiple duties are assigned today. Open schedule to choose one.'
-                  : todaySchedule ? `${scheduleWard(todaySchedule)}${todaySchedule.hospital ? ` at ${todaySchedule.hospital}` : ''}` : 'No active clinical duty is assigned for today.'}
-              </Text>
-            </>
-          )}
-          
-          <View style={styles.progressSection}>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: todaySchedule ? '100%' : '0%', backgroundColor: '#8A252C' }]} />
+            {isDashboardLoading ? (
+              <>
+                <SkeletonBlock width="68%" height={18} style={styles.statSkeletonLine} />
+                <SkeletonBlock width="92%" height={13} style={styles.statSkeletonSubLine} />
+                <SkeletonBlock width="76%" height={13} style={styles.statSkeletonSubLine} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.statTitle}>{hasMultipleSchedulesToday ? `${todaySchedules.length} Schedules Today` : todaySchedule ? 'Schedule Today' : 'No Schedule Today'}</Text>
+                <Text style={styles.statSubText}>
+                  {hasMultipleSchedulesToday
+                    ? 'Multiple duties are assigned today. Open schedule to choose one.'
+                    : todaySchedule ? `${scheduleWard(todaySchedule)}${todaySchedule.hospital ? ` at ${todaySchedule.hospital}` : ''}` : 'No active clinical duty is assigned for today.'}
+                </Text>
+              </>
+            )}
+            
+            <View style={styles.progressSection}>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: todaySchedule ? '100%' : '0%', backgroundColor: '#8A252C' }]} />
+              </View>
+              <View style={styles.statFooter}>
+                {isDashboardLoading ? <SkeletonBlock width={82} height={13} /> : <Text style={styles.statTime}>{hasMultipleSchedulesToday ? `${todaySchedules.length} duties` : todaySchedule ? formatTime(scheduleStart(todaySchedule)) : 'No duty'}</Text>}
+                {isDashboardLoading ? <SkeletonBlock width={64} height={13} /> : <Text style={styles.statDuration}>{hasMultipleSchedulesToday ? 'View list' : todaySchedule ? `${formatTime(scheduleEnd(todaySchedule))} end` : ''}</Text>}
+              </View>
             </View>
-            <View style={styles.statFooter}>
-              {isDashboardLoading ? <SkeletonBlock width={82} height={13} /> : <Text style={styles.statTime}>{hasMultipleSchedulesToday ? `${todaySchedules.length} duties` : todaySchedule ? formatTime(scheduleStart(todaySchedule)) : 'No duty'}</Text>}
-              {isDashboardLoading ? <SkeletonBlock width={64} height={13} /> : <Text style={styles.statDuration}>{hasMultipleSchedulesToday ? 'View list' : todaySchedule ? `${formatTime(scheduleEnd(todaySchedule))} end` : ''}</Text>}
-            </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        {/* Pending Items Card */}
-        <View style={styles.statCard}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: 'rgba(255, 215, 0, 0.15)' }]}>
-              <AlertCircle color="#D4A017" size={22} />
+          {/* Pending Items Card */}
+          <View style={styles.statCard}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconContainer, { backgroundColor: 'rgba(255, 215, 0, 0.15)' }]}>
+                <AlertCircle color="#D4A017" size={22} />
+              </View>
             </View>
-          </View>
-          {isDashboardLoading ? (
-            <>
-              <SkeletonBlock width="64%" height={18} style={styles.statSkeletonLine} />
-              <SkeletonBlock width="88%" height={13} style={styles.statSkeletonSubLine} />
-              <SkeletonBlock width="62%" height={13} style={styles.statSkeletonSubLine} />
-            </>
-          ) : (
-            <>
-              <Text style={styles.statTitle}>{isInstructor ? 'Unread Updates' : 'Pending Updates'}</Text>
-              <Text style={styles.statSubText}>{unreadCount > 0 ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'} need your attention.` : 'No unread notifications right now.'}</Text>
-            </>
-          )}
-          
-          <View style={styles.progressSection}>
-            <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: unreadCount > 0 ? '100%' : '0%', backgroundColor: '#FFD700' }]} />
-            </View>
-            <View style={styles.statFooter}>
-              {isDashboardLoading ? <SkeletonBlock width={84} height={13} /> : <Text style={styles.statValue}>{`${unreadCount} Unread`}</Text>}
-              {isDashboardLoading ? <SkeletonBlock width={58} height={13} /> : <Text style={styles.statPercentage} />}
+            {isDashboardLoading ? (
+              <>
+                <SkeletonBlock width="64%" height={18} style={styles.statSkeletonLine} />
+                <SkeletonBlock width="88%" height={13} style={styles.statSkeletonSubLine} />
+                <SkeletonBlock width="62%" height={13} style={styles.statSkeletonSubLine} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.statTitle}>{isInstructor ? 'Unread Updates' : 'Pending Updates'}</Text>
+                <Text style={styles.statSubText}>{unreadCount > 0 ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'} need your attention.` : 'No unread notifications right now.'}</Text>
+              </>
+            )}
+            
+            <View style={styles.progressSection}>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: unreadCount > 0 ? '100%' : '0%', backgroundColor: '#FFD700' }]} />
+              </View>
+              <View style={styles.statFooter}>
+                {isDashboardLoading ? <SkeletonBlock width={84} height={13} /> : <Text style={styles.statValue}>{`${unreadCount} Unread`}</Text>}
+                {isDashboardLoading ? <SkeletonBlock width={58} height={13} /> : <Text style={styles.statPercentage} />}
+              </View>
             </View>
           </View>
         </View>
-      </View>
+      </SlideUpView>
 
       {/* Quick Actions Panel */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionHeading}>Quick Actions</Text>
-      </View>
-      
-      <View style={styles.quickActionsGrid}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('DutyAttendance')}
-        >
-          <View style={[styles.actionIconBg, { backgroundColor: '#8A252C' }]}>
-            <Calendar color="#FFFFFF" size={20} />
-          </View>
-          <Text style={styles.actionLabel}>Clock In (Bluetooth)</Text>
-        </TouchableOpacity>
+      <SlideUpView delay={240} duration={620}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeading}>Quick Actions</Text>
+        </View>
+        
+        <View style={styles.quickActionsGrid}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('DutyAttendance')}
+          >
+            <View style={[styles.actionIconBg, { backgroundColor: '#8A252C' }]}>
+              <Calendar color="#FFFFFF" size={20} />
+            </View>
+            <Text style={styles.actionLabel}>Clock In (Bluetooth)</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => navigation.navigate(isInstructor ? 'ManualBackup' : 'Notification')}
-        >
-          <View style={[styles.actionIconBg, { backgroundColor: isInstructor ? '#111827' : '#FFCF01' }]}> 
-            {isInstructor ? <Award color="#FFFFFF" size={20} /> : <Bell color="#111827" size={20} />}
-          </View>
-          <Text style={styles.actionLabel}>{isInstructor ? 'Manual Backup' : 'Notifications'}</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => navigation.navigate(isInstructor ? 'ManualBackup' : 'Notification')}
+          >
+            <View style={[styles.actionIconBg, { backgroundColor: isInstructor ? '#111827' : '#FFCF01' }]}> 
+              {isInstructor ? <Award color="#FFFFFF" size={20} /> : <Bell color="#111827" size={20} />}
+            </View>
+            <Text style={styles.actionLabel}>{isInstructor ? 'Manual Backup' : 'Notifications'}</Text>
+          </TouchableOpacity>
+        </View>
+      </SlideUpView>
     </ScrollView>
   );
 };

@@ -4,6 +4,7 @@ import { Bluetooth, CheckCircle, MapPin, Users } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
 import { SkeletonBlock } from '../../components/Skeleton';
+import { SlideUpView } from '../../components/SlideUpView';
 
 interface AttendanceStudent {
   studentId: number;
@@ -432,7 +433,8 @@ export const DutyAttendanceScreen = () => {
 
   if (isTeacher) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <SlideUpView delay={0} duration={600} style={{ flex: 1 }}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <View style={styles.heroCircle} />
           <Text style={styles.heroKicker}>TEACHER VIEW</Text>
@@ -514,11 +516,13 @@ export const DutyAttendanceScreen = () => {
           )}
         </View>
       </ScrollView>
+      </SlideUpView>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <SlideUpView delay={0} duration={600} style={{ flex: 1 }}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.heroCard}>
         <View style={styles.heroCircle} />
         <Text style={styles.heroKicker}>STUDENT VIEW</Text>
@@ -582,6 +586,7 @@ export const DutyAttendanceScreen = () => {
         {isLoading ? <SkeletonBlock width="76%" height={15} radius={7} style={{ marginTop: 14 }} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>}
       </View>
     </ScrollView>
+    </SlideUpView>
   );
 };
 

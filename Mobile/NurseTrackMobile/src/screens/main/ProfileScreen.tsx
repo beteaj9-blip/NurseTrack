@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
 import { SkeletonPage } from '../../components/Skeleton';
+import { SlideUpView } from '../../components/SlideUpView';
 import { 
   User as UserIcon, 
   Mail, 
@@ -182,7 +183,8 @@ export const ProfileScreen = () => {
       showsVerticalScrollIndicator={false}
     >
       {/* Top Banner & Profile Header Card */}
-      <View style={styles.profileHeaderCard}>
+      <SlideUpView delay={0} duration={520}>
+        <View style={styles.profileHeaderCard}>
         {/* Banner with CIT-U Branding */}
         <View style={styles.bannerBackground}>
           <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={isRefreshing}>
@@ -244,94 +246,98 @@ export const ProfileScreen = () => {
             <Text style={styles.secondaryActionBtnText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
-      </View>
+        </View>
+      </SlideUpView>
 
       {/* Profile Details Cards */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionCardHeader}>
-          <UserIcon color="#8A252C" size={20} style={{ marginRight: 8 }} />
-          <Text style={styles.sectionCardTitle}>Personal Information</Text>
-        </View>
+      <SlideUpView delay={140} duration={580}>
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionCardHeader}>
+            <UserIcon color="#8A252C" size={20} style={{ marginRight: 8 }} />
+            <Text style={styles.sectionCardTitle}>Personal Information</Text>
+          </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoIconBg}>
-            <UserIcon color="#475467" size={18} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconBg}>
+              <UserIcon color="#475467" size={18} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Full Name</Text>
+              <Text style={styles.infoValue}>{profileData?.fullName || 'Jay Yan C. Tiongzon'}</Text>
+            </View>
           </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Full Name</Text>
-            <Text style={styles.infoValue}>{profileData?.fullName || 'Jay Yan C. Tiongzon'}</Text>
-          </View>
-        </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoIconBg}>
-            <Award color="#475467" size={18} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconBg}>
+              <Award color="#475467" size={18} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>School ID Number</Text>
+              <Text style={styles.infoValue}>{profileData?.schoolId || '2021-12345'}</Text>
+            </View>
           </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>School ID Number</Text>
-            <Text style={styles.infoValue}>{profileData?.schoolId || '2021-12345'}</Text>
-          </View>
-        </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoIconBg}>
-            <Mail color="#475467" size={18} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconBg}>
+              <Mail color="#475467" size={18} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>School Email Address</Text>
+              <Text style={styles.infoValue}>{profileData?.email || 'jay.tiongzon@cit.edu'}</Text>
+            </View>
           </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>School Email Address</Text>
-            <Text style={styles.infoValue}>{profileData?.email || 'jay.tiongzon@cit.edu'}</Text>
-          </View>
-        </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoIconBg}>
-            <Phone color="#475467" size={18} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Mobile Contact Number</Text>
-            <Text style={styles.infoValue}>{profileData?.mobileNumber || '+63 912 345 6789'}</Text>
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconBg}>
+              <Phone color="#475467" size={18} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Mobile Contact Number</Text>
+              <Text style={styles.infoValue}>{profileData?.mobileNumber || '+63 912 345 6789'}</Text>
+            </View>
           </View>
         </View>
-      </View>
+      </SlideUpView>
 
       {/* Academic Status Card */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionCardHeader}>
-          <Shield color="#8A252C" size={20} style={{ marginRight: 8 }} />
-          <Text style={styles.sectionCardTitle}>Academic & Account Status</Text>
-        </View>
+      <SlideUpView delay={240} duration={580}>
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionCardHeader}>
+            <Shield color="#8A252C" size={20} style={{ marginRight: 8 }} />
+            <Text style={styles.sectionCardTitle}>Academic & Account Status</Text>
+          </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoIconBg}>
-            <Award color="#475467" size={18} />
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconBg}>
+              <Award color="#475467" size={18} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Assigned Role</Text>
+              <Text style={styles.infoValue}>{getRoleLabel()}</Text>
+            </View>
           </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Assigned Role</Text>
-            <Text style={styles.infoValue}>{getRoleLabel()}</Text>
+
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconBg}>
+              <Clock color="#475467" size={18} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Last login</Text>
+              <Text style={styles.infoValue}>May 21, 2026 at 11:10 PM</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconBg}>
+              <CheckCircle2 color="#475467" size={18} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Authentication Status</Text>
+              <Text style={[styles.infoValue, { color: '#10B981' }]}>Authorized & Encrypted</Text>
+            </View>
           </View>
         </View>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoIconBg}>
-            <Clock color="#475467" size={18} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Last login</Text>
-            <Text style={styles.infoValue}>May 21, 2026 at 11:10 PM</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoIconBg}>
-            <CheckCircle2 color="#475467" size={18} />
-          </View>
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Authentication Status</Text>
-            <Text style={[styles.infoValue, { color: '#10B981' }]}>Authorized & Encrypted</Text>
-          </View>
-        </View>
-      </View>
-
+      </SlideUpView>
       <Modal
         visible={isEditModalVisible}
         transparent={true}

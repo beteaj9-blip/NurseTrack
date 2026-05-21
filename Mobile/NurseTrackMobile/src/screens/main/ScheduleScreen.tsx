@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock, List, MapPin
 import { api } from '../../api/axiosConfig';
 import { useAuth } from '../../context/AuthContext';
 import { SkeletonBlock } from '../../components/Skeleton';
+import { SlideUpView } from '../../components/SlideUpView';
 
 interface ScheduleUser {
   id: number;
@@ -50,7 +51,34 @@ interface AssignedStudent {
 
 const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
-const parseDate = (dateStr: string) => new Date(`${dateStr}T00:00:00`);
+const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+const parseDate = (dateStr: string) => {
+  if (!dateStr) return new Date();
+  const dateOnly = dateStr.split('T')[0].split(' ')[0];
+  const parts = dateOnly.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // 0-indexed
+    const day = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  return new Date(dateStr);
+};
+
+const formatMonthYear = (date: Date) => {
+  return `${monthsShort[date.getMonth()]} ${date.getFullYear()}`;
+};
+
+const formatFullDate = (date: Date) => {
+  return `${daysShort[date.getDay()]}, ${monthsShort[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+};
+
+const formatMonthShort = (date: Date) => {
+  return monthsShort[date.getMonth()].toUpperCase();
+};
+
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const getScheduleEndpoint = (role?: string) => {
@@ -126,8 +154,8 @@ export const ScheduleScreen = () => {
   }, [user?.role]);
 
   const fetchSchedules = async () => {
-    if (schedules.length > 0) setIsRefreshing(true);
-    else setIsLoading(true);
+    setIsLoading(true);
+    setIsRefreshing(true);
 
     try {
       const response = await api.get<ScheduleData[]>(getScheduleEndpoint(user?.role));
@@ -167,6 +195,17 @@ export const ScheduleScreen = () => {
     });
     return map;
   }, [displaySchedules]);
+
+  const listViewSchedules = useMemo(() => {
+    const year = displayedMonth.getFullYear();
+    const month = displayedMonth.getMonth();
+    return displaySchedules
+      .filter((schedule) => {
+        const d = parseDate(schedule.shiftDate);
+        return d.getFullYear() === year && d.getMonth() === month;
+      })
+      .sort((a, b) => a.shiftDate.localeCompare(b.shiftDate));
+  }, [displaySchedules, displayedMonth]);
 
   const calendarCells = useMemo(() => {
     const year = displayedMonth.getFullYear();
@@ -225,11 +264,11 @@ export const ScheduleScreen = () => {
 
   const monthButtonLabel = () => isDisplayingCurrentMonth()
     ? 'This Month'
-    : displayedMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    : formatMonthYear(displayedMonth);
 
   const formatDate = (dateStr: string) => {
     try {
-      return parseDate(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      return formatFullDate(parseDate(dateStr));
     } catch {
       return dateStr;
     }
@@ -301,11 +340,11 @@ export const ScheduleScreen = () => {
           </View>
         )}
 
-        <View style={styles.studentRosterCard}>
+        <View style={[styles.studentRosterCard, selectedSchedule.canceled && styles.studentRosterCardCanceled]}>
           <View style={styles.rosterTopRow}>
             <Text style={styles.rosterHeading}>CLINICAL DUTY</Text>
-            <View style={styles.completedPill}>
-              <Text style={styles.completedPillText}>{selectedSchedule.canceled ? 'Cancelled' : 'Assigned'}</Text>
+            <View style={selectedSchedule.canceled ? styles.canceledPill : styles.completedPill}>
+              <Text style={selectedSchedule.canceled ? styles.canceledPillText : styles.completedPillText}>{selectedSchedule.canceled ? 'Cancelled' : 'Assigned'}</Text>
             </View>
           </View>
           <Text style={styles.rosterDate}>{formatDate(selectedSchedule.shiftDate)}</Text>
@@ -316,15 +355,15 @@ export const ScheduleScreen = () => {
           <InfoBox label="ASSIGNED GROUP" value={selectedGroup} />
         </View>
 
-        <View style={styles.rosterCard}>
+        <View style={[styles.rosterCard, selectedSchedule.canceled && styles.rosterCardCanceled]}>
           <View style={styles.rosterHeaderRow}>
             <Text style={styles.rosterSectionTitle}>Assigned Student(s)</Text>
-            <View style={styles.activeStudentPill}>
-              <Text style={styles.activeStudentPillText}>{selectedRoster.length} {selectedSchedule.canceled ? 'assigned' : 'active'} student(s)</Text>
+            <View style={[styles.activeStudentPill, selectedSchedule.canceled && styles.activeStudentPillCanceled]}>
+              <Text style={[styles.activeStudentPillText, selectedSchedule.canceled && styles.activeStudentPillTextCanceled]}>{selectedRoster.length} {selectedSchedule.canceled ? 'assigned' : 'active'} student(s)</Text>
             </View>
           </View>
 
-          <View style={styles.instructorRow}>
+          <View style={[styles.instructorRow, selectedSchedule.canceled && styles.instructorRowCanceled]}>
             <StudentAvatar name={selectedInstructorName} imageUrl={selectedInstructorImage} size={40} />
             <View style={{ flex: 1 }}>
               <Text style={styles.instructorName}>{selectedInstructorName}</Text>
@@ -360,18 +399,21 @@ export const ScheduleScreen = () => {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.screenTitleRow}>
-        <View>
-          <Text style={styles.kicker}>ASSIGNED SCHEDULES</Text>
-          <Text style={styles.pageTitle}>Assigned Schedules</Text>
+      <SlideUpView delay={0} duration={480}>
+        <View style={styles.screenTitleRow}>
+          <View>
+            <Text style={styles.kicker}>ASSIGNED SCHEDULES</Text>
+            <Text style={styles.pageTitle}>Assigned Schedules</Text>
+          </View>
+          <TouchableOpacity style={styles.refreshButton} onPress={fetchSchedules} disabled={isRefreshing}>
+            {isRefreshing ? <ActivityIndicator size="small" color="#8A252C" /> : <Text style={styles.refreshText}>Refresh</Text>}
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.refreshButton} onPress={fetchSchedules} disabled={isRefreshing}>
-          {isRefreshing ? <ActivityIndicator size="small" color="#8A252C" /> : <Text style={styles.refreshText}>Refresh</Text>}
-        </TouchableOpacity>
-      </View>
+      </SlideUpView>
 
-      <View style={styles.calendarShell}>
-        <View style={styles.calendarHeaderRow}>
+      <SlideUpView delay={120} duration={520}>
+        <View style={styles.calendarShell}>
+          <View style={styles.calendarHeaderRow}>
           <Text style={styles.sectionTitle}>Schedule Calendar and List</Text>
           <View style={styles.modeToggleGroup}>
             <TouchableOpacity style={[styles.modeToggle, viewMode === 'calendar' && styles.modeToggleActive]} onPress={() => setViewMode('calendar')}>
@@ -386,13 +428,25 @@ export const ScheduleScreen = () => {
         </View>
 
         <View style={styles.monthControlsCard}>
-          <TouchableOpacity style={styles.monthNavButton} onPress={goToPreviousMonth}>
+          <TouchableOpacity 
+            style={[styles.monthNavButton, (isLoading || isRefreshing) && { opacity: 0.5 }]} 
+            onPress={goToPreviousMonth}
+            disabled={isLoading || isRefreshing}
+          >
             <ChevronLeft color="#344054" size={18} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.thisMonthButton} onPress={goToThisMonth}>
+          <TouchableOpacity 
+            style={[styles.thisMonthButton, (isLoading || isRefreshing) && { opacity: 0.5 }]} 
+            onPress={goToThisMonth}
+            disabled={isLoading || isRefreshing}
+          >
             <Text style={styles.thisMonthText}>{monthButtonLabel()}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.monthNavButton} onPress={goToNextMonth}>
+          <TouchableOpacity 
+            style={[styles.monthNavButton, (isLoading || isRefreshing) && { opacity: 0.5 }]} 
+            onPress={goToNextMonth}
+            disabled={isLoading || isRefreshing}
+          >
             <ChevronRight color="#344054" size={18} />
           </TouchableOpacity>
         </View>
@@ -422,17 +476,17 @@ export const ScheduleScreen = () => {
                         style={[
                           styles.dayCell,
                           !cell.isCurrentMonth && styles.dayCellOutside,
-                          primarySchedule && styles.dayCellAssigned,
-                          hasMultipleSchedules && styles.dayCellMultiple,
-                          hasMixedCanceledSchedules && styles.dayCellMixedCanceled,
-                          allSchedulesCanceled && styles.dayCellCanceled,
-                          cell.isToday && !primarySchedule && styles.dayCellToday,
+                          !isLoading && primarySchedule && !allSchedulesCanceled && styles.dayCellAssigned,
+                          !isLoading && hasMultipleSchedules && !allSchedulesCanceled && styles.dayCellMultiple,
+                          !isLoading && hasMixedCanceledSchedules && styles.dayCellMixedCanceled,
+                          !isLoading && allSchedulesCanceled && styles.dayCellCanceled,
+                          cell.isToday && (!primarySchedule || isLoading) && styles.dayCellToday,
                         ]}
                         onPress={() => openScheduleCell(cell.schedules)}
-                        disabled={!primarySchedule}
+                        disabled={isLoading || isRefreshing || !primarySchedule}
                         activeOpacity={0.82}
                       >
-                      {hasMixedCanceledSchedules && (
+                      {!isLoading && hasMixedCanceledSchedules && (
                         <LinearGradient
                           colors={['#FFF8D7', '#FFF0B3', '#F5D9DD']}
                           start={{ x: 0, y: 0 }}
@@ -441,14 +495,16 @@ export const ScheduleScreen = () => {
                           pointerEvents="none"
                         />
                       )}
-                      <Text style={[
-                        styles.dayNumber,
-                        !cell.isCurrentMonth && styles.dayNumberOutside,
-                        primarySchedule && styles.dayNumberDuty,
-                        allSchedulesCanceled && styles.dayNumberCanceled,
-                        cell.isToday && styles.dayNumberToday,
-                      ]}>{cell.day}</Text>
-                        {isLoading && cell.isCurrentMonth ? (
+                      {!isLoading && (
+                        <Text style={[
+                          styles.dayNumber,
+                          !cell.isCurrentMonth && styles.dayNumberOutside,
+                          !isLoading && primarySchedule && !allSchedulesCanceled && styles.dayNumberDuty,
+                          !isLoading && allSchedulesCanceled && styles.dayNumberCanceled,
+                          cell.isToday && styles.dayNumberToday,
+                        ]}>{cell.day}</Text>
+                      )}
+                        {isLoading ? (
                           (cell.day % 4 === 0 || cell.day % 7 === 0) ? (
                             <>
                               <SkeletonBlock width="74%" height={8} radius={4} style={styles.calendarCellSkeletonLine} />
@@ -517,16 +573,16 @@ export const ScheduleScreen = () => {
                   </View>
                 ))}
               </View>
-            ) : displaySchedules.length === 0 ? (
+            ) : listViewSchedules.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Users color="#667085" size={28} style={{ marginBottom: 10 }} />
-                <Text style={styles.emptyText}>No schedules assigned yet.</Text>
+                <Text style={styles.emptyText}>No schedules for this month.</Text>
               </View>
             ) : (
-              displaySchedules.map((schedule) => (
+              listViewSchedules.map((schedule) => (
                 <TouchableOpacity key={schedule.id} style={[styles.scheduleListRow, schedule.canceled && styles.scheduleListRowCanceled]} onPress={() => setSelectedSchedule(schedule)} activeOpacity={0.82}>
                   <View style={styles.listDateBox}>
-                    <Text style={styles.listDateMonth}>{parseDate(schedule.shiftDate).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</Text>
+                    <Text style={styles.listDateMonth}>{formatMonthShort(parseDate(schedule.shiftDate))}</Text>
                     <Text style={styles.listDateDay}>{parseDate(schedule.shiftDate).getDate()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -547,6 +603,7 @@ export const ScheduleScreen = () => {
           </View>
         )}
       </View>
+      </SlideUpView>
     </ScrollView>
   );
 };
@@ -1068,6 +1125,24 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
   },
+  studentRosterCardCanceled: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  rosterCardCanceled: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  instructorRowCanceled: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  activeStudentPillCanceled: {
+    backgroundColor: '#FEE2E2',
+  },
+  activeStudentPillTextCanceled: {
+    color: '#991B1B',
+  },
   rosterTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1096,6 +1171,19 @@ const styles = StyleSheet.create({
   },
   completedPillText: {
     color: '#047857',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  canceledPill: {
+    minHeight: 30,
+    paddingHorizontal: 14,
+    borderRadius: 99,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  canceledPillText: {
+    color: '#991B1B',
     fontSize: 11,
     fontWeight: '900',
   },
