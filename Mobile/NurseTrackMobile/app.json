@@ -21,7 +21,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ],
+      "package": "com.mrxception.NurseTrackMobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,7 +41,23 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
+      ],
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": [
+            "peripheral",
+            "central"
+          ],
+          "bluetoothAlwaysPermission": "NurseTrack uses Bluetooth to scan for and connect to your Clinical Instructor's attendance signal."
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9da91ec9-5879-4fd0-90b0-54057403e749"
+      }
+    }
   }
 }

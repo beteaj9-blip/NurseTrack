@@ -142,11 +142,25 @@ public class UserController {
     }
 
     @PutMapping("/{id}/password/reset")
-    public ResponseEntity<User> resetPassword(@PathVariable Long id, @RequestBody java.util.Map<String, String> payload) {
+    public ResponseEntity<?> resetPassword(@PathVariable Long id) {
         return userService.getUserById(id).map(user -> {
-            user.setPasswordHash(payload.getOrDefault("password", user.getSchoolId()));
-            return ResponseEntity.ok(userService.saveUser(user));
+            String generated = userService.resetPasswordToInitials(user);
+            return ResponseEntity.ok(java.util.Map.of("password", generated));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody java.util.Map<String, String> payload) {
+        String accountId = payload.getOrDefault("accountId", "").trim();
+        if (accountId.isEmpty()) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", "accountId is required"));
+        }
+        return userService.findByEmailOrSchoolId(accountId)
+                .map(user -> {
+                    String generated = userService.resetPasswordToInitials(user);
+                    return ResponseEntity.ok(java.util.Map.of("password", generated));
+                })
+                .orElse(ResponseEntity.status(404).body(java.util.Map.of("message", "No account found for that school email or ID.")));
     }
 
     @PostMapping("/section-import")

@@ -21,7 +21,8 @@ public class DutyController {
     public ResponseEntity<DutyAttendanceTodayResponse> getTodayAttendance(
             @RequestParam(required = false) Long scheduleId,
             HttpServletRequest request) {
-        return ResponseEntity.ok(dutyService.getTodayAttendance(jwtService.getUserId(request), scheduleId));
+        boolean isMobile = "mobile".equalsIgnoreCase(request.getHeader("X-Platform"));
+        return ResponseEntity.ok(dutyService.getTodayAttendance(jwtService.getUserId(request), scheduleId, isMobile));
     }
 
     @PostMapping("/attendance/time-in")
@@ -45,7 +46,8 @@ public class DutyController {
             @RequestBody(required = false) DutyAttendanceScheduleRequest submitRequest,
             HttpServletRequest request) {
         Long scheduleId = submitRequest != null ? submitRequest.scheduleId() : null;
-        return ResponseEntity.ok(dutyService.submitAttendanceForToday(jwtService.getUserId(request), scheduleId));
+        boolean isMobile = "mobile".equalsIgnoreCase(request.getHeader("X-Platform"));
+        return ResponseEntity.ok(dutyService.submitAttendanceForToday(jwtService.getUserId(request), scheduleId, isMobile));
     }
 
     @PostMapping("/time-in")
@@ -107,5 +109,22 @@ public class DutyController {
             @RequestParam DutyStatus status,
             @RequestParam(required = false) String feedback) {
         return ResponseEntity.ok(dutyService.validateDuty(id, status, feedback));
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDuty(@PathVariable Long id) {
+        dutyService.deleteDutyRecord(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/attendance/reset-today")
+    public ResponseEntity<Void> resetTodayAttendance(HttpServletRequest request) {
+        dutyService.resetTodayAttendanceForUser(jwtService.getUserId(request));
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/attendance/broadcast")
+    public ResponseEntity<Void> setBroadcasting(@RequestBody DutyAttendanceBroadcastRequest broadcastRequest) {
+        dutyService.setBroadcasting(broadcastRequest.scheduleId(), broadcastRequest.broadcasting());
+        return ResponseEntity.ok().build();
     }
 }

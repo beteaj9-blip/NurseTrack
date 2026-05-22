@@ -69,7 +69,34 @@ public class UserService {
     }
 
     public List<User> getUsersByRole(UserRole role) {
+        if (role == UserRole.INSTRUCTOR) {
+            return userRepository.findByRoleNot(UserRole.STUDENT);
+        }
         return userRepository.findByRole(role);
+    }
+
+    public String getPasswordInitials(String fullName) {
+        if (fullName == null || fullName.isBlank()) return "U";
+        String[] parts = fullName.trim().split("\\s+");
+        StringBuilder initials = new StringBuilder();
+        for (String part : parts) {
+            String clean = part.replaceAll("[^a-zA-Z]", "");
+            if (!clean.isEmpty()) initials.append(Character.toUpperCase(clean.charAt(0)));
+        }
+        return initials.isEmpty() ? "U" : initials.toString();
+    }
+
+    public Optional<User> findByEmailOrSchoolId(String accountId) {
+        Optional<User> byEmail = userRepository.findByEmail(accountId);
+        if (byEmail.isPresent()) return byEmail;
+        return userRepository.findBySchoolId(accountId);
+    }
+
+    public String resetPasswordToInitials(User user) {
+        String password = getPasswordInitials(user.getFullName()) + "#" + user.getSchoolId();
+        user.setPasswordHash(password);
+        userRepository.save(user);
+        return password;
     }
 
     public List<User> getUsersByRoleVisibleTo(UserRole role, Long viewerId) {

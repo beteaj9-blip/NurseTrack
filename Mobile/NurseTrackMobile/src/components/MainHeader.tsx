@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Modal, DeviceEventEmitter } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, DeviceEventEmitter } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Menu, Bell, User, LogOut } from 'lucide-react-native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +20,7 @@ type NotificationSummary = {
 
 export const MainHeader = ({ navigation, title, currentRouteName }: MainHeaderProps) => {
   const { logout, user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const superTitleText = user?.role === 'STUDENT' ? 'NURSING STUDENT WORKSPACE' : 'CLINICAL INSTRUCTOR WORKSPACE';
@@ -48,7 +50,7 @@ export const MainHeader = ({ navigation, title, currentRouteName }: MainHeaderPr
   }, [currentRouteName, user?.id]);
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { paddingTop: insets.top + 12 }]}>
       <View style={styles.leftSection}>
         <TouchableOpacity 
           style={styles.menuButton} 
@@ -151,7 +153,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20, // rough safe area
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EAECF0',

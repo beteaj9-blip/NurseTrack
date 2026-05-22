@@ -332,16 +332,15 @@ export function ManageUsersContent() {
     event.preventDefault();
     if (!selectedUserForAction) return;
     try {
-      const nextPassword = resetPasswordValue(selectedUserForAction);
-      await resetPassword.mutateAsync({
+      const result = await resetPassword.mutateAsync({
         userId: selectedUserForAction.api.id,
-        password: nextPassword,
       });
-      setMessage(`Password reset to ${nextPassword}.`);
+      const nextPassword = result?.password ?? "";
+      setMessage(nextPassword ? `Password reset to ${nextPassword}.` : "Password reset successfully.");
       showToast({
         variant: "success",
         title: "Password reset",
-        message: `Password was reset to ${nextPassword}.`,
+        message: nextPassword ? `Password was reset to: ${nextPassword}` : "Password was reset successfully.",
       });
       closeActionModal();
     } catch {
@@ -941,17 +940,15 @@ export function ManageUsersContent() {
                 className="flex flex-col min-h-0 overflow-y-auto"
                 onSubmit={handlePasswordReset}
               >
-                <p className="m-0 pt-[1.15rem] px-[1.35rem] pb-0 !text-[#4c5d7d] !text-[0.94rem] !font-bold leading-[1.55]">
-                  Reset the password for{" "}
-                  <strong className="!text-[#111827]">
-                    {selectedUserForAction.name}
-                  </strong>{" "}
-                  to:{" "}
-                  <strong className="!text-[#111827]">
-                    {resetPasswordValue(selectedUserForAction)}
-                  </strong>
-                  .
-                </p>
+                 <p className="m-0 pt-[1.15rem] px-[1.35rem] pb-0 !text-[#4c5d7d] !text-[0.94rem] !font-bold leading-[1.55]">
+                   Reset the password for{" "}
+                   <strong className="!text-[#111827]">
+                     {selectedUserForAction.name}
+                   </strong>{" "}
+                   to the default initials-based password (e.g.{" "}
+                   <strong className="!text-[#111827]">Initials#SchoolID</strong>
+                   ).
+                 </p>
                 <div className="grid grid-cols-2 gap-[0.8rem] m-0 px-[1.35rem] py-[1.1rem] pb-[1.35rem] mt-4 border-t border-[#e5eaf1] bg-[#f8fafc] max-[680px]:grid-cols-1 shrink-0">
                   <button
                     className="inline-flex items-center justify-center w-full min-h-[48px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#111827] !text-[0.95rem] !font-extrabold hover:bg-gray-50 transition-colors cursor-pointer"

@@ -5,20 +5,50 @@ import Link from "next/link";
 import { AuthInfoPanel } from "@/components/ui/AuthInfoPanel";
 import { InputField } from "@/components/ui/InputField";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
+import { apiClient } from "@/core/api/axios";
 
 export default function ForgotPassword() {
-  const [formMessage] = useState("We will send password reset instructions if the account exists.");
+  const [accountId, setAccountId] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [formMessage, setFormMessage] = useState(
+    "We will reset your password if the account exists.",
+  );
+  const [resetPassword, setResetPassword] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!accountId.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+    setResetPassword(null);
+
+    try {
+      const response = await apiClient.post<{ password: string }>(
+        "/users/forgot-password",
+        { accountId: accountId.trim() },
+      );
+      const generatedPassword = response.data?.password;
+      setResetPassword(generatedPassword ?? null);
+      setFormMessage("Password reset successfully. Use the password below to log in.");
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ??
+        "No account found for that school email or ID.";
+      setError(message);
+      setFormMessage("We will reset your password if the account exists.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <main className="w-full min-h-screen grid grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)] max-[820px]:grid-cols-1">
       <AuthInfoPanel
         headline="Recover access to your account securely."
-        description="Enter your registered school email or ID number and follow the reset instructions sent to your account."
-        highlights={["Secure reset", "Account recovery", "Email verification", "Protected access"]}
+        description="Enter your registered school email or ID number to reset your password immediately."
+        highlights={["Secure reset", "Account recovery", "Instant access", "Protected access"]}
       />
 
       <section className="flex flex-col items-center justify-center min-h-screen bg-white p-[clamp(28px,5vw,58px)] overflow-y-auto animate-[panelInRight_720ms_ease_both]" aria-label="Forgot password">
@@ -29,18 +59,69 @@ export default function ForgotPassword() {
           </div>
 
           <form id="forgot-password-form" className="grid gap-[18px]" noValidate onSubmit={handleSubmit}>
-            <InputField label="School email or ID number" id="account-id" name="accountId" type="text" autoComplete="username" placeholder="student@cit.edu" required />
+            <InputField
+              label="School email or ID number"
+              id="account-id"
+              name="accountId"
+              type="text"
+              autoComplete="username"
+              placeholder="student@cit.edu or 23-0509-324"
+              required
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+            />
 
-            <div className="min-h-[42px] border border-[#e4e7ec] rounded-[8px] bg-[#f9fafb] text-[#667085] p-[11px_12px] text-[0.82rem] font-[700] leading-[1.35]" role="status" aria-live="polite">
-              {formMessage}
-            </div>
+            {resetPassword ? (
+              <div
+                className="min-h-[42px] border border-[#d1fadf] rounded-[8px] bg-[#f0fdf4] text-[#027a48] p-[11px_12px] text-[0.82rem] font-[700] leading-[1.35] flex flex-col gap-1"
+                role="status"
+                aria-live="polite"
+              >
+                <span>{formMessage}</span>
+                <span className="text-[1rem] font-[900] tracking-wider mt-1 font-mono">
+                  {resetPassword}
+                </span>
+                <span className="text-[0.75rem] font-[600] text-[#047857] mt-1">
+                  Write this down — you can change it after logging in.
+                </span>
+              </div>
+            ) : error ? (
+              <div
+                className="min-h-[42px] border border-[#fecdca] rounded-[8px] bg-[#fff5f5] text-[#b42318] p-[11px_12px] text-[0.82rem] font-[700] leading-[1.35]"
+                role="alert"
+                aria-live="assertive"
+              >
+                {error}
+              </div>
+            ) : (
+              <div
+                className="min-h-[42px] border border-[#e4e7ec] rounded-[8px] bg-[#f9fafb] text-[#667085] p-[11px_12px] text-[0.82rem] font-[700] leading-[1.35]"
+                role="status"
+                aria-live="polite"
+              >
+                {formMessage}
+              </div>
+            )}
 
-            <PrimaryButton type="submit">Send reset instructions</PrimaryButton>
+            {!resetPassword && (
+              <PrimaryButton type="submit" disabled={isLoading}>
+                {isLoading ? "Resetting…" : "Reset password"}
+              </PrimaryButton>
+            )}
+
+            {resetPassword && (
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center min-h-[48px] px-4 rounded-[10px] bg-[#8A252C] !text-white !text-[0.95rem] !font-[800] no-underline hover:bg-[#6d1d23] transition-all text-center"
+              >
+                Back to Login
+              </Link>
+            )}
           </form>
 
           <div className="flex justify-center gap-[6px] mt-[18px] text-[#667085] text-[0.9rem]">
-            <span>Already have a reset code?</span>
-            <Link href="/reset-password" className="!text-[#8A252C] !font-[800] no-underline hover:underline">Reset password</Link>
+            <span>Remembered your password?</span>
+            <Link href="/" className="!text-[#8A252C] !font-[800] no-underline hover:underline">Sign in</Link>
           </div>
         </div>
       </section>

@@ -32,6 +32,11 @@ public class DutyService {
     private final DutyRepository dutyRepository;
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
+    private final Map<Long, Boolean> activeBroadcastingSignals = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public void setBroadcasting(Long scheduleId, boolean broadcasting) {
+        activeBroadcastingSignals.put(scheduleId, broadcasting);
+    }
 
     public DutyRecord timeIn(DutyRecord record) {
         record.setTimeIn(LocalDateTime.now(APP_ZONE));
@@ -99,12 +104,29 @@ public class DutyService {
                 .orElse(List.of());
     }
 
-    public DutyAttendanceTodayResponse getTodayAttendance(Long userId, Long scheduleId) {
+    public void deleteDutyRecord(Long id) {
+        dutyRepository.deleteById(id);
+    }
+
+    public void resetTodayAttendanceForUser(Long userId) {
+        LocalDate today = LocalDate.now(APP_ZONE);
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59);
+        List<DutyRecord> todaysRecords = dutyRepository.findByStudentIdOrderByTimeInDesc(userId)
+                .stream()
+                .filter(record -> record.getTimeIn() != null
+                        && !record.getTimeIn().isBefore(startOfDay)
+                        && !record.getTimeIn().isAfter(endOfDay))
+                .toList();
+        dutyRepository.deleteAll(todaysRecords);
+    }
+
+    public DutyAttendanceTodayResponse getTodayAttendance(Long userId, Long scheduleId, boolean isMobile) {
         User viewer = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
 
         LocalDate today = LocalDate.now(APP_ZONE);
-        List<Schedule> schedules = getTodaySchedulesForViewer(viewer, today);
+        List<Schedule> schedules = getTodaySchedulesForViewer(viewer, today, isMobile);
 
         List<Schedule> scheduleOptions = uniqueScheduleSessions(schedules);
         return findRequestedSchedule(scheduleOptions, scheduleId)
@@ -172,7 +194,7 @@ public class DutyService {
         return buildAttendanceResponse(schedule, userId, uniqueScheduleSessions(todaysSchedules));
     }
 
-    public DutyAttendanceTodayResponse submitAttendanceForToday(Long userId, Long scheduleId) {
+    public DutyAttendanceTodayResponse submitAttendanceForToday(Long userId, Long scheduleId, boolean isMobile) {
         User viewer = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
 
@@ -181,7 +203,7 @@ public class DutyService {
         }
 
         LocalDate today = LocalDate.now(APP_ZONE);
-        List<Schedule> schedules = getTodaySchedulesForViewer(viewer, today);
+        List<Schedule> schedules = getTodaySchedulesForViewer(viewer, today, isMobile);
         List<Schedule> scheduleOptions = uniqueScheduleSessions(schedules);
         Schedule schedule = findRequestedSchedule(scheduleOptions, scheduleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
@@ -233,12 +255,13 @@ public class DutyService {
         return selectCurrentSchedule(schedules);
     }
 
-    private List<Schedule> getTodaySchedulesForViewer(User viewer, LocalDate today) {
+    private List<Schedule> getTodaySchedulesForViewer(User viewer, LocalDate today, boolean isMobile) {
         if (viewer.getRole() == UserRole.STUDENT) {
             return scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today);
         }
 
-        if (viewer.getRole() == UserRole.INSTRUCTOR) {
+        // On mobile, all non-student roles are treated as instructors: only see their own assigned schedules
+        if (isMobile || viewer.getRole() == UserRole.INSTRUCTOR) {
             return scheduleRepository.findByInstructorIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today);
         }
 
@@ -317,6 +340,8 @@ public class DutyService {
         boolean checkedOut = checkedIn && presentRecords.get(currentStudentId).getTimeOut() != null;
         boolean timeOutOpen = !LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime());
 
+        boolean instructorBroadcasting = activeBroadcastingSignals.getOrDefault(schedule.getId(), false);
+
         return new DutyAttendanceTodayResponse(
                 true,
                 schedule.getId(),
@@ -337,7 +362,8 @@ public class DutyService {
                 sessionStartedAt,
                 scheduleOptions.stream().map(this::toScheduleOption).toList(),
                 students,
-                presentStudents
+                presentStudents,
+                instructorBroadcasting
         );
     }
 

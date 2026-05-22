@@ -24,9 +24,10 @@ public record DutyAttendanceTodayResponse(
         String sessionStartedAt,
         List<DutyAttendanceScheduleOption> scheduleOptions,
         List<DutyAttendanceStudent> students,
-        List<DutyAttendanceStudent> presentStudents
+        List<DutyAttendanceStudent> presentStudents,
+        boolean instructorBroadcasting
 ) {
     public static DutyAttendanceTodayResponse empty() {
-        return new DutyAttendanceTodayResponse(false, null, null, null, null, null, null, null, null, 0, 0, 0, false, false, false, false, null, List.of(), List.of(), List.of());
+        return new DutyAttendanceTodayResponse(false, null, null, null, null, null, null, null, null, 0, 0, 0, false, false, false, false, null, List.of(), List.of(), List.of(), false);
     }
 }

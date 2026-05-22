@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Bluetooth, CheckCircle, MapPin, Users } from 'lucide-react-native';
+import { CheckCircle, MapPin, Users, Bluetooth } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { SlideUpView } from '../../components/SlideUpView';
+import { BluetoothService } from '../../services/BluetoothService';
 
 interface AttendanceStudent {
   studentId: number;
@@ -49,6 +50,7 @@ interface AttendanceToday {
   scheduleOptions: AttendanceScheduleOption[];
   students: AttendanceStudent[];
   presentStudents: AttendanceStudent[];
+  instructorBroadcasting?: boolean;
 }
 
 interface ScheduleData {
@@ -156,8 +158,18 @@ export const DutyAttendanceScreen = () => {
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
   const [scheduleChoices, setScheduleChoices] = useState<AttendanceScheduleOption[]>([]);
   const [attendanceCache, setAttendanceCache] = useState<Record<number, AttendanceToday>>({});
+  const [isSessionDisconnected, setIsSessionDisconnected] = useState(false);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const refreshRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = BluetoothService.subscribeToState((state) => {
+      setIsBluetoothOn(state);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   const fetchAttendance = async (silent = false, scheduleId = selectedScheduleId) => {
     if (!silent) setIsLoading(true);
@@ -177,8 +189,16 @@ export const DutyAttendanceScreen = () => {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
       }
       if (!scheduleId && response.data.scheduleId) setSelectedScheduleId(response.data.scheduleId);
-      if (response.data.checkedIn) setStudentStatus('connected');
-      else if (studentStatus === 'connected') setStudentStatus('ready');
+      if (response.data.checkedIn) {
+        if (studentStatus !== 'scanning' && studentStatus !== 'found') {
+          setStudentStatus('connected');
+        }
+        if (response.data.checkedOut === false && response.data.instructorBroadcasting === false) {
+          setIsSessionDisconnected(true);
+        }
+      } else if (studentStatus === 'connected') {
+        setStudentStatus('ready');
+      }
     } catch (error) {
       console.log('Failed to fetch attendance schedule', error);
       setAttendance(null);
@@ -253,6 +273,17 @@ export const DutyAttendanceScreen = () => {
     };
   }, []);
 
+  const updateTeacherBroadcasting = async (broadcasting: boolean, scheduleId: number) => {
+    try {
+      await api.post('/duties/attendance/broadcast', {
+        scheduleId,
+        broadcasting,
+      });
+    } catch (error) {
+      console.log('Failed to update teacher broadcasting status', error);
+    }
+  };
+
   const promptEnableBluetooth = (context: BluetoothPromptContext) => {
     Alert.alert(
       'Bluetooth Required',
@@ -262,7 +293,29 @@ export const DutyAttendanceScreen = () => {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Open Settings', onPress: () => void openBluetoothSettings() },
-        { text: "I've Turned It On", onPress: () => setIsBluetoothOn(true) },
+        {
+          text: "I've Turned It On",
+          onPress: () => {
+            if (BluetoothService.isRealBleAvailable()) {
+              void BluetoothService.checkBluetoothState().then((state) => {
+                setIsBluetoothOn(state);
+                if (state) {
+                  if (context === 'instructor' && effectiveScheduleId) {
+                    void updateTeacherBroadcasting(true, effectiveScheduleId);
+                  }
+                } else {
+                  Alert.alert('Bluetooth Offline', 'Please enable Bluetooth in your device settings first.');
+                }
+              });
+            } else {
+              setIsBluetoothOn(true);
+              BluetoothService.setSimulatedState(true);
+              if (context === 'instructor' && effectiveScheduleId) {
+                void updateTeacherBroadcasting(true, effectiveScheduleId);
+              }
+            }
+          },
+        },
       ]
     );
   };
@@ -288,7 +341,12 @@ export const DutyAttendanceScreen = () => {
 
   useEffect(() => {
     if (refreshRef.current) clearInterval(refreshRef.current);
-    if (!isTeacher || !effectiveScheduleId || !isBluetoothOn) {
+    
+    const shouldPoll = isTeacher
+      ? (effectiveScheduleId && isBluetoothOn)
+      : (effectiveScheduleId && checkedIn && !checkedOut);
+
+    if (!shouldPoll) {
       refreshRef.current = null;
       return;
     }
@@ -297,7 +355,7 @@ export const DutyAttendanceScreen = () => {
     return () => {
       if (refreshRef.current) clearInterval(refreshRef.current);
     };
-  }, [effectiveScheduleId, isBluetoothOn, isTeacher]);
+  }, [effectiveScheduleId, isBluetoothOn, isTeacher, checkedIn, checkedOut]);
 
   const requireSchedule = () => {
     if (hasUsableSchedule) return true;
@@ -322,19 +380,64 @@ export const DutyAttendanceScreen = () => {
   };
 
   const handleScan = () => {
+    if (studentStatus === 'scanning') {
+      if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+      setStudentStatus(checkedIn ? 'connected' : 'ready');
+      return;
+    }
+    if (!isBluetoothOn) {
+      promptEnableBluetooth('student');
+      return;
+    }
     if (checkedOut) {
       setStudentStatus('connected');
       return;
     }
-    if (needsTimeOut && !canTimeOut) {
+    if (needsTimeOut && !canTimeOut && !isActiveSessionDisconnected) {
       Alert.alert('Time Out Not Open', 'You can time out once the scheduled duty end time is reached.');
       setStudentStatus('connected');
       return;
     }
-    if (!ensureBluetoothEnabled('student')) return;
     setStudentStatus('scanning');
     if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-    scanTimeoutRef.current = setTimeout(() => setStudentStatus('found'), 1400);
+    scanTimeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await api.get<AttendanceToday>('/duties/attendance/today', {
+          params: effectiveScheduleId ? { scheduleId: effectiveScheduleId } : undefined,
+        });
+        setAttendance(response.data);
+        if (response.data.scheduleId) {
+          setAttendanceCache((current) => ({
+            ...current,
+            [response.data.scheduleId as number]: response.data,
+          }));
+        }
+
+        if (response.data.instructorBroadcasting === true) {
+          if (checkedIn && !canTimeOut) {
+            setStudentStatus('connected');
+            setIsSessionDisconnected(false);
+            Alert.alert('Session Reconnected', 'You have successfully reconnected to your Clinical Instructor.');
+          } else {
+            setStudentStatus('found');
+            setIsSessionDisconnected(false);
+          }
+        } else {
+          setStudentStatus(checkedIn ? 'connected' : 'ready');
+          Alert.alert(
+            'Instructor Signal Not Found',
+            "We couldn't detect your Clinical Instructor's Bluetooth signal. Make sure your instructor has turned on their Bluetooth signal and try again."
+          );
+        }
+      } catch (error) {
+        console.log('Failed to verify instructor signal during scan', error);
+        setStudentStatus(checkedIn ? 'connected' : 'ready');
+        Alert.alert(
+          'Connection Error',
+          'Failed to scan nearby devices. Please check your connection and try again.'
+        );
+      }
+    }, 1400);
   };
 
   const handleConnect = async () => {
@@ -352,6 +455,7 @@ export const DutyAttendanceScreen = () => {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
       }
       setStudentStatus('connected');
+      setIsSessionDisconnected(false);
     } catch (error) {
       console.log('Failed to record attendance', error);
       Alert.alert('Attendance Not Recorded', needsTimeOut ? 'Please make sure time out is open and try again.' : 'Please make sure you are assigned to today\'s duty schedule and try again.');
@@ -385,7 +489,15 @@ export const DutyAttendanceScreen = () => {
 
   const handleTeacherBluetooth = () => {
     if (isBluetoothOn) {
+      if (BluetoothService.isRealBleAvailable()) {
+        Alert.alert('Turn Off Bluetooth', 'Please turn off Bluetooth in your device settings to host offline.');
+        return;
+      }
       setIsBluetoothOn(false);
+      BluetoothService.setSimulatedState(false);
+      if (effectiveScheduleId) {
+        void updateTeacherBroadcasting(false, effectiveScheduleId);
+      }
       return;
     }
     if (!requireSchedule()) return;
@@ -394,9 +506,16 @@ export const DutyAttendanceScreen = () => {
   };
 
   const handleSelectSchedule = (scheduleId: number) => {
+    if (isTeacher && isBluetoothOn && effectiveScheduleId) {
+      void updateTeacherBroadcasting(false, effectiveScheduleId);
+    }
     setSelectedScheduleId(scheduleId);
-    setIsBluetoothOn(false);
+    if (!BluetoothService.isRealBleAvailable()) {
+      setIsBluetoothOn(false);
+      BluetoothService.setSimulatedState(false);
+    }
     setStudentStatus('ready');
+    setIsSessionDisconnected(false);
     if (attendanceCache[scheduleId]) {
       setAttendance(attendanceCache[scheduleId]);
       return;
@@ -404,6 +523,27 @@ export const DutyAttendanceScreen = () => {
     setAttendance(null);
     void fetchAttendance(true, scheduleId);
   };
+
+  useEffect(() => {
+    if (isTeacher && !isBluetoothOn && effectiveScheduleId) {
+      void updateTeacherBroadcasting(false, effectiveScheduleId);
+    }
+    return () => {
+      if (isTeacher && isBluetoothOn && effectiveScheduleId) {
+        void updateTeacherBroadcasting(false, effectiveScheduleId);
+      }
+    };
+  }, [isTeacher, isBluetoothOn, effectiveScheduleId]);
+
+  useEffect(() => {
+    if (checkedIn && !checkedOut) {
+      if (!isBluetoothOn) {
+        setIsSessionDisconnected(true);
+      }
+    } else {
+      setIsSessionDisconnected(false);
+    }
+  }, [checkedIn, checkedOut, isBluetoothOn]);
 
   const locationLabel = hasUsableSchedule ? `${selectedAttendance?.hospital ?? selectedOption?.hospital} - ${selectedAttendance?.ward ?? selectedOption?.ward}` : 'No duty schedule today';
   const scheduleTime = hasUsableSchedule ? `${formatTime(selectedAttendance?.startTime ?? selectedOption?.startTime)} - ${formatTime(selectedAttendance?.endTime ?? selectedOption?.endTime)}` : '--';
@@ -413,17 +553,70 @@ export const DutyAttendanceScreen = () => {
   const presentStudents = selectedAttendance?.presentStudents ?? [];
   const progressPercent = scheduledCount > 0 ? Math.min(100, (presentCount / scheduledCount) * 100) : 0;
   const teacherSubmitDisabled = isLoading || isSubmitting || !hasUsableSchedule || !hasChosenSchedule || presentCount === 0 || selectedAttendance?.submitted || !localTimeOutOpen;
+
+  const isActiveSessionDisconnected = isSessionDisconnected;
+
+  const isSignalPanelHidden = checkedIn && studentStatus !== 'scanning' && studentStatus !== 'found' && !isActiveSessionDisconnected;
+
   const studentHeroLabel = isLoading
     ? 'Scan for Clinical Instructor'
-    : !hasUsableSchedule
-    ? 'No Schedule Today'
-    : !hasChosenSchedule
-      ? 'Choose Schedule First'
-      : checkedOut
-        ? 'Time Out Recorded'
-        : needsTimeOut
-          ? canTimeOut ? 'Scan to Time Out' : 'Time In Recorded'
-          : 'Scan for Clinical Instructor';
+    : studentStatus === 'scanning'
+      ? 'Stop Scan'
+      : !hasUsableSchedule
+      ? 'No Schedule Today'
+      : !hasChosenSchedule
+        ? 'Choose Schedule First'
+        : checkedOut
+          ? 'Time Out Recorded'
+          : isActiveSessionDisconnected
+            ? 'Scan to Reconnect'
+            : needsTimeOut
+              ? canTimeOut ? 'Scan to Time Out' : 'Time In Recorded'
+              : 'Scan for Clinical Instructor';
+
+  const getStudentInfoTitle = () => {
+    if (isLoading) return 'Ready to scan';
+    if (!hasUsableSchedule) return 'No schedule today';
+    if (checkedOut) return 'Time out recorded';
+    if (isActiveSessionDisconnected) return 'Active Session - Bluetooth Disconnected';
+
+    switch (studentStatus) {
+      case 'scanning':
+        return 'Scanning nearby';
+      case 'found':
+        return 'Clinical instructor device found';
+      case 'connected':
+        return checkedIn ? 'Time in recorded' : 'Attendance recorded';
+      case 'ready':
+      default:
+        return 'Ready to scan';
+    }
+  };
+
+  const getStudentInfoBody = () => {
+    if (isLoading) return 'Tap scan once your assigned duty schedule is ready.';
+    if (!hasUsableSchedule) return 'There is no assigned duty schedule available for attendance today.';
+    if (checkedOut) return 'Your duty time out has been saved for this session.';
+    if (isActiveSessionDisconnected) {
+      return 'You have an active duty session, but you are not connected to Bluetooth. You must turn on Bluetooth or connect back to your Clinical Instructor to perform a Time Out.';
+    }
+
+    switch (studentStatus) {
+      case 'scanning':
+        return 'Keep your phone nearby while NurseTrack searches for the active session.';
+      case 'found':
+        return needsTimeOut
+          ? 'A clinical instructor session is available. Connect to record your time out.'
+          : 'A clinical instructor session is available. Connect to record your time in.';
+      case 'connected':
+        return 'Your duty time in has been saved for this session.';
+      case 'ready':
+      default:
+        return needsTimeOut
+          ? 'Your time in is saved. Scan again after the scheduled end time to record time out.'
+          : 'Tap scan to find the active clinical instructor device nearby.';
+    }
+  };
 
   if (isTeacher) {
     return (
@@ -435,7 +628,15 @@ export const DutyAttendanceScreen = () => {
           <Text style={styles.heroTitle}>Host attendance{String.fromCharCode(10)}signal</Text>
           <TouchableOpacity style={[styles.primaryHeroButton, (isLoading || !hasUsableSchedule) && styles.disabledButton]} onPress={handleTeacherBluetooth} disabled={isLoading}>
             <Text style={styles.primaryHeroButtonText}>
-              {isLoading ? 'Turn Bluetooth On' : hasUsableSchedule ? (hasChosenSchedule ? (isBluetoothOn ? 'Turn Bluetooth Off' : 'Turn Bluetooth On') : 'Choose Schedule First') : 'No Schedule Today'}
+              {isLoading 
+                ? 'Turn Bluetooth On' 
+                : hasUsableSchedule 
+                  ? (hasChosenSchedule 
+                    ? (isBluetoothOn 
+                      ? (BluetoothService.isRealBleAvailable() ? 'Device Bluetooth On' : 'Turn Bluetooth Off') 
+                      : 'Turn Bluetooth On') 
+                    : 'Choose Schedule First') 
+                  : 'No Schedule Today'}
             </Text>
           </TouchableOpacity>
           <Text style={styles.heroDescription}>
@@ -522,13 +723,18 @@ export const DutyAttendanceScreen = () => {
         <Text style={styles.heroKicker}>STUDENT VIEW</Text>
         <Text style={styles.heroTitle}>Scan and mark{String.fromCharCode(10)}attendance</Text>
         <TouchableOpacity
-          style={[styles.primaryHeroButton, (isLoading || !hasUsableSchedule || checkedOut || (needsTimeOut && !canTimeOut)) && styles.disabledButton]}
+          style={[styles.primaryHeroButton, (isLoading || !hasUsableSchedule || checkedOut || (needsTimeOut && !canTimeOut && studentStatus !== 'scanning' && !isActiveSessionDisconnected)) && styles.disabledButton]}
           onPress={handleScan}
-          disabled={isLoading || studentStatus === 'scanning'}
+          disabled={isLoading}
         >
-          {studentStatus === 'scanning'
-            ? <ActivityIndicator color="#111827" />
-            : <Text style={styles.primaryHeroButtonText}>{studentHeroLabel}</Text>}
+          {studentStatus === 'scanning' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ActivityIndicator color="#111827" size="small" />
+              <Text style={styles.primaryHeroButtonText}>{studentHeroLabel}</Text>
+            </View>
+          ) : (
+            <Text style={styles.primaryHeroButtonText}>{studentHeroLabel}</Text>
+          )}
         </TouchableOpacity>
         <Text style={styles.heroDescription}>
           {isLoading || hasUsableSchedule
@@ -539,32 +745,105 @@ export const DutyAttendanceScreen = () => {
 
       {hasMultipleSchedules && <ScheduleChooser options={displayedScheduleOptions} selectedScheduleId={effectiveScheduleId} onSelect={handleSelectSchedule} formatTime={formatTime} />}
 
-      <View style={styles.signalPanel}>
-        <View style={styles.gridOverlay}>
-          {Array.from({ length: 8 }).map((_, index) => <View key={`v-${index}`} style={[styles.gridLineVertical, { left: `${index * 14}%` }]} />)}
-          {Array.from({ length: 5 }).map((_, index) => <View key={`h-${index}`} style={[styles.gridLineHorizontal, { top: `${index * 24}%` }]} />)}
+      {hasUsableSchedule && (
+        <View style={styles.bluetoothStatusCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={[styles.bluetoothIconCircle, isBluetoothOn ? styles.bluetoothActive : styles.bluetoothInactive]}>
+                <Bluetooth color={isBluetoothOn ? '#FFFFFF' : '#64748B'} size={20} />
+              </View>
+              <View>
+                <Text style={styles.bluetoothCardTitle}>
+                  {BluetoothService.isRealBleAvailable() ? 'Device Bluetooth' : 'Simulated Bluetooth'}
+                </Text>
+                <Text style={styles.bluetoothCardStatus}>
+                  {isBluetoothOn 
+                    ? (BluetoothService.isRealBleAvailable() ? 'Hardware Connected' : 'Active & Discoverable') 
+                    : (BluetoothService.isRealBleAvailable() ? 'Hardware Disabled' : 'Disabled / Off')}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.bluetoothToggleBtn, isBluetoothOn ? styles.bluetoothToggleBtnActive : styles.bluetoothToggleBtnInactive]}
+              onPress={() => {
+                if (BluetoothService.isRealBleAvailable()) {
+                  if (isBluetoothOn) {
+                    Alert.alert('Turn Off Bluetooth', 'Please turn off Bluetooth in your device settings.');
+                  } else {
+                    void openBluetoothSettings();
+                  }
+                  return;
+                }
+                const nextState = !isBluetoothOn;
+                setIsBluetoothOn(nextState);
+                BluetoothService.setSimulatedState(nextState);
+                if (!nextState) {
+                  if (checkedIn && !checkedOut) {
+                    setIsSessionDisconnected(true);
+                  }
+                  if (studentStatus === 'scanning' || studentStatus === 'found') {
+                    setStudentStatus(checkedIn ? 'connected' : 'ready');
+                  }
+                }
+              }}
+            >
+              <Text style={[styles.bluetoothToggleBtnText, isBluetoothOn ? styles.bluetoothToggleBtnTextActive : styles.bluetoothToggleBtnTextInactive]}>
+                {BluetoothService.isRealBleAvailable() ? (isBluetoothOn ? 'Device On' : 'Turn On') : (isBluetoothOn ? 'Turn Off' : 'Turn On')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <Bluetooth color="#8A252C" size={42} opacity={studentStatus === 'ready' ? 0.22 : 0.55} />
-      </View>
+      )}
 
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>
-          {!isLoading && !hasUsableSchedule && 'No schedule today'}
-          {isLoading && 'Ready to scan'}
-          {!isLoading && hasUsableSchedule && studentStatus === 'ready' && 'Ready to scan'}
-          {!isLoading && hasUsableSchedule && studentStatus === 'scanning' && 'Scanning nearby'}
-          {!isLoading && hasUsableSchedule && studentStatus === 'found' && 'Clinical instructor device found'}
-          {!isLoading && hasUsableSchedule && studentStatus === 'connected' && (checkedOut ? 'Time out recorded' : checkedIn ? 'Time in recorded' : 'Attendance recorded')}
-        </Text>
-        <Text style={styles.infoBody}>
-          {isLoading && 'Tap scan once your assigned duty schedule is ready.'}
-          {!isLoading && !hasUsableSchedule && 'There is no assigned duty schedule available for attendance today.'}
-          {!isLoading && hasUsableSchedule && studentStatus === 'ready' && (needsTimeOut ? 'Your time in is saved. Scan again after the scheduled end time to record time out.' : 'Tap scan to find the active clinical instructor device nearby.')}
-          {!isLoading && hasUsableSchedule && studentStatus === 'scanning' && 'Keep your phone nearby while NurseTrack searches for the active session.'}
-          {!isLoading && hasUsableSchedule && studentStatus === 'found' && (needsTimeOut ? 'A clinical instructor session is available. Connect to record your time out.' : 'A clinical instructor session is available. Connect to record your time in.')}
-          {!isLoading && hasUsableSchedule && studentStatus === 'connected' && (checkedOut ? 'Your duty time out has been saved for this session.' : 'Your duty time in has been saved for this session.')}
-        </Text>
-        {studentStatus === 'found' && (
+      {!isSignalPanelHidden && (
+        <View style={styles.signalPanel}>
+          <View style={styles.gridOverlay}>
+            {Array.from({ length: 8 }).map((_, index) => <View key={`v-${index}`} style={[styles.gridLineVertical, { left: `${index * 14}%` }]} />)}
+            {Array.from({ length: 5 }).map((_, index) => <View key={`h-${index}`} style={[styles.gridLineHorizontal, { top: `${index * 24}%` }]} />)}
+          </View>
+          <View style={styles.ciInfoRow}>
+            {isLoading ? (
+              <>
+                <SkeletonBlock width={48} height={48} radius={24} />
+                <SkeletonBlock width={120} height={14} radius={7} style={{ marginTop: 8 }} />
+              </>
+            ) : hasUsableSchedule ? (
+              !isBluetoothOn ? (
+                <>
+                  <Bluetooth color="#64748B" size={42} opacity={0.3} />
+                  <Text style={styles.ciNameLabel}>Bluetooth Off</Text>
+                  <Text style={styles.ciSubLabel}>Turn on Bluetooth to scan</Text>
+                </>
+              ) : studentStatus === 'found' ? (
+                <>
+                  <PersonAvatar name={selectedAttendance?.instructorName ?? selectedOption?.instructorName ?? 'CI'} imageUrl={undefined} size={48} />
+                  <Text style={styles.ciNameLabel} numberOfLines={1}>
+                    {selectedAttendance?.instructorName ?? selectedOption?.instructorName ?? 'Assigned Instructor'}
+                  </Text>
+                  <Text style={styles.ciSubLabel}>Clinical Instructor</Text>
+                </>
+              ) : studentStatus === 'scanning' ? (
+                <>
+                  <ActivityIndicator color="#8A252C" size="large" />
+                  <Text style={styles.ciNameLabel}>Searching...</Text>
+                  <Text style={styles.ciSubLabel}>Scanning for Instructor signal</Text>
+                </>
+              ) : (
+                <>
+                  <Bluetooth color="#8A252C" size={42} opacity={0.3} />
+                  <Text style={styles.ciNameLabel}>Signal Offline</Text>
+                  <Text style={styles.ciSubLabel}>Ready to Scan</Text>
+                </>
+              )
+            ) : null}
+          </View>
+        </View>
+      )}
+
+      <View style={[styles.infoCard, isSignalPanelHidden && { marginTop: 14 }]}>
+        <Text style={styles.infoTitle}>{getStudentInfoTitle()}</Text>
+        <Text style={styles.infoBody}>{getStudentInfoBody()}</Text>
+        {studentStatus === 'found' && !isActiveSessionDisconnected && (
           <TouchableOpacity style={styles.connectButton} onPress={handleConnect} disabled={isSubmitting}>
             {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>{needsTimeOut ? 'Connect and Time Out' : 'Connect and Time In'}</Text>}
           </TouchableOpacity>
@@ -623,14 +902,15 @@ const ScheduleChooser = ({
   </View>
 );
 
-const PersonAvatar = ({ name, imageUrl }: { name: string; imageUrl?: string }) => {
+const PersonAvatar = ({ name, imageUrl, size = 34 }: { name: string; imageUrl?: string; size?: number }) => {
+  const radius = size / 2;
   if (imageUrl) {
-    return <Image source={{ uri: imageUrl }} style={styles.personImage} />;
+    return <Image source={{ uri: imageUrl }} style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#E5E7EB' }} />;
   }
 
   return (
-    <View style={styles.personFallbackAvatar}>
-      <Text style={styles.personFallbackText}>{initialsFor(name)}</Text>
+    <View style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#FFCF01', justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#111827', fontSize: size * 0.35, fontWeight: '900' }}>{initialsFor(name)}</Text>
     </View>
   );
 };
@@ -693,6 +973,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  secondaryHeroButton: {
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  secondaryHeroButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
   disabledButton: {
     opacity: 0.72,
@@ -813,7 +1108,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   signalPanel: {
-    minHeight: 112,
+    minHeight: 160,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#D8DFEA',
@@ -824,6 +1119,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 10,
+    paddingVertical: 18,
   },
   gridOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -997,5 +1294,84 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     paddingVertical: 12,
+  },
+  ciInfoRow: {
+    alignItems: 'center',
+    gap: 4,
+    zIndex: 1,
+  },
+  ciNameLabel: {
+    color: '#111827',
+    fontSize: 15,
+    fontWeight: '900',
+    marginTop: 4,
+    textAlign: 'center',
+    maxWidth: 220,
+  },
+  ciSubLabel: {
+    color: '#8A252C',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  bluetoothStatusCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#D8DFEA',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 0,
+  },
+  bluetoothIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bluetoothActive: {
+    backgroundColor: '#2563EB',
+  },
+  bluetoothInactive: {
+    backgroundColor: '#E2E8F0',
+  },
+  bluetoothCardTitle: {
+    color: '#030B1D',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  bluetoothCardStatus: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  bluetoothToggleBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 99,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bluetoothToggleBtnActive: {
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  bluetoothToggleBtnInactive: {
+    backgroundColor: '#2563EB',
+  },
+  bluetoothToggleBtnText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  bluetoothToggleBtnTextActive: {
+    color: '#475569',
+  },
+  bluetoothToggleBtnTextInactive: {
+    color: '#FFFFFF',
   },
 });

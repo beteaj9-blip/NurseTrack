@@ -88,8 +88,8 @@ export const useAdminUpdateUser = () => {
 
 export const useAdminResetPassword = () => {
   return useMutation({
-    mutationFn: async ({ userId, password }: { userId: number; password: string }) => {
-      const { data } = await apiClient.put(`/users/${userId}/password/reset`, { password });
+    mutationFn: async ({ userId }: { userId: number }) => {
+      const { data } = await apiClient.put<{ password: string }>(`/users/${userId}/password/reset`);
       return data;
     },
   });
