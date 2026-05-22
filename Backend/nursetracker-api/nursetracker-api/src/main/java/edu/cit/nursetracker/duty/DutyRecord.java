@@ -49,6 +49,31 @@ public class DutyRecord {
 
     private Double totalHours;
 
+    public Double getTotalHours() {
+        if (this.totalHours != null) {
+            return this.totalHours;
+        }
+        if (this.timeIn != null && this.timeOut == null) {
+            LocalDateTime start = this.timeIn;
+            if (this.schedule != null) {
+                try {
+                    LocalDateTime scheduledStart = this.schedule.getShiftDate().atTime(this.schedule.getStartTime());
+                    if (start.isBefore(scheduledStart)) {
+                        start = scheduledStart;
+                    }
+                } catch (Exception e) {
+                    // Ignore lazy init exception if session is closed
+                }
+            }
+            LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Manila"));
+            if (now.isBefore(start)) {
+                return 0.0;
+            }
+            return java.time.Duration.between(start, now).toMinutes() / 60.0;
+        }
+        return 0.0;
+    }
+
     private LocalDateTime attendanceSubmittedAt;
 
     @Enumerated(EnumType.STRING)

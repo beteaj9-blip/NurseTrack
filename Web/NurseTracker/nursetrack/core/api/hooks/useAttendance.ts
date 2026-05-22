@@ -16,15 +16,6 @@ function formatTime(dateTime?: string) {
 }
 
 function normalizeDuty(record: any) {
-  let computedHours = Number(record.totalHours ?? record.hours ?? 0);
-  if (computedHours === 0 && record.timeIn && !record.timeOut) {
-    const start = Date.parse(record.timeIn);
-    const now = Date.now();
-    if (!Number.isNaN(start) && now > start) {
-      computedHours = (now - start) / (1000 * 60 * 60);
-    }
-  }
-
   return {
     ...record,
     studentId: record.studentId ?? record.student?.id,
@@ -39,7 +30,7 @@ function normalizeDuty(record: any) {
     dutyDate: record.dutyDate ?? formatDate(record.timeIn),
     timeInLabel: record.timeInLabel ?? formatTime(record.timeIn),
     timeOutLabel: record.timeOutLabel ?? formatTime(record.timeOut),
-    hours: computedHours,
+    hours: Number(record.totalHours ?? record.hours ?? 0),
   };
 }
 
