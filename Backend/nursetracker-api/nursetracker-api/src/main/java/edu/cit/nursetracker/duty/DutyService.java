@@ -223,7 +223,12 @@ public class DutyService {
         }
 
         LocalDateTime submittedAt = LocalDateTime.now(APP_ZONE);
-        records.forEach(record -> record.setAttendanceSubmittedAt(submittedAt));
+        records.forEach(record -> {
+            record.setAttendanceSubmittedAt(submittedAt);
+            if (record.getStatus() == DutyStatus.PENDING) {
+                record.setStatus(DutyStatus.VERIFIED);
+            }
+        });
         dutyRepository.saveAll(records);
 
         return buildAttendanceResponse(schedule, null, scheduleOptions);
