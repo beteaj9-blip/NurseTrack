@@ -151,11 +151,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const { data: instructorCases = [] } = useInstructorCases();
   const { data: studentCases = [] } = useStudentCases();
   const { data: allCases = [] } = useAllClinicalCases(routeRole !== "STUDENT" && routeRole !== "INSTRUCTOR", scopedViewerId);
-  const visibleSchedules = React.useMemo(() => {
-    if (routeRole === "INSTRUCTOR") return (schedules as any[]).filter((schedule: any) => String(schedule.instructorId) === String(user?.id));
-    if (routeRole === "STUDENT") return (schedules as any[]).filter((schedule: any) => String(schedule.studentId) === String(user?.id));
-    return schedules as any[];
-  }, [routeRole, schedules, user?.id]);
+  const visibleSchedules = schedules as any[];
   const clinicalCases = routeRole === "INSTRUCTOR" ? instructorCases : routeRole === "STUDENT" ? studentCases : allCases;
   const routeSelectedSchedule = visibleSchedules.find((schedule: any) => String(schedule.id) === selectedScheduleId);
   const selectedDate = selectedDateParam ?? routeSelectedSchedule?.date ?? visibleSchedules[0]?.date;

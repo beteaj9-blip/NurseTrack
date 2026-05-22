@@ -114,12 +114,6 @@ const initialsFor = (name: string) => {
 };
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-const getScheduleEndpoint = (role?: string) => {
-  if (role === 'STUDENT') return '/schedules/student';
-  if (role === 'INSTRUCTOR') return '/schedules/instructor';
-  return '/schedules/all';
-};
-
 const scheduleSessionKey = (schedule: ScheduleData) => [
   schedule.shiftDate ?? schedule.date ?? '',
   schedule.instructor?.id ?? schedule.instructorId ?? 'instructor',
@@ -201,7 +195,7 @@ export const DutyAttendanceScreen = () => {
   const fetchScheduleChoices = async () => {
     const todayKey = toDateKey(new Date());
     try {
-      const response = await api.get<ScheduleData[]>(getScheduleEndpoint(user?.role));
+      const response = await api.get<ScheduleData[]>('/schedules/me');
       const todaySchedules = response.data.filter((schedule) => {
         const date = schedule.shiftDate ?? schedule.date;
         return date === todayKey && schedule.canceled !== true;

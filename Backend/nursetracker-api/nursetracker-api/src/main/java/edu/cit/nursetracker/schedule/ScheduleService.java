@@ -2,6 +2,7 @@ package edu.cit.nursetracker.schedule;
 
 import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.UserRepository;
+import edu.cit.nursetracker.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,12 @@ public class ScheduleService {
 
     public List<Schedule> getInstructorSchedules(Long instructorId) {
         return scheduleRepository.findByInstructorIdOrderByShiftDateAsc(instructorId);
+    }
+
+    public List<Schedule> getMobileSchedules(Long viewerId) {
+        return userRepository.findById(viewerId)
+                .map(viewer -> viewer.getRole() == UserRole.STUDENT ? getStudentSchedules(viewerId) : getInstructorSchedules(viewerId))
+                .orElse(List.of());
     }
 
     public void unassignSchedule(Long scheduleId) {

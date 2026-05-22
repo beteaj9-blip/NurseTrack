@@ -21,7 +21,7 @@ export const MainHeader = ({ navigation, title, currentRouteName }: MainHeaderPr
   const { logout, user } = useAuth();
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const superTitleText = user?.role === 'STUDENT' ? 'NURSING STUDENT WORKSPACE' : 'TEACHER WORKSPACE';
+  const superTitleText = user?.role === 'STUDENT' ? 'NURSING STUDENT WORKSPACE' : 'CLINICAL INSTRUCTOR WORKSPACE';
   const isNotificationActive = currentRouteName === 'Notification';
   const isProfileActive = currentRouteName === 'Profile';
 

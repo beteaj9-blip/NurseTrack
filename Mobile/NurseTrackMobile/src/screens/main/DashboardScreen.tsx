@@ -27,12 +27,6 @@ interface DashboardSchedule {
   canceled?: boolean;
 }
 
-const getScheduleEndpoint = (role?: string) => {
-  if (role === 'STUDENT') return '/schedules/student';
-  if (role === 'INSTRUCTOR') return '/schedules/instructor';
-  return '/schedules/all';
-};
-
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const scheduleDate = (schedule: DashboardSchedule) => schedule.shiftDate ?? schedule.date;
@@ -62,7 +56,7 @@ export const DashboardScreen = () => {
     const loadDashboardData = async () => {
       try {
         const [scheduleResponse, notificationResponse] = await Promise.all([
-          api.get<DashboardSchedule[]>(getScheduleEndpoint(user?.role)),
+          api.get<DashboardSchedule[]>('/schedules/me'),
           api.get<{ unreadCount?: number }>('/notifications/me/count'),
         ]);
 

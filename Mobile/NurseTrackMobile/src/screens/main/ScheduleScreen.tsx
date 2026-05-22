@@ -81,12 +81,6 @@ const formatMonthShort = (date: Date) => {
 
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-const getScheduleEndpoint = (role?: string) => {
-  if (role === 'STUDENT') return '/schedules/student';
-  if (role === 'INSTRUCTOR') return '/schedules/instructor';
-  return '/schedules/all';
-};
-
 const normalizeSchedule = (schedule: ScheduleData): ScheduleData => ({
   ...schedule,
   hospital: schedule.hospital ?? '',
@@ -158,7 +152,7 @@ export const ScheduleScreen = () => {
     setIsRefreshing(true);
 
     try {
-      const response = await api.get<ScheduleData[]>(getScheduleEndpoint(user?.role));
+      const response = await api.get<ScheduleData[]>('/schedules/me');
       setSchedules(response.data.map(normalizeSchedule));
     } catch (e) {
       console.log('Failed to fetch schedules from backend', e);

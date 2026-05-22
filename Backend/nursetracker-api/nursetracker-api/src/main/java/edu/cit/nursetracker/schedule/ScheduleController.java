@@ -62,6 +62,11 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.getInstructorSchedules(jwtService.getUserId(request)));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<List<Schedule>> getCurrentMobileSchedules(HttpServletRequest request) {
+        return ResponseEntity.ok(scheduleService.getMobileSchedules(jwtService.getUserId(request)));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> unassignSchedule(@PathVariable Long id, HttpServletRequest request) {
         if (!canEditSchedules(request)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

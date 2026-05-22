@@ -74,12 +74,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
     user?.id != null ? String(user.id) : undefined,
     routeRole
   );
-  const visibleSchedules = React.useMemo(() => {
-    const records = schedules ?? [];
-    if (routeRole === "INSTRUCTOR") return records.filter((schedule: any) => String(schedule.instructorId) === String(user?.id));
-    if (routeRole === "STUDENT") return records.filter((schedule: any) => String(schedule.studentId) === String(user?.id));
-    return records;
-  }, [routeRole, schedules, user?.id]);
+  const visibleSchedules = schedules ?? [];
 
   // Build a map of dates that have one or more duty groups.
   const scheduleMap = React.useMemo(() => {
