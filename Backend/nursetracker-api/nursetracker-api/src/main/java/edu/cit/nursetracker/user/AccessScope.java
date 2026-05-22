@@ -17,6 +17,7 @@ public final class AccessScope {
         if (viewer == null || target == null) return false;
         if (canViewAll(viewer)) return true;
         if (viewer.getRole() == UserRole.CHAIR || viewer.getRole() == UserRole.ASSISTANT) {
+            if (target.getRole() == UserRole.INSTRUCTOR) return true;
             return intersects(target.getAssignedLevels(), viewer.getAssignedLevels());
         }
         if (viewer.getRole() == UserRole.INSTRUCTOR || viewer.getRole() == UserRole.STUDENT) {

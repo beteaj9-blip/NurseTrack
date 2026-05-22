@@ -148,7 +148,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const updateSchedule = useUpdateSchedule();
   const deleteSchedule = useDeleteSchedule();
   const { data: hospitals = [] } = useHospitals();
-  const { data: instructors = [] } = useInstructors(scopedViewerId);
+  const { data: instructors = [] } = useInstructors();
   const { data: databaseStudents = [] } = useUsers("STUDENT", scopedViewerId, routeRole === "ADMIN" || routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT");
   const { data: instructorCases = [] } = useInstructorCases();
   const { data: studentCases = [] } = useStudentCases();

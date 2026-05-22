@@ -215,7 +215,7 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   const canEdit = basePath === "/admin" || basePath === "/chair" || basePath === "/assistant" || (basePath === "/coordinator" && canUseScheduleMaker);
   const { data: hospitals = [] } = useHospitals();
   const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
-  const { data: instructors = [] } = useInstructors(scopedViewerId);
+  const { data: instructors = [] } = useInstructors();
   const { data: databaseStudents = [] } = useUsers("STUDENT", scopedViewerId);
   const { showToast } = useToast();
   const previewImport = usePreviewScheduleImport();

@@ -859,31 +859,28 @@ export const DutyAttendanceScreen = () => {
     || (needsTimeOut && !canTimeOut && studentStatus !== 'scanning');
   const studentCanRecordAttendance = studentStatus === 'connected' && !checkedOut && (!checkedIn || canTimeOut);
 
-  const studentHeroLabel = isLoading
-    ? 'Scan for Clinical Instructor'
-    : studentStatus === 'scanning'
-      ? 'Stop Scan'
-      : studentStatus === 'connected' && !checkedOut
-        ? connectedSignalText
-      : studentStatus === 'found'
-        ? 'Clinical Instructor Found'
-      : !hasUsableSchedule
-      ? 'No Schedule Today'
-      : !hasChosenSchedule
-        ? 'Choose Schedule First'
-        : isActiveSessionDisconnected && canTimeOut && !isBluetoothOn
-          ? 'Bluetooth Required to Time Out'
-        : isActiveSessionDisconnected && canTimeOut
-          ? 'Scan to Time Out'
-        : isActiveSessionDisconnected
-          ? 'Active Session'
-        : !isBluetoothOn
-          ? 'Bluetooth Required to Scan'
-        : checkedOut
-          ? 'Time Out Recorded'
-          : needsTimeOut
-              ? canTimeOut ? 'Scan to Time Out' : 'Time In Recorded'
-              : 'Scan for Clinical Instructor';
+  const getStudentHeroLabel = () => {
+    if (isLoading) return 'Scan for Clinical Instructor';
+    if (studentStatus === 'scanning') return 'Stop Scan';
+    if (checkedOut) return 'Time Out Recorded';
+
+    if (checkedIn) {
+      if (!canTimeOut) return 'Time In Recorded';
+      if (!isBluetoothOn) return 'Bluetooth Required to Time Out';
+      if (studentStatus === 'connected') return connectedSignalText;
+      if (studentStatus === 'found') return 'Clinical Instructor Found';
+      return 'Scan to Time Out';
+    }
+
+    if (!hasUsableSchedule) return 'No Schedule Today';
+    if (!hasChosenSchedule) return 'Choose Schedule First';
+    if (!isBluetoothOn) return 'Bluetooth Required to Scan';
+    if (studentStatus === 'connected') return connectedSignalText;
+    if (studentStatus === 'found') return 'Clinical Instructor Found';
+    return 'Scan for Clinical Instructor';
+  };
+
+  const studentHeroLabel = getStudentHeroLabel();
 
   const getStudentInfoTitle = () => {
     if (isLoading) return 'Ready to scan';
@@ -1330,6 +1327,12 @@ export const DutyAttendanceScreen = () => {
                   <ActivityIndicator color="#8A252C" size="large" />
                   <Text style={styles.ciNameLabel}>Searching...</Text>
                   <Text style={styles.ciSubLabel}>Scanning for Instructor signal</Text>
+                </>
+              ) : isActiveSessionDisconnected ? (
+                <>
+                  <Bluetooth color="#8A252C" size={42} opacity={0.3} />
+                  <Text style={styles.ciNameLabel}>Active Session</Text>
+                  <Text style={styles.ciSubLabel}>Scan to reconnect</Text>
                 </>
               ) : (
                 <>

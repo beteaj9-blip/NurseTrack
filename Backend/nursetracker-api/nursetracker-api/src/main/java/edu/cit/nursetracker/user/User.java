@@ -32,6 +32,19 @@ public class User {
     @Column(nullable = false)
     private String fullName;
 
+    public void setFullName(String fullName) {
+        if (fullName == null) {
+            this.fullName = null;
+            return;
+        }
+        this.fullName = fullName.replaceAll("(?i)^(?:Admin|Clinical Instructor|Chair|Assistant Coordinator|Student)\\s*\\((.*?)\\)$", "$1").trim();
+    }
+
+    public String getFullName() {
+        if (this.fullName == null) return null;
+        return this.fullName.replaceAll("(?i)^(?:Admin|Clinical Instructor|Chair|Assistant Coordinator|Student)\\s*\\((.*?)\\)$", "$1").trim();
+    }
+
     @Column(nullable = false, unique = true)
     private String email;
 
