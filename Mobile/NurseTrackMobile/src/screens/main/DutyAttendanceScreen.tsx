@@ -122,28 +122,6 @@ const initialsFor = (name: string) => {
 };
 const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-const scheduleSessionKey = (schedule: ScheduleData) => [
-  schedule.shiftDate ?? schedule.date ?? '',
-  schedule.instructor?.id ?? schedule.instructorId ?? 'instructor',
-  schedule.hospital ?? '',
-  schedule.ward ?? schedule.area ?? '',
-  schedule.rawStartTime ?? schedule.startTime ?? '',
-  schedule.rawEndTime ?? schedule.endTime ?? '',
-  schedule.studentSection ?? 'section',
-].join('|');
-
-const toScheduleOption = (schedule: ScheduleData, scheduledStudentCount: number): AttendanceScheduleOption => ({
-  scheduleId: schedule.id,
-  hospital: schedule.hospital ?? '',
-  ward: schedule.ward ?? schedule.area ?? '',
-  shiftDate: schedule.shiftDate ?? schedule.date ?? '',
-  startTime: schedule.rawStartTime ?? schedule.startTime ?? '',
-  endTime: schedule.rawEndTime ?? schedule.endTime ?? '',
-  instructorId: schedule.instructor?.id ?? schedule.instructorId ?? 0,
-  instructorName: schedule.instructor?.fullName ?? schedule.instructorName ?? 'Assigned Instructor',
-  scheduledStudentCount,
-});
-
 const mergeScheduleOptions = (fallbackOptions: AttendanceScheduleOption[], backendOptions: AttendanceScheduleOption[]) => {
   const merged = new Map<number, AttendanceScheduleOption>();
   fallbackOptions.forEach((option) => merged.set(option.scheduleId, option));
@@ -280,6 +258,23 @@ export const DutyAttendanceScreen = () => {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
       }
       if (!scheduleId && response.data.scheduleId) setSelectedScheduleId(response.data.scheduleId);
+      if (!scheduleId && response.data.scheduleOptions && response.data.scheduleOptions.length > 0) {
+        setScheduleChoices(response.data.scheduleOptions);
+        
+        // Background prefetch for other options
+        void Promise.allSettled(response.data.scheduleOptions.map(async (choice) => {
+          if (choice.scheduleId === response.data.scheduleId) return;
+          try {
+            const detailRes = await api.get<AttendanceToday>('/duties/attendance/today', { params: { scheduleId: choice.scheduleId } });
+            if (detailRes.data.scheduleId) {
+              setAttendanceCache((current) => ({ ...current, [detailRes.data.scheduleId as number]: detailRes.data }));
+            }
+          } catch (e) {
+            console.log('Failed to prefetch detail', e);
+          }
+        }));
+      }
+
       if (!isTeacher) {
         if (response.data.checkedIn) {
           if (response.data.checkedOut) {
@@ -331,60 +326,8 @@ export const DutyAttendanceScreen = () => {
     return response.data;
   };
 
-  const fetchScheduleChoices = async () => {
-    const todayKey = toDateKey(new Date());
-    try {
-      const response = await api.get<ScheduleData[]>('/schedules/me');
-      const todaySchedules = response.data.filter((schedule) => {
-        const date = schedule.shiftDate ?? schedule.date;
-        return date === todayKey && schedule.canceled !== true;
-      });
-
-      const groups = new Map<string, { schedule: ScheduleData; studentIds: Set<number> }>();
-      todaySchedules.forEach((schedule) => {
-        const key = scheduleSessionKey(schedule);
-        const existing = groups.get(key) ?? { schedule, studentIds: new Set<number>() };
-        const studentId = schedule.student?.id ?? schedule.studentId;
-        const studentRole = schedule.student?.role;
-        const instructorId = schedule.instructor?.id ?? schedule.instructorId;
-        if (studentId && studentId !== instructorId && studentRole === 'STUDENT') existing.studentIds.add(studentId);
-        groups.set(key, existing);
-      });
-
-      const choices = Array.from(groups.values())
-        .map((group) => toScheduleOption(group.schedule, group.studentIds.size))
-        .sort((first, second) => first.startTime.localeCompare(second.startTime));
-
-      setScheduleChoices(choices);
-      if (!selectedScheduleId && choices.length > 0) {
-        setSelectedScheduleId(choices[0].scheduleId);
-      }
-
-      const details = await Promise.allSettled(choices.map((choice) => fetchAttendanceDetail(choice.scheduleId)));
-      const nextCache: Record<number, AttendanceToday> = {};
-      details.forEach((detail) => {
-        if (detail.status === 'fulfilled' && detail.value.scheduleId && isAttendanceForToday(detail.value)) {
-          nextCache[detail.value.scheduleId] = detail.value;
-        }
-      });
-      setAttendanceCache((current) => ({ ...current, ...nextCache }));
-
-      const defaultScheduleId = selectedScheduleId ?? choices[0]?.scheduleId;
-      if (defaultScheduleId && nextCache[defaultScheduleId]) {
-        setAttendance(nextCache[defaultScheduleId]);
-        if (isTeacher) {
-          setIsHosting(nextCache[defaultScheduleId].instructorBroadcasting === true);
-        }
-      }
-    } catch (error) {
-      console.log('Failed to fetch attendance schedule choices', error);
-      setScheduleChoices([]);
-    }
-  };
-
   useEffect(() => {
     void fetchAttendance();
-    void fetchScheduleChoices();
   }, [user?.role]);
 
   useEffect(() => () => {
@@ -721,8 +664,7 @@ export const DutyAttendanceScreen = () => {
     setIsLoading(true);
     try {
       await Promise.all([
-        fetchAttendance(true), // call silently so fetchAttendance does not toggle isLoading early
-        fetchScheduleChoices()
+        fetchAttendance(true) // call silently so fetchAttendance does not toggle isLoading early
       ]);
     } catch (error) {
       console.log('Refresh failed', error);
