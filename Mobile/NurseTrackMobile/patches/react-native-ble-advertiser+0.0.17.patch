@@ -1,0 +1,73 @@
+diff --git a/node_modules/react-native-ble-advertiser/android/build.gradle b/node_modules/react-native-ble-advertiser/android/build.gradle
+index 2526548..287a659 100644
+--- a/node_modules/react-native-ble-advertiser/android/build.gradle
++++ b/node_modules/react-native-ble-advertiser/android/build.gradle
+@@ -1,18 +1,17 @@
+ apply plugin: 'com.android.library'
+ 
+ android {
+-    compileSdkVersion 28
+-    buildToolsVersion "28.0.3"
++    namespace "com.vitorpamplona.bleadvertiser"
++    compileSdkVersion rootProject.ext.has("compileSdkVersion") ? rootProject.ext.compileSdkVersion : 35
+ 
+     defaultConfig {
+         minSdkVersion 21
+-        targetSdkVersion 28
++        targetSdkVersion rootProject.ext.has("targetSdkVersion") ? rootProject.ext.targetSdkVersion : 35
+         versionCode 1
+         versionName "1.0"
+     }
+ }
+ 
+ dependencies {
+-    implementation 'com.facebook.react:react-native:+'
++    implementation 'com.facebook.react:react-android'
+ }
+-
+diff --git a/node_modules/react-native-ble-advertiser/android/src/main/AndroidManifest.xml b/node_modules/react-native-ble-advertiser/android/src/main/AndroidManifest.xml
+index 5246db1..431ef7b 100644
+--- a/node_modules/react-native-ble-advertiser/android/src/main/AndroidManifest.xml
++++ b/node_modules/react-native-ble-advertiser/android/src/main/AndroidManifest.xml
+@@ -1,5 +1,4 @@
+-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+-          package="com.vitorpamplona.bleavertiser">
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+           <uses-permission android:name="android.permission.BLUETOOTH" />
+           <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+           <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+diff --git a/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserModule.java b/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserModule.java
+index 036de18..9e50717 100644
+--- a/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserModule.java
++++ b/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserModule.java
+@@ -1,4 +1,4 @@
+-package com.vitorpamplona.bleavertiser;
++package com.vitorpamplona.bleadvertiser;
+ 
+ import com.facebook.react.uimanager.*;
+ import com.facebook.react.bridge.*;
+@@ -257,12 +257,12 @@ public class BLEAdvertiserModule extends ReactContextBaseJavaModule {
+         ScanSettings scanSettings = buildScanSettings(options);
+     
+         List<ScanFilter> filters = new ArrayList<>();
+-        if (manufacturerPayload == null)
+-            filters = null;
+         if (manufacturerPayload != null)
+             filters.add(new ScanFilter.Builder().setManufacturerData(companyId, toByteArray(manufacturerPayload)).build());
+         if (uid != null) 
+             filters.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(uid)).build());
++        if (filters.isEmpty())
++            filters = null;
+         
+         mScanner.startScan(filters, scanSettings, mScannerCallback);
+         promise.resolve("Scanner started");
+diff --git a/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserPackage.java b/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserPackage.java
+index 483e522..746ce59 100644
+--- a/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserPackage.java
++++ b/node_modules/react-native-ble-advertiser/android/src/main/java/com/vitorpamplona/bleadvertiser/BLEAdvertiserPackage.java
+@@ -1,4 +1,4 @@
+-package com.vitorpamplona.bleavertiser;
++package com.vitorpamplona.bleadvertiser;
+ 
+ import java.util.Arrays;
+ import java.util.Collections;

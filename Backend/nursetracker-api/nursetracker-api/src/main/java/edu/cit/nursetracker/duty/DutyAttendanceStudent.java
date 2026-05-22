@@ -7,6 +7,7 @@ public record DutyAttendanceStudent(
         String sectionInfo,
         String profileImageUrl,
         String timeIn,
-        String timeOut
+        String timeOut,
+        Long dutyDurationMinutes
 ) {
 }

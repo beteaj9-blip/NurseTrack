@@ -37,6 +37,7 @@ export function LiveAttendanceContent({ basePath }: { basePath?: string } = {}) 
   const [areaFilter, setAreaFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const today = new Date().toISOString().slice(0, 10);
   const todaySchedules = (schedules as any[]).filter((schedule: any) => schedule.date === today && (isAllScope || String(schedule.instructorId) === String(user?.id)));
   const todayAttendance = (attendance as any[]).filter((record: any) => record.dutyDate === today && (isAllScope || String(record.instructorId) === String(user?.id)));
@@ -51,8 +52,10 @@ export function LiveAttendanceContent({ basePath }: { basePath?: string } = {}) 
     area: schedule.area || "Assigned Area",
     ci: record?.instructorName || schedule.instructorName || (!isAllScope ? user?.fullName : undefined) || "Clinical Instructor",
     time: record?.timeInLabel || "Not timed in",
+    timeOut: record?.timeOutLabel || "Not timed out",
     liveMin: record?.timeOutLabel ? "Completed" : record?.timeInLabel ? "Active" : "Waiting",
     status: record?.status || "Not connected",
+    hours: record?.hours ?? 0,
   };
   });
   const filtered = data.filter((item: any) => {
@@ -100,7 +103,7 @@ export function LiveAttendanceContent({ basePath }: { basePath?: string } = {}) 
                   {['No.','Student','Duty Location','Time-In','Connection','Status'].map(h => <span key={h} role="columnheader">{h}</span>)}
                 </div>
                 {filtered.map((item: any, i: number) => (
-                  <div className="grid grid-cols-[44px_minmax(150px,1.2fr)_minmax(160px,1.35fr)_minmax(76px,0.6fr)_minmax(86px,0.7fr)_minmax(92px,0.65fr)] items-center gap-3 border-b border-[#e2e8f0] bg-white p-4 hover:bg-[#f8fafc] last:border-b-0 max-[760px]:grid-cols-[32px_minmax(0,1fr)_auto] max-[760px]:gap-3 max-[760px]:p-3" role="row" key={item.id}>
+                  <div className="grid grid-cols-[44px_minmax(150px,1.2fr)_minmax(160px,1.35fr)_minmax(76px,0.6fr)_minmax(86px,0.7fr)_minmax(92px,0.65fr)] items-center gap-3 border-b border-[#e2e8f0] bg-white p-4 hover:bg-[#f8fafc] last:border-b-0 max-[760px]:grid-cols-[32px_minmax(0,1fr)_auto] max-[760px]:gap-3 max-[760px]:p-3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#8A252C]/20" role="row" key={item.id} tabIndex={0} onClick={() => setSelectedSession(item)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedSession(item); }}>
                     <span role="cell" className="w-[32px] h-[32px] rounded-full border border-[#8a252c]/16 bg-[#f8fafc] grid place-items-center !text-[#8A252C] !text-[0.82rem] !font-[900]">{i+1}.</span>
                     <span role="cell" className="flex min-w-0 items-center gap-[10px]"><ProfileAvatar name={item.name} imageUrl={item.profileImageUrl} size={42} /><div className="min-w-0"><strong className="block truncate !text-[#111827] !text-[0.88rem] !font-[900] max-[760px]:whitespace-normal max-[760px]:break-words">{item.name}</strong><small className="block truncate !text-[#64748b] !text-[0.74rem] !font-[800] max-[760px]:whitespace-normal max-[760px]:break-words">{item.section}</small></div></span>
                     <span role="cell" className="min-w-0 max-[760px]:col-start-2 max-[760px]:col-span-2"><strong className="block truncate !text-[#111827] !text-[0.88rem] max-[760px]:whitespace-normal max-[760px]:break-words">{item.site}</strong><small className="block truncate !text-[#64748b] !text-[0.74rem] !font-[800] max-[760px]:whitespace-normal max-[760px]:break-words">{item.area}</small><small className="block truncate !text-[#64748b] !text-[0.74rem] !font-[800] max-[760px]:whitespace-normal max-[760px]:break-words">CI: {item.ci}</small></span>
@@ -110,6 +113,34 @@ export function LiveAttendanceContent({ basePath }: { basePath?: string } = {}) 
                   </div>
                 ))}
               </div>
+              {selectedSession && (
+                <div className="mt-4 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="m-0 !text-[#475569] !text-[0.72rem] !font-[900] uppercase">Session Details</p>
+                      <h3 className="m-0 mt-1 !text-[#111827] !text-[1rem] !font-[900]">{selectedSession.name}</h3>
+                      <p className="m-0 mt-1 !text-[#64748b] !text-[0.82rem] !font-[800]">{selectedSession.section}</p>
+                    </div>
+                    <button type="button" className="rounded-lg border border-[#cbd5e1] bg-white px-3 py-2 !text-[#475569] !text-[0.78rem] !font-[900]" onClick={() => setSelectedSession(null)}>Close</button>
+                  </div>
+                  <div className="mt-4 grid grid-cols-4 gap-3 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">
+                    {[
+                      ["Duty Location", `${selectedSession.site} - ${selectedSession.area}`],
+                      ["Clinical Instructor", selectedSession.ci],
+                      ["Time In", selectedSession.time],
+                      ["Time Out", selectedSession.timeOut],
+                      ["Connection", selectedSession.liveMin],
+                      ["Status", selectedSession.status],
+                      ["Counted Hours", `${Number(selectedSession.hours || 0).toFixed(2)}h`],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-lg border border-[#e2e8f0] bg-white p-3">
+                        <p className="m-0 !text-[#64748b] !text-[0.7rem] !font-[900] uppercase">{label}</p>
+                        <p className="m-0 mt-1 !text-[#111827] !text-[0.9rem] !font-[900]">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {filtered.length === 0 && <div className="p-8 text-center !text-[#64748b] !text-[0.85rem] !font-bold">No scheduled student(s) match the selected filters.</div>}
             </>
           )}

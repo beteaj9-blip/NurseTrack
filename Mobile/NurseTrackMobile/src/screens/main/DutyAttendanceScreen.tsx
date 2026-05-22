@@ -15,6 +15,7 @@ interface AttendanceStudent {
   profileImageUrl?: string;
   timeIn?: string;
   timeOut?: string;
+  dutyDurationMinutes?: number;
 }
 
 interface AttendanceScheduleOption {
@@ -51,6 +52,9 @@ interface AttendanceToday {
   students: AttendanceStudent[];
   presentStudents: AttendanceStudent[];
   instructorBroadcasting?: boolean;
+  studentActualTimeIn?: string | null;
+  studentActualTimeOut?: string | null;
+  studentDutyDurationMinutes?: number;
 }
 
 interface ScheduleData {
@@ -95,8 +99,10 @@ const openBluetoothSettings = async () => {
 
 const formatTime = (time?: string | null) => {
   if (!time) return '--';
-  const [hours = '0', minutes = '00'] = time.split(':');
+  const timePart = time.includes('T') ? time.split('T')[1] : time;
+  const [hours = '0', minutes = '00'] = timePart.split(':');
   const hourNumber = Number(hours);
+  if (Number.isNaN(hourNumber)) return '--';
   const period = hourNumber >= 12 ? 'PM' : 'AM';
   const displayHour = hourNumber % 12 || 12;
   return `${displayHour}:${minutes} ${period}`;
@@ -172,6 +178,8 @@ const calculateElapsedMinutes = (sessionStartedAt: string | null, shiftDate: str
   return Math.floor(elapsedMs / (1000 * 60));
 };
 
+const connectedSignalText = 'Connected to Clinical Instructor';
+
 const formatElapsed = (minutes: number): string => {
   if (minutes <= 0) return '0m';
   const hrs = Math.floor(minutes / 60);
@@ -180,6 +188,16 @@ const formatElapsed = (minutes: number): string => {
     return `${hrs}h ${mins}m`;
   }
   return `${mins}m`;
+};
+
+const errorMessage = (error: unknown) => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown Bluetooth error';
+  }
 };
 
 export const DutyAttendanceScreen = () => {
@@ -194,6 +212,7 @@ export const DutyAttendanceScreen = () => {
   const [scheduleChoices, setScheduleChoices] = useState<AttendanceScheduleOption[]>([]);
   const [attendanceCache, setAttendanceCache] = useState<Record<number, AttendanceToday>>({});
   const [isSessionDisconnected, setIsSessionDisconnected] = useState(false);
+  const [verifiedSignalScheduleId, setVerifiedSignalScheduleId] = useState<number | null>(null);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const refreshRef = useRef<NodeJS.Timeout | null>(null);
   const [isHosting, setIsHosting] = useState(false);
@@ -261,15 +280,43 @@ export const DutyAttendanceScreen = () => {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
       }
       if (!scheduleId && response.data.scheduleId) setSelectedScheduleId(response.data.scheduleId);
-      if (response.data.checkedIn) {
-        if (studentStatus !== 'scanning' && studentStatus !== 'found') {
-          setStudentStatus('connected');
+      if (!isTeacher) {
+        if (response.data.checkedIn) {
+          if (response.data.checkedOut) {
+            setStudentStatus('ready');
+            setVerifiedSignalScheduleId(null);
+          } else {
+            const isBroadcasting = response.data.instructorBroadcasting === true;
+            const stillConnected = isBroadcasting && verifiedSignalScheduleId === response.data.scheduleId && isBluetoothOn;
+            
+            if (studentStatus !== 'scanning' && studentStatus !== 'found') {
+              if (stillConnected) {
+                setStudentStatus('connected');
+              } else {
+                setStudentStatus('ready');
+                setVerifiedSignalScheduleId(null);
+              }
+            } else if (!isBroadcasting) {
+              setStudentStatus('ready');
+              setVerifiedSignalScheduleId(null);
+            }
+          }
+        } else {
+          const isBroadcasting = response.data.instructorBroadcasting === true;
+          const stillConnected = isBroadcasting && verifiedSignalScheduleId === response.data.scheduleId && isBluetoothOn;
+          
+          if (studentStatus !== 'scanning' && studentStatus !== 'found') {
+            if (stillConnected) {
+              setStudentStatus('connected');
+            } else {
+              setStudentStatus('ready');
+              setVerifiedSignalScheduleId(null);
+            }
+          } else if (!isBroadcasting) {
+            setStudentStatus('ready');
+            setVerifiedSignalScheduleId(null);
+          }
         }
-        if (response.data.checkedOut === false && response.data.instructorBroadcasting === false) {
-          setIsSessionDisconnected(true);
-        }
-      } else if (studentStatus === 'connected') {
-        setStudentStatus('ready');
       }
     } catch (error) {
       console.log('Failed to fetch attendance schedule', error);
@@ -381,11 +428,7 @@ export const DutyAttendanceScreen = () => {
                 }
                 void BluetoothService.checkBluetoothState().then((state) => {
                   setIsBluetoothOn(state);
-                  if (state) {
-                    if (context === 'instructor' && effectiveScheduleId) {
-                      void updateTeacherBroadcasting(true, effectiveScheduleId);
-                    }
-                  } else {
+                  if (!state) {
                     Alert.alert('Bluetooth Offline', 'Please enable Bluetooth in your device settings first.');
                   }
                 });
@@ -393,9 +436,6 @@ export const DutyAttendanceScreen = () => {
             } else {
               setIsBluetoothOn(true);
               BluetoothService.setSimulatedState(true);
-              if (context === 'instructor' && effectiveScheduleId) {
-                void updateTeacherBroadcasting(true, effectiveScheduleId);
-              }
             }
           },
         },
@@ -462,12 +502,13 @@ export const DutyAttendanceScreen = () => {
     return false;
   };
 
-  const handleScan = () => {
+  const handleScan = async () => {
     if (studentStatus === 'scanning') {
       if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-      setStudentStatus(checkedIn ? 'connected' : 'ready');
+      setStudentStatus('ready');
       return;
     }
+    if (!requireSchedule() || !requireScheduleChoice() || !effectiveScheduleId) return;
     if (!isBluetoothOn) {
       promptEnableBluetooth('student');
       return;
@@ -482,53 +523,72 @@ export const DutyAttendanceScreen = () => {
       return;
     }
     setStudentStatus('scanning');
-    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-    scanTimeoutRef.current = setTimeout(async () => {
-      try {
-        const response = await api.get<AttendanceToday>('/duties/attendance/today', {
-          params: effectiveScheduleId ? { scheduleId: effectiveScheduleId } : undefined,
-        });
-        setAttendance(response.data);
-        if (response.data.scheduleId) {
-          setAttendanceCache((current) => ({
-            ...current,
-            [response.data.scheduleId as number]: response.data,
-          }));
-        }
+    setVerifiedSignalScheduleId(null);
+    try {
+      const response = await api.get<AttendanceToday>('/duties/attendance/today', {
+        params: { scheduleId: effectiveScheduleId },
+      });
+      setAttendance(response.data);
+      if (response.data.scheduleId) {
+        setAttendanceCache((current) => ({
+          ...current,
+          [response.data.scheduleId as number]: response.data,
+        }));
+      }
 
-        if (response.data.instructorBroadcasting === true) {
-          if (checkedIn && !canTimeOut) {
-            setStudentStatus('connected');
-            setIsSessionDisconnected(false);
-            Alert.alert('Session Reconnected', 'You have successfully reconnected to your Clinical Instructor.');
-          } else {
-            setStudentStatus('found');
-            setIsSessionDisconnected(false);
-          }
-        } else {
-          setStudentStatus(checkedIn ? 'connected' : 'ready');
-          Alert.alert(
-            'Instructor Signal Not Found',
-            "We couldn't detect your Clinical Instructor's Bluetooth signal. Make sure your instructor has turned on their Bluetooth signal and try again."
-          );
-        }
-      } catch (error) {
-        console.log('Failed to verify instructor signal during scan', error);
-        setStudentStatus(checkedIn ? 'connected' : 'ready');
+      const foundSignal = await BluetoothService.scanForAttendanceHostSignal(
+        effectiveScheduleId,
+        3500,
+        response.data.instructorBroadcasting === true
+      );
+
+      if (foundSignal) {
+        setVerifiedSignalScheduleId(effectiveScheduleId);
+        setStudentStatus('found');
+        setIsSessionDisconnected(false);
+      } else {
+        setStudentStatus('ready');
         Alert.alert(
-          'Connection Error',
-          'Failed to scan nearby devices. Please check your connection and try again.'
+          'Instructor Signal Not Found',
+          "We couldn't detect your Clinical Instructor's BLE signal. Keep your phone near the host device and make sure the Clinical Instructor tapped Start Hosting."
         );
       }
-    }, 1400);
+    } catch (error) {
+      console.log('Failed to verify instructor BLE signal during scan', error);
+      setStudentStatus('ready');
+      Alert.alert(
+        'Bluetooth Scan Failed',
+        `NurseTrack could not scan for the host BLE signal. ${errorMessage(error)}`
+      );
+    }
   };
 
   const handleConnect = async () => {
     if (!ensureBluetoothEnabled('student') || !effectiveScheduleId) return;
+    if (verifiedSignalScheduleId !== effectiveScheduleId) {
+      setStudentStatus('ready');
+      Alert.alert('BLE Signal Required', 'Scan and detect your Clinical Instructor\'s BLE signal before connecting.');
+      return;
+    }
+    setStudentStatus('connected');
+    setIsSessionDisconnected(false);
+  };
+
+  const handleRecordAttendance = async () => {
+    if (!ensureBluetoothEnabled('student') || !effectiveScheduleId) return;
+    if (studentStatus !== 'connected') {
+      Alert.alert('Connect First', 'Connect to your Clinical Instructor before recording attendance.');
+      return;
+    }
+    if (verifiedSignalScheduleId !== effectiveScheduleId) {
+      Alert.alert('BLE Signal Required', `Scan and connect to your Clinical Instructor before recording ${needsTimeOut ? 'time out' : 'time in'}.`);
+      return;
+    }
     if (needsTimeOut && !canTimeOut) {
       Alert.alert('Time Out Not Open', 'You can time out once the scheduled duty end time is reached.');
       return;
     }
+
     setIsSubmitting(true);
 
     try {
@@ -537,7 +597,12 @@ export const DutyAttendanceScreen = () => {
       if (response.data.scheduleId) {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
       }
-      setStudentStatus('connected');
+      if (response.data.checkedIn && !response.data.checkedOut) {
+        setVerifiedSignalScheduleId(null);
+        setStudentStatus('ready');
+      } else {
+        setStudentStatus('connected');
+      }
       setIsSessionDisconnected(false);
     } catch (error) {
       console.log('Failed to record attendance', error);
@@ -604,6 +669,26 @@ export const DutyAttendanceScreen = () => {
       return;
     }
     const nextHosting = !isHosting;
+    setIsSubmitting(true);
+    try {
+      if (BluetoothService.isRealAttendanceSignalAvailable()) {
+        if (nextHosting) {
+          await BluetoothService.startAttendanceHostSignal(effectiveScheduleId);
+        } else {
+          await BluetoothService.stopAttendanceHostSignal();
+        }
+      }
+    } catch (error) {
+      console.log('Failed to update BLE host signal', error);
+      Alert.alert(
+        nextHosting ? 'Hosting Failed' : 'Stop Hosting Failed',
+        nextHosting
+          ? `NurseTrack could not start the BLE host signal. ${errorMessage(error)}`
+          : `NurseTrack could not stop the BLE host signal. ${errorMessage(error)}`
+      );
+      setIsSubmitting(false);
+      return;
+    }
     setIsHosting(nextHosting);
     setAttendanceCache((current) => {
       const existing = current[effectiveScheduleId];
@@ -628,6 +713,7 @@ export const DutyAttendanceScreen = () => {
       return current;
     });
     await updateTeacherBroadcasting(nextHosting, effectiveScheduleId);
+    setIsSubmitting(false);
   };
 
   const handleRefresh = async () => {
@@ -650,6 +736,7 @@ export const DutyAttendanceScreen = () => {
 
   const handleSelectSchedule = (scheduleId: number) => {
     if (isTeacher && isBluetoothOn && effectiveScheduleId) {
+      void BluetoothService.stopAttendanceHostSignal();
       void updateTeacherBroadcasting(false, effectiveScheduleId);
     }
     setSelectedScheduleId(scheduleId);
@@ -660,6 +747,7 @@ export const DutyAttendanceScreen = () => {
     setIsHosting(false);
     setStudentStatus('ready');
     setIsSessionDisconnected(false);
+    setVerifiedSignalScheduleId(null);
     if (attendanceCache[scheduleId]) {
       setAttendance(attendanceCache[scheduleId]);
       setIsHosting(attendanceCache[scheduleId].instructorBroadcasting === true);
@@ -674,6 +762,10 @@ export const DutyAttendanceScreen = () => {
       setIsHosting(selectedAttendance.instructorBroadcasting === true);
     }
   }, [selectedAttendance?.instructorBroadcasting]);
+
+  useEffect(() => {
+    setVerifiedSignalScheduleId(null);
+  }, [effectiveScheduleId]);
 
   useEffect(() => {
     const updateElapsed = () => {
@@ -692,10 +784,12 @@ export const DutyAttendanceScreen = () => {
 
   useEffect(() => {
     if (isTeacher && !isBluetoothOn && effectiveScheduleId) {
+      void BluetoothService.stopAttendanceHostSignal();
       void updateTeacherBroadcasting(false, effectiveScheduleId);
     }
     return () => {
       if (isTeacher && isBluetoothOn && effectiveScheduleId) {
+        void BluetoothService.stopAttendanceHostSignal();
         void updateTeacherBroadcasting(false, effectiveScheduleId);
       }
     };
@@ -704,7 +798,7 @@ export const DutyAttendanceScreen = () => {
   useEffect(() => {
     if (checkedIn && !checkedOut) {
       if (!isBluetoothOn) {
-        setIsSessionDisconnected(true);
+        setVerifiedSignalScheduleId(null);
       }
     } else {
       setIsSessionDisconnected(false);
@@ -736,27 +830,58 @@ export const DutyAttendanceScreen = () => {
   const scheduledCount = selectedAttendance?.scheduledStudentCount ?? selectedOption?.scheduledStudentCount ?? 0;
   const presentCount = selectedAttendance?.presentStudentCount ?? 0;
   const timedOutCount = selectedAttendance?.timedOutStudentCount ?? 0;
-  const presentStudents = selectedAttendance?.presentStudents ?? [];
+  const rosterStudents = selectedAttendance?.students ?? [];
+  const studentAttendanceMeta = (student: AttendanceStudent) => {
+    const studentInfo = student.sectionInfo || student.schoolId;
+    if (student.timeIn) {
+      const timeInStr = formatTime(student.timeIn);
+      const timeOutStr = student.timeOut ? formatTime(student.timeOut) : null;
+      const durationStr = formatElapsed(student.dutyDurationMinutes ?? 0);
+      
+      if (timeOutStr) {
+        return `In: ${timeInStr} | Out: ${timeOutStr} | Duty: ${durationStr} - ${studentInfo}`;
+      }
+      return `In: ${timeInStr} | Duty: ${durationStr} - ${studentInfo}`;
+    }
+    return `Not timed in - ${studentInfo}`;
+  };
   const progressPercent = scheduledCount > 0 ? Math.min(100, (presentCount / scheduledCount) * 100) : 0;
   const teacherSubmitDisabled = isLoading || isSubmitting || !hasUsableSchedule || !hasChosenSchedule || presentCount === 0 || selectedAttendance?.submitted || !localTimeOutOpen;
 
-  const isActiveSessionDisconnected = isSessionDisconnected;
+  const isActiveSessionDisconnected = checkedIn && !checkedOut && studentStatus !== 'connected' && studentStatus !== 'found' && studentStatus !== 'scanning';
 
   const isSignalPanelHidden = checkedIn && studentStatus !== 'scanning' && studentStatus !== 'found' && !isActiveSessionDisconnected;
+  const studentScanDisabled = !hasUsableSchedule
+    || !isBluetoothOn
+    || checkedOut
+    || studentStatus === 'found'
+    || studentStatus === 'connected'
+    || (needsTimeOut && !canTimeOut && studentStatus !== 'scanning');
+  const studentCanRecordAttendance = studentStatus === 'connected' && !checkedOut && (!checkedIn || canTimeOut);
 
   const studentHeroLabel = isLoading
     ? 'Scan for Clinical Instructor'
     : studentStatus === 'scanning'
       ? 'Stop Scan'
+      : studentStatus === 'connected' && !checkedOut
+        ? connectedSignalText
+      : studentStatus === 'found'
+        ? 'Clinical Instructor Found'
       : !hasUsableSchedule
       ? 'No Schedule Today'
       : !hasChosenSchedule
         ? 'Choose Schedule First'
+        : isActiveSessionDisconnected && canTimeOut && !isBluetoothOn
+          ? 'Bluetooth Required to Time Out'
+        : isActiveSessionDisconnected && canTimeOut
+          ? 'Scan to Time Out'
+        : isActiveSessionDisconnected
+          ? 'Active Session'
+        : !isBluetoothOn
+          ? 'Bluetooth Required to Scan'
         : checkedOut
           ? 'Time Out Recorded'
-          : isActiveSessionDisconnected
-            ? 'Scan to Reconnect'
-            : needsTimeOut
+          : needsTimeOut
               ? canTimeOut ? 'Scan to Time Out' : 'Time In Recorded'
               : 'Scan for Clinical Instructor';
 
@@ -764,7 +889,7 @@ export const DutyAttendanceScreen = () => {
     if (isLoading) return 'Ready to scan';
     if (!hasUsableSchedule) return 'No schedule today';
     if (checkedOut) return 'Time out recorded';
-    if (isActiveSessionDisconnected) return 'Active Session - Bluetooth Disconnected';
+    if (isActiveSessionDisconnected) return 'Active session';
 
     switch (studentStatus) {
       case 'scanning':
@@ -772,7 +897,8 @@ export const DutyAttendanceScreen = () => {
       case 'found':
         return 'Clinical instructor device found';
       case 'connected':
-        return checkedIn ? 'Time in recorded' : 'Attendance recorded';
+        if (checkedIn && !canTimeOut) return 'Time in recorded';
+        return connectedSignalText;
       case 'ready':
       default:
         return 'Ready to scan';
@@ -784,7 +910,9 @@ export const DutyAttendanceScreen = () => {
     if (!hasUsableSchedule) return 'There is no assigned duty schedule available for attendance today.';
     if (checkedOut) return 'Your duty time out has been saved for this session.';
     if (isActiveSessionDisconnected) {
-      return 'You have an active duty session, but you are not connected to Bluetooth. You must turn on Bluetooth or connect back to your Clinical Instructor to perform a Time Out.';
+      return canTimeOut
+        ? 'Your time in is saved. Turn on Bluetooth, scan for your Clinical Instructor, connect, then record time out.'
+        : 'Your time in is saved. Duty elapsed starts from the scheduled shift start if you timed in early.';
     }
 
     switch (studentStatus) {
@@ -792,10 +920,12 @@ export const DutyAttendanceScreen = () => {
         return 'Keep your phone nearby while NurseTrack searches for the active session.';
       case 'found':
         return needsTimeOut
-          ? 'A clinical instructor session is available. Connect to record your time out.'
-          : 'A clinical instructor session is available. Connect to record your time in.';
+          ? 'A clinical instructor session is available. Connect first, then record your time out.'
+          : 'A clinical instructor session is available. Connect first, then record your time in.';
       case 'connected':
-        return 'Your duty time in has been saved for this session.';
+        if (needsTimeOut && canTimeOut) return 'You are connected. Record your time out when ready.';
+        if (checkedIn) return 'Your duty time in has been saved for this session.';
+        return 'You are connected. Record your time in when ready.';
       case 'ready':
       default:
         return needsTimeOut
@@ -834,7 +964,7 @@ export const DutyAttendanceScreen = () => {
             </TouchableOpacity>
           )}
 
-          <Text style={styles.heroKicker}>TEACHER VIEW</Text>
+          <Text style={styles.heroKicker}>CLINICAL INSTRUCTOR VIEW</Text>
           <Text style={styles.heroTitle}>Host attendance{String.fromCharCode(10)}signal</Text>
           
           {isLoading ? (
@@ -843,20 +973,22 @@ export const DutyAttendanceScreen = () => {
             <TouchableOpacity 
               style={[
                 styles.primaryHeroButton, 
-                (!hasUsableSchedule || !isBluetoothOn) && styles.disabledButton
+                (!hasUsableSchedule || !isBluetoothOn || isSubmitting) && styles.disabledButton
               ]} 
               onPress={handleToggleHosting} 
-              disabled={!hasUsableSchedule || !isBluetoothOn}
+              disabled={!hasUsableSchedule || !isBluetoothOn || isSubmitting}
             >
-              <Text style={styles.primaryHeroButtonText}>
-                {!hasUsableSchedule 
-                  ? 'No Schedule Today' 
-                  : !isBluetoothOn 
-                    ? 'Bluetooth Required to Host' 
-                    : isHosting 
-                      ? 'Stop Hosting Signal' 
-                      : 'Start Hosting'}
-              </Text>
+              {isSubmitting ? <ActivityIndicator color="#111827" /> : (
+                <Text style={styles.primaryHeroButtonText}>
+                  {!hasUsableSchedule 
+                    ? 'No Schedule Today' 
+                    : !isBluetoothOn 
+                      ? 'Bluetooth Required to Host' 
+                      : isHosting 
+                        ? 'Stop Hosting Signal' 
+                        : 'Start Hosting'}
+                </Text>
+              )}
             </TouchableOpacity>
           )}
           <Text style={styles.heroDescription}>
@@ -962,7 +1094,7 @@ export const DutyAttendanceScreen = () => {
         <View style={styles.infoCard}>
           <View style={styles.infoHeaderRow}>
             <Users color="#8A252C" size={18} />
-            <Text style={styles.infoKicker}>VERIFIED CHECK-INS</Text>
+            <Text style={styles.infoKicker}>SCHEDULE ROSTER</Text>
           </View>
           {isLoading ? (
             <View>
@@ -979,17 +1111,17 @@ export const DutyAttendanceScreen = () => {
             </View>
           ) : !hasUsableSchedule ? (
             <Text style={styles.emptyStateText}>No roster available today.</Text>
-          ) : presentStudents.length === 0 ? (
-            <Text style={styles.emptyStateText}>{isBluetoothOn ? 'Waiting for nearby students...' : 'Turn on Bluetooth to start accepting check-ins.'}</Text>
+          ) : rosterStudents.length === 0 ? (
+            <Text style={styles.emptyStateText}>No assigned students found for this schedule.</Text>
           ) : (
-            presentStudents.map((student) => (
+            rosterStudents.map((student) => (
               <View key={student.studentId} style={styles.studentRow}>
                 <PersonAvatar name={student.fullName} imageUrl={student.profileImageUrl} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.studentName}>{student.fullName}</Text>
-                  <Text style={styles.studentMeta}>{student.timeOut ? 'Timed out' : 'Timed in'} - {student.sectionInfo || student.schoolId}</Text>
+                  <Text style={styles.studentMeta}>{studentAttendanceMeta(student)}</Text>
                 </View>
-                <CheckCircle color="#10B981" size={18} />
+                {student.timeIn ? <CheckCircle color="#10B981" size={18} /> : <View style={styles.pendingStudentDot} />}
               </View>
             ))
           )}
@@ -1035,8 +1167,9 @@ export const DutyAttendanceScreen = () => {
           <SkeletonBlock width="100%" height={54} radius={14} style={{ marginBottom: 16, opacity: 0.3 }} />
         ) : (
           <TouchableOpacity
-            style={[styles.primaryHeroButton, (!hasUsableSchedule || checkedOut || (needsTimeOut && !canTimeOut && studentStatus !== 'scanning' && !isActiveSessionDisconnected)) && styles.disabledButton]}
+            style={[styles.primaryHeroButton, studentScanDisabled && styles.disabledButton]}
             onPress={handleScan}
+            disabled={studentScanDisabled}
           >
             {studentStatus === 'scanning' ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1072,15 +1205,27 @@ export const DutyAttendanceScreen = () => {
             {isLoading ? (
               <SkeletonBlock width={64} height={18} radius={9} />
             ) : (
-              <Text style={styles.metricValue}>{getStudentTimeIn()}</Text>
+              <Text style={styles.metricValue}>
+                {selectedAttendance?.studentActualTimeIn ? formatTime(selectedAttendance.studentActualTimeIn) : '--'}
+              </Text>
             )}
           </View>
+          {checkedOut && (
+            <View style={styles.studentMetric}>
+              <Text style={styles.metricLabel}>CHECK-OUT TIME</Text>
+              <Text style={styles.metricValue}>
+                {selectedAttendance?.studentActualTimeOut ? formatTime(selectedAttendance.studentActualTimeOut) : '--'}
+              </Text>
+            </View>
+          )}
           <View style={styles.studentMetric}>
-            <Text style={styles.metricLabel}>DUTY ELAPSED</Text>
+            <Text style={styles.metricLabel}>DUTY TIME</Text>
             {isLoading ? (
               <SkeletonBlock width={64} height={18} radius={9} />
             ) : (
-              <Text style={styles.metricValue}>{formatElapsed(elapsedMinutes)}</Text>
+              <Text style={styles.metricValue}>
+                {formatElapsed(selectedAttendance?.studentDutyDurationMinutes ?? 0)}
+              </Text>
             )}
           </View>
         </View>
@@ -1137,9 +1282,7 @@ export const DutyAttendanceScreen = () => {
                   setIsBluetoothOn(nextState);
                   BluetoothService.setSimulatedState(nextState);
                   if (!nextState) {
-                    if (checkedIn && !checkedOut) {
-                      setIsSessionDisconnected(true);
-                    }
+                    setVerifiedSignalScheduleId(null);
                     if (studentStatus === 'scanning' || studentStatus === 'found') {
                       setStudentStatus(checkedIn ? 'connected' : 'ready');
                     }
@@ -1213,7 +1356,12 @@ export const DutyAttendanceScreen = () => {
             <Text style={styles.infoBody}>{getStudentInfoBody()}</Text>
             {studentStatus === 'found' && !isActiveSessionDisconnected && (
               <TouchableOpacity style={styles.connectButton} onPress={handleConnect} disabled={isSubmitting}>
-                {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>{needsTimeOut ? 'Connect and Time Out' : 'Connect and Time In'}</Text>}
+                {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>Connect to Clinical Instructor</Text>}
+              </TouchableOpacity>
+            )}
+            {studentCanRecordAttendance && (
+              <TouchableOpacity style={styles.connectButton} onPress={handleRecordAttendance} disabled={isSubmitting}>
+                {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>{needsTimeOut ? 'Time Out' : 'Time In'}</Text>}
               </TouchableOpacity>
             )}
           </>
@@ -1656,6 +1804,13 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 11,
     fontWeight: '800',
+  },
+  pendingStudentDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
   },
   personImage: {
     width: 34,
