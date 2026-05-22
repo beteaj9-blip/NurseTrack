@@ -10,7 +10,7 @@ type InlineSelectOption = {
 
 export function InlineSelect({ value, options, placeholder, onChange, disabled = false, className = "" }: { value: string; options: InlineSelectOption[]; placeholder: string; onChange: (value: string) => void; disabled?: boolean; className?: string }) {
   const [open, setOpen] = React.useState(false);
-  const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0, width: 0 });
+  const [menuPosition, setMenuPosition] = React.useState({ top: 0, bottom: -1, left: 0, width: 0 });
   const wrapperRef = React.useRef<HTMLDivElement>(null);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const selected = options.find((option) => option.value === value);
@@ -20,7 +20,13 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
   const updateMenuPosition = React.useCallback(() => {
     const rect = wrapperRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setMenuPosition({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    if (spaceBelow < 280 && spaceAbove > spaceBelow) {
+      setMenuPosition({ top: -1, bottom: window.innerHeight - rect.top + 6, left: rect.left, width: rect.width });
+    } else {
+      setMenuPosition({ top: rect.bottom + 6, bottom: -1, left: rect.left, width: rect.width });
+    }
   }, []);
 
   React.useEffect(() => {
@@ -58,7 +64,7 @@ export function InlineSelect({ value, options, placeholder, onChange, disabled =
       </button>
 
       {open && !disabled && typeof document !== "undefined" && createPortal(
-        <div ref={menuRef} className="fixed z-[10000] max-h-64 overflow-auto rounded-lg border border-[#dbe3ee] bg-white py-1 shadow-[0_16px_40px_rgba(15,23,42,0.16)]" style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width }} role="listbox">
+        <div ref={menuRef} className="fixed z-[10000] max-h-64 overflow-auto rounded-lg border border-[#dbe3ee] bg-white py-1 shadow-[0_16px_40px_rgba(15,23,42,0.16)]" style={{ top: menuPosition.top >= 0 ? menuPosition.top : undefined, bottom: menuPosition.bottom >= 0 ? menuPosition.bottom : undefined, left: menuPosition.left, width: menuPosition.width }} role="listbox">
           {options.length > 0 ? options.map((option) => (
             <button
               key={option.value}

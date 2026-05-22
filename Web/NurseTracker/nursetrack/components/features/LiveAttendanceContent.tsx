@@ -38,7 +38,9 @@ export function LiveAttendanceContent({ basePath }: { basePath?: string } = {}) 
   const [levelFilter, setLevelFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const today = new Date(now.getTime() - offset).toISOString().slice(0, 10);
   const todaySchedules = (schedules as any[]).filter((schedule: any) => schedule.date === today && (isAllScope || String(schedule.instructorId) === String(user?.id)));
   const todayAttendance = (attendance as any[]).filter((record: any) => record.dutyDate === today && (isAllScope || String(record.instructorId) === String(user?.id)));
   const data = todaySchedules.map((schedule: any) => {

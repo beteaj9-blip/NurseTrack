@@ -32,10 +32,12 @@ public class DutyService {
     private final DutyRepository dutyRepository;
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
-    private final Map<Long, Boolean> activeBroadcastingSignals = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Boolean> activeBroadcastingSignals = new java.util.concurrent.ConcurrentHashMap<>();
 
     public void setBroadcasting(Long scheduleId, boolean broadcasting) {
-        activeBroadcastingSignals.put(scheduleId, broadcasting);
+        scheduleRepository.findById(scheduleId).ifPresent(schedule -> 
+            activeBroadcastingSignals.put(scheduleSessionKey(schedule), broadcasting)
+        );
     }
 
     public DutyRecord timeIn(DutyRecord record) {
@@ -251,7 +253,9 @@ public class DutyService {
 
     private Optional<Schedule> findRequestedSchedule(List<Schedule> schedules, Long scheduleId) {
         if (scheduleId != null) {
-            return schedules.stream().filter(schedule -> schedule.getId().equals(scheduleId)).findFirst();
+            return schedules.stream()
+                    .filter(schedule -> schedule.getId().equals(scheduleId) || getRepresentativeSchedule(schedule).getId().equals(scheduleId))
+                    .findFirst();
         }
         return selectCurrentSchedule(schedules);
     }
@@ -279,6 +283,7 @@ public class DutyService {
                 .collect(Collectors.toMap(this::scheduleSessionKey, Function.identity(), (first, second) -> first))
                 .values()
                 .stream()
+                .map(this::getRepresentativeSchedule)
                 .sorted(Comparator.comparing(Schedule::getStartTime).thenComparing(Schedule::getWard, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
@@ -342,7 +347,7 @@ public class DutyService {
         boolean checkedOut = checkedIn && presentRecords.get(currentStudentId).getTimeOut() != null;
         boolean timeOutOpen = !LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime());
 
-        boolean instructorBroadcasting = activeBroadcastingSignals.getOrDefault(schedule.getId(), false);
+        boolean instructorBroadcasting = activeBroadcastingSignals.getOrDefault(scheduleSessionKey(schedule), false);
 
         String studentActualTimeIn = null;
         String studentActualTimeOut = null;
@@ -357,7 +362,7 @@ public class DutyService {
 
         return new DutyAttendanceTodayResponse(
                 true,
-                schedule.getId(),
+                getRepresentativeSchedule(schedule).getId(),
                 schedule.getHospital(),
                 schedule.getWard(),
                 schedule.getShiftDate(),
@@ -438,6 +443,12 @@ public class DutyService {
                 schedule.getStartTime(),
                 schedule.getEndTime()
         );
+    }
+
+    private Schedule getRepresentativeSchedule(Schedule schedule) {
+        return getRosterSchedules(schedule).stream()
+                .min(Comparator.comparing(Schedule::getId))
+                .orElse(schedule);
     }
 
     private DutyAttendanceScheduleOption toScheduleOption(Schedule schedule) {

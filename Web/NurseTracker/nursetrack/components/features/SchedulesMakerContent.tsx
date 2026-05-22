@@ -241,7 +241,10 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
     const value = ward ? `${hospital.name} - ${ward}` : hospital.name;
     return { value, label: value };
   })), [hospitals]);
-  const instructorOptions = useMemo(() => (instructors as any[]).map((instructor: any) => ({ value: instructor.fullName, label: instructor.fullName })), [instructors]);
+  const instructorOptions = useMemo(() => {
+    const uniqueNames = Array.from(new Set((instructors as any[]).map((instructor: any) => instructor.fullName)));
+    return uniqueNames.map((name) => ({ value: name, label: name }));
+  }, [instructors]);
   const totalStudents = groups.reduce((sum, group) => sum + getStudentRecords(group).length, 0);
   const publishBlockMessage = publishDisabledReason(groups, preview, publishImport.isPending);
   const studentSearchResults = useMemo(() => {
