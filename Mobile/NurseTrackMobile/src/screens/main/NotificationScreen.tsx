@@ -9,7 +9,8 @@ import {
   TextInput, 
   Modal,
   DeviceEventEmitter,
-  Animated
+  Animated,
+  Easing
 } from 'react-native';
 import { api } from '../../api/axiosConfig';
 import { NotificationCardSkeleton } from '../../components/Skeleton';
@@ -61,6 +62,28 @@ export const NotificationScreen = () => {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isRefreshing) {
+      spinAnim.setValue(0);
+      Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinAnim.setValue(0);
+    }
+  }, [isRefreshing, spinAnim]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   useEffect(() => {
     fetchNotifications();
@@ -104,9 +127,16 @@ export const NotificationScreen = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchNotifications();
-    setIsRefreshing(false);
-    DeviceEventEmitter.emit('notifications:changed');
+    try {
+      await fetchNotifications();
+    } catch (e) {
+      console.log('Failed to refresh notifications', e);
+    } finally {
+      // Ensure the spin animation is shown for at least 800ms to be visually clear and smooth
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setIsRefreshing(false);
+      DeviceEventEmitter.emit('notifications:changed');
+    }
   };
 
   const markAllAsRead = async () => {
@@ -240,15 +270,21 @@ export const NotificationScreen = () => {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryActionBtn} onPress={handleRefresh} disabled={isRefreshing || isLoading}>
-            {isRefreshing || isLoading ? (
-              <ActivityIndicator size="small" color="#475467" />
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity 
+            style={[styles.secondaryActionBtn, (isRefreshing || isLoading) && styles.actionBtnDisabled]} 
+            onPress={handleRefresh} 
+            disabled={isRefreshing || isLoading}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {isRefreshing || isLoading ? (
+                <Animated.View style={{ transform: [{ rotate: spin }], marginRight: 6 }}>
+                  <RefreshCw color="#475467" size={16} />
+                </Animated.View>
+              ) : (
                 <RefreshCw color="#475467" size={16} style={{ marginRight: 6 }} />
-                <Text style={styles.secondaryActionBtnText}>Refresh</Text>
-              </View>
-            )}
+              )}
+              <Text style={styles.secondaryActionBtnText}>Refresh</Text>
+            </View>
           </TouchableOpacity>
         </View>
 

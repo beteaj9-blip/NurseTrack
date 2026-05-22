@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { 
   View, 
@@ -11,7 +11,9 @@ import {
   Image,
   Clipboard,
   TextInput,
-  Modal
+  Modal,
+  Animated,
+  Easing
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
@@ -44,6 +46,29 @@ export const ProfileScreen = () => {
     mobileNumber: user?.mobileNumber || '',
   });
 
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isRefreshing) {
+      spinAnim.setValue(0);
+      Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinAnim.setValue(0);
+    }
+  }, [isRefreshing, spinAnim]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -69,6 +94,8 @@ export const ProfileScreen = () => {
     } catch (e) {
       console.log('Refresh failed', e);
     } finally {
+      // Ensure the spin animation is shown for at least 800ms to be visually clear and smooth
+      await new Promise(resolve => setTimeout(resolve, 800));
       setIsRefreshing(false);
     }
   };
@@ -187,13 +214,24 @@ export const ProfileScreen = () => {
         <View style={styles.profileHeaderCard}>
         {/* Banner with CIT-U Branding */}
         <View style={styles.bannerBackground}>
-          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh} disabled={isRefreshing}>
-            {isRefreshing ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
+          {isRefreshing ? (
+            <TouchableOpacity 
+              style={[styles.refreshButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0 }]} 
+              disabled={true}
+            >
+              <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                <RefreshCw color="#FFFFFF" size={18} />
+              </Animated.View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              style={styles.refreshButton} 
+              onPress={handleRefresh}
+              activeOpacity={0.7}
+            >
               <RefreshCw color="#FFFFFF" size={18} />
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Profile Avatar & Primary Info */}

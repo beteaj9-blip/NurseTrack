@@ -47,8 +47,7 @@ function getScheduleStatusClass(status: string) {
 
 function chairScheduleBadge(schedule: any, index: number) {
   if (schedule.activeStudents?.length === 0) return "Canceled";
-  if (getScheduleStatus(schedule.date) === "Completed") return "Published";
-  return index === 0 ? "Published" : "Draft";
+  return "Published";
 }
 
 function chairScheduleBadgeClass(label: string) {
@@ -119,7 +118,10 @@ function toTimeInput(time?: string) {
 function schedulePayload(schedule: any, overrides: any = {}) {
   const next = { ...schedule, ...overrides };
   const payload: any = {
-    student: { id: next.studentId },
+    student: { 
+      id: next.studentId,
+      sectionInfo: next.studentSection || next.student?.sectionInfo,
+    },
     instructor: { id: next.instructorId },
     hospital: next.hospital,
     ward: next.area,
@@ -141,7 +143,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const routeRole = routeRoleMap[basePath] ?? user?.role;
   const userId = user?.id != null ? String(user.id) : undefined;
   const scopedViewerId = (routeRole === "CHAIR" || routeRole === "ASSISTANT") && userId ? userId : undefined;
-  const { data: schedules = [], isLoading } = useSchedules(routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT" ? userId : undefined, routeRole);
+  const { data: schedules = [], isLoading, isFetching, refetch } = useSchedules(routeRole === "CHAIR" || routeRole === "COORDINATOR" || routeRole === "ASSISTANT" ? userId : undefined, routeRole);
   const createSchedule = useCreateSchedule();
   const updateSchedule = useUpdateSchedule();
   const deleteSchedule = useDeleteSchedule();
@@ -171,7 +173,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
   const activeAssignedStudents = activeAssignmentSplit.unique;
   const duplicateAssignedStudents = activeAssignmentSplit.duplicates;
   const selectedScheduleCanceled = assignedStudents.length > 0 && activeAssignedStudents.length === 0;
-  const visibleAssignedStudents = selectedScheduleCanceled ? allAssignedStudents : activeAssignedStudents;
+  const visibleAssignedStudents = selectedScheduleCanceled ? [] : activeAssignedStudents;
   const instructorName = selectedSchedule?.instructorName || "Clinical Instructor";
   const isStudentView = basePath === "/nursing-student";
   const isChairView = basePath === "/admin" || basePath === "/chair" || basePath === "/coordinator" || basePath === "/assistant";
@@ -273,8 +275,21 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
     if (!draftSchedule || !selectedSchedule) return;
     try {
       const duplicateDeletes = duplicateAssignedStudents.map((schedule: any) => deleteSchedule.mutateAsync(String(schedule.id)));
+      
+      const remainingActiveCount = assignmentDrafts.filter((s: any) => !s.removed).length;
+      const allRemoved = remainingActiveCount === 0;
+
       const assignmentSaves = assignmentDrafts.map((schedule: any) => {
-        if (schedule.removed) return schedule.isNew ? Promise.resolve() : deleteSchedule.mutateAsync(String(schedule.id));
+        if (schedule.removed) {
+          if (schedule.isNew) return Promise.resolve();
+          if (allRemoved) {
+            return updateSchedule.mutateAsync({
+              scheduleId: String(schedule.id),
+              schedule: schedulePayload(schedule, { canceled: true }),
+            });
+          }
+          return deleteSchedule.mutateAsync(String(schedule.id));
+        }
         if (schedule.isNew) return createSchedule.mutateAsync(schedulePayload(schedule, {
           instructorId: Number(draftSchedule.instructorId || schedule.instructorId),
           hospital: draftSchedule.hospital,
@@ -282,6 +297,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
           date: draftSchedule.startDate,
           rawStartTime: draftSchedule.shiftStart,
           rawEndTime: draftSchedule.shiftEnd,
+          studentSection: draftSchedule.group,
         }));
         if (schedule.draftGroupKey !== schedule.originalGroupKey) {
           const target = dayScheduleGroups.find((group: any) => group.groupKey === schedule.draftGroupKey);
@@ -295,6 +311,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
               date: target.date,
               rawStartTime: target.rawStartTime ?? target.startTime,
               rawEndTime: target.rawEndTime ?? target.endTime,
+              studentSection: target.studentSection,
             }),
           });
         }
@@ -307,6 +324,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
             date: draftSchedule.startDate,
             rawStartTime: draftSchedule.shiftStart,
             rawEndTime: draftSchedule.shiftEnd,
+            studentSection: draftSchedule.group,
           }),
         });
       });
@@ -338,7 +356,7 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
       studentId: student.id,
       studentName: student.fullName,
       studentSchoolId: student.schoolId,
-      studentSection: student.sectionInfo,
+      studentSection: selectedSchedule.studentSection,
       studentProfileImageUrl: student.profileImageUrl,
       originalGroupKey: selectedSchedule.groupKey,
       draftGroupKey: selectedSchedule.groupKey,
@@ -420,7 +438,9 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,#fff8d6_0%,#ffffff_60%)] pointer-events-none" />
             <div className="relative z-10 min-w-0 max-w-full">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 mb-5 max-[760px]:grid-cols-1">
-                <h2 className="m-0 min-w-0 !text-[#202124] !text-[1.25rem] !font-[900] tracking-[-0.03em] break-words max-[760px]:!text-[1.15rem]">{draftSchedule.title}</h2>
+                <div className="flex items-center gap-3 min-w-0">
+                  <h2 className="m-0 min-w-0 !text-[#202124] !text-[1.25rem] !font-[900] tracking-[-0.03em] break-words max-[760px]:!text-[1.15rem]">{draftSchedule.title}</h2>
+                </div>
                 <div className="flex items-center justify-end gap-3 flex-wrap max-[760px]:w-full max-[760px]:flex-col max-[760px]:items-stretch"><span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full !text-[0.76rem] !font-[900] max-[760px]:w-full ${chairScheduleBadgeClass(selectedScheduleCanceled ? "Canceled" : "Published")}`}>{selectedScheduleCanceled ? "Canceled" : "Published"}</span>{selectedScheduleCanceled ? <button type="button" onClick={restoreSelectedSchedule} disabled={!canEditChairSchedule || isSaving} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#86efac] !text-[#15803d] !text-[0.86rem] !font-[900] cursor-pointer hover:bg-[#ecfdf3] transition-colors disabled:opacity-60 disabled:cursor-not-allowed max-[760px]:w-full">Restore Schedule</button> : <button type="button" onClick={isEditingChairSchedule ? cancelChairEdit : startChairEdit} disabled={!canEditChairSchedule || isSaving} className="inline-flex items-center justify-center min-h-[40px] px-4 rounded-lg bg-white border border-[#e2e8f0] !text-[#344054] !text-[0.86rem] !font-[900] cursor-pointer hover:border-[#cbd5e1] transition-colors disabled:opacity-60 disabled:cursor-not-allowed max-[760px]:w-full">{isEditingChairSchedule ? "Cancel Edit" : "Edit Schedule"}</button>}</div>
               </div>
 
@@ -479,9 +499,11 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
           <div className="relative z-10">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 p-[1rem_1.5rem] pb-0">
-              <h2 className="m-0 !text-[#8a252c] !text-[0.95rem] leading-[1.15] !font-black uppercase tracking-widest">
-                Clinical Duty
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="m-0 !text-[#8a252c] !text-[0.95rem] leading-[1.15] !font-black uppercase tracking-widest">
+                  Clinical Duty
+                </h2>
+              </div>
               <div className="flex items-center gap-3">
                 <span className="inline-flex items-center justify-center px-4 py-1.5 bg-white border border-[#e2e8f0] rounded-full !text-[#334155] !font-extrabold !text-[0.8rem]">
                   {formatDisplayDate(selectedSchedule.date)}

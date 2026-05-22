@@ -3,7 +3,7 @@ import { apiClient } from '../axios';
 
 export const useNotifications = (userId?: string, enabled = true) => {
   return useQuery({
-    queryKey: ['notifications', userId],
+    queryKey: userId ? ['notifications', userId] : ['notifications'],
     queryFn: async () => {
       const { data } = await apiClient.get('/notifications/me');
       return data;
@@ -25,6 +25,7 @@ export const useMarkNotificationRead = (userId?: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.refetchQueries({ queryKey: ['notifications'] });
     },
   });
 };
@@ -38,6 +39,7 @@ export const useMarkNotificationUnread = (userId?: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.refetchQueries({ queryKey: ['notifications'] });
     },
   });
 };
@@ -50,6 +52,8 @@ export const useMarkAllNotificationsRead = (userId?: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.refetchQueries({ queryKey: ['notifications'] });
     },
   });
 };
+

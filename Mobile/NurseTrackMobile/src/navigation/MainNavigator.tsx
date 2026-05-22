@@ -8,7 +8,6 @@ import { DutyAttendanceScreen } from '../screens/main/DutyAttendanceScreen';
 import { ScheduleScreen } from '../screens/main/ScheduleScreen';
 import { ProfileScreen } from '../screens/main/ProfileScreen';
 import { NotificationScreen } from '../screens/main/NotificationScreen';
-import { ManualBackupScreen } from '../screens/main/ManualBackupScreen';
 
 export type MainDrawerParamList = {
   Dashboard: undefined;
@@ -16,7 +15,6 @@ export type MainDrawerParamList = {
   Schedule: undefined;
   Profile: undefined;
   Notification: undefined;
-  ManualBackup: undefined;
 };
 
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
@@ -31,7 +29,6 @@ export const MainNavigator = () => {
           const title = options.title || route.name;
           // Clean up route names for display if needed
           const displayTitle = title === 'DutyAttendance' ? 'Duty Attendance' 
-            : title === 'ManualBackup' ? 'Manual Backup'
             : title;
           return <MainHeader navigation={navigation as any} title={displayTitle} currentRouteName={route.name as keyof MainDrawerParamList} />;
         },
@@ -63,11 +60,6 @@ export const MainNavigator = () => {
         name="Notification" 
         component={NotificationScreen} 
         options={{ title: 'Notifications' }} 
-      />
-      <Drawer.Screen 
-        name="ManualBackup" 
-        component={ManualBackupScreen} 
-        options={{ title: 'Manual Backup' }} 
       />
     </Drawer.Navigator>
   );

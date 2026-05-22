@@ -19,7 +19,7 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
   const { showToast } = useToast();
   const [page, setPage] = React.useState(1);
   const user = useAuthStore((state) => state.user);
-  const { data: apiNotifications = [], isLoading } = useNotifications(undefined, true);
+  const { data: apiNotifications = [], isLoading, isFetching, refetch } = useNotifications(undefined, true);
   const markRead = useMarkNotificationRead();
   const markUnread = useMarkNotificationUnread();
   const markAllRead = useMarkAllNotificationsRead();
@@ -56,9 +56,10 @@ export default function NotificationsContent({ studentOnly = false }: { studentO
     <div className="p-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
         
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h2 className="text-[1.2rem] font-[800] text-[#111827] m-0">Recent Notifications</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-[1.2rem] font-[800] text-[#111827] m-0">Recent Notifications</h2>
+          </div>
           <div className="flex items-center gap-3">
             <button onClick={markAll} className="h-[40px] px-4 rounded-lg border border-[#dbe3ee] bg-white text-[#344054] text-[0.92rem] font-bold hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:text-[#0f172a] hover:-translate-y-px transition-all cursor-pointer">
               Mark all as read

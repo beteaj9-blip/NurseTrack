@@ -1,8 +1,11 @@
 package edu.cit.nursetracker.schedule;
 
 import edu.cit.nursetracker.user.AccessScope;
+import edu.cit.nursetracker.user.User;
 import edu.cit.nursetracker.user.UserRepository;
 import edu.cit.nursetracker.user.UserRole;
+import edu.cit.nursetracker.duty.DutyRepository;
+import edu.cit.nursetracker.duty.DutyRecord;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,8 +17,10 @@ public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
+    private final DutyRepository dutyRepository;
 
     public Schedule assignSchedule(Schedule schedule) {
+        updateStudentSectionAndGroup(schedule.getStudent());
         return scheduleRepository.save(schedule);
     }
 
@@ -35,15 +40,22 @@ public class ScheduleService {
 
     public void unassignSchedule(Long scheduleId) {
         scheduleRepository.findById(scheduleId).ifPresent(schedule -> {
-            schedule.setCanceled(true);
-            scheduleRepository.save(schedule);
+            List<DutyRecord> dutyRecords = dutyRepository.findByScheduleIdInOrderByTimeInAsc(List.of(scheduleId));
+            for (DutyRecord record : dutyRecords) {
+                record.setSchedule(null);
+                dutyRepository.save(record);
+            }
+            scheduleRepository.delete(schedule);
         });
     }
 
     public Schedule updateSchedule(Long scheduleId, Schedule updatedSchedule) {
         Schedule schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Schedule not found."));
-        if (updatedSchedule.getStudent() != null) schedule.setStudent(updatedSchedule.getStudent());
+        if (updatedSchedule.getStudent() != null) {
+            schedule.setStudent(updatedSchedule.getStudent());
+            updateStudentSectionAndGroup(updatedSchedule.getStudent());
+        }
         if (updatedSchedule.getInstructor() != null) schedule.setInstructor(updatedSchedule.getInstructor());
         schedule.setHospital(updatedSchedule.getHospital());
         schedule.setWard(updatedSchedule.getWard());
@@ -70,5 +82,25 @@ public class ScheduleService {
                         .filter(schedule -> AccessScope.canViewRecord(viewer, schedule.getStudent(), schedule.getInstructor()))
                         .toList())
                 .orElse(List.of());
+    }
+
+    private void updateStudentSectionAndGroup(User studentPayload) {
+        if (studentPayload != null && studentPayload.getId() != null) {
+            userRepository.findById(studentPayload.getId()).ifPresent(student -> {
+                if (studentPayload.getSectionInfo() != null && !studentPayload.getSectionInfo().isBlank()) {
+                    String fullSection = studentPayload.getSectionInfo().trim();
+                    java.util.regex.Matcher groupMatcher = java.util.regex.Pattern.compile("(?i)\\b(g\\s*\\d+[a-z]?)\\b").matcher(fullSection);
+                    if (groupMatcher.find()) {
+                        String group = groupMatcher.group(1).replaceAll("\\s+", "").toUpperCase();
+                        String section = fullSection.replace(groupMatcher.group(0), "").replaceAll("[-–—]", " ").replaceAll("\\s+", " ").trim();
+                        student.setSectionInfo(section);
+                        student.setGroupInfo(group);
+                    } else {
+                        student.setSectionInfo(fullSection);
+                    }
+                    userRepository.save(student);
+                }
+            });
+        }
     }
 }

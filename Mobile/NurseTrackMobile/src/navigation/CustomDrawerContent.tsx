@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DrawerContentScrollView, DrawerItemList, DrawerContentComponentProps } from '@react-navigation/drawer';
-import { LayoutDashboard, FileText, Calendar, TrendingUp, MessageSquare, BarChart2, Bluetooth } from 'lucide-react-native';
+import { LayoutDashboard, FileText, Calendar, TrendingUp, MessageSquare, Bluetooth } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { CitLogo } from '../components/CitLogo';
 
@@ -19,7 +19,6 @@ export const CustomDrawerContent = (props: DrawerContentComponentProps) => {
     { name: 'Dashboard', icon: LayoutDashboard },
     { name: 'DutyAttendance', label: 'Duty Attendance', icon: Bluetooth },
     { name: 'Schedule', label: 'Assigned Schedules', icon: Calendar },
-    ...(isTeacher ? [{ name: 'ManualBackup', label: 'Manual Backup', icon: BarChart2 }] : []),
   ];
 
   return (

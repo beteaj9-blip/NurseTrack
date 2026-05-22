@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, DeviceEventEmitter } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { MainDrawerParamList } from '../../navigation/MainNavigator';
-import { Calendar, AlertCircle, ArrowRight, Bell, Award } from 'lucide-react-native';
+import { Calendar, AlertCircle, ArrowRight, Bell } from 'lucide-react-native';
 import { api } from '../../api/axiosConfig';
 import { SkeletonBlock } from '../../components/Skeleton';
 import { SlideUpView } from '../../components/SlideUpView';
@@ -75,8 +75,13 @@ export const DashboardScreen = () => {
 
     void loadDashboardData();
 
+    const subscription = DeviceEventEmitter.addListener('notifications:changed', () => {
+      void loadDashboardData();
+    });
+
     return () => {
       isMounted = false;
+      subscription.remove();
     };
   }, [user?.role]);
 
@@ -153,11 +158,13 @@ export const DashboardScreen = () => {
               </View>
             </View>
             {isDashboardLoading ? (
-              <>
-                <SkeletonBlock width="68%" height={18} style={styles.statSkeletonLine} />
-                <SkeletonBlock width="92%" height={13} style={styles.statSkeletonSubLine} />
-                <SkeletonBlock width="76%" height={13} style={styles.statSkeletonSubLine} />
-              </>
+              <View style={{ marginBottom: 16 }}>
+                <SkeletonBlock width="68%" height={18} style={{ marginBottom: 4 }} />
+                <View style={{ height: 32, justifyContent: 'center', gap: 6 }}>
+                  <SkeletonBlock width="92%" height={12} />
+                  <SkeletonBlock width="76%" height={12} />
+                </View>
+              </View>
             ) : (
               <>
                 <Text style={styles.statTitle}>{hasMultipleSchedulesToday ? `${todaySchedules.length} Schedules Today` : todaySchedule ? 'Schedule Today' : 'No Schedule Today'}</Text>
@@ -188,11 +195,13 @@ export const DashboardScreen = () => {
               </View>
             </View>
             {isDashboardLoading ? (
-              <>
-                <SkeletonBlock width="64%" height={18} style={styles.statSkeletonLine} />
-                <SkeletonBlock width="88%" height={13} style={styles.statSkeletonSubLine} />
-                <SkeletonBlock width="62%" height={13} style={styles.statSkeletonSubLine} />
-              </>
+              <View style={{ marginBottom: 16 }}>
+                <SkeletonBlock width="64%" height={18} style={{ marginBottom: 4 }} />
+                <View style={{ height: 32, justifyContent: 'center', gap: 6 }}>
+                  <SkeletonBlock width="88%" height={12} />
+                  <SkeletonBlock width="62%" height={12} />
+                </View>
+              </View>
             ) : (
               <>
                 <Text style={styles.statTitle}>{isInstructor ? 'Unread Updates' : 'Pending Updates'}</Text>
@@ -232,12 +241,12 @@ export const DashboardScreen = () => {
 
           <TouchableOpacity 
             style={styles.actionButton}
-            onPress={() => navigation.navigate(isInstructor ? 'ManualBackup' : 'Notification')}
+            onPress={() => navigation.navigate('Notification')}
           >
-            <View style={[styles.actionIconBg, { backgroundColor: isInstructor ? '#111827' : '#FFCF01' }]}> 
-              {isInstructor ? <Award color="#FFFFFF" size={20} /> : <Bell color="#111827" size={20} />}
+            <View style={[styles.actionIconBg, { backgroundColor: '#FFCF01' }]}> 
+              <Bell color="#111827" size={20} />
             </View>
-            <Text style={styles.actionLabel}>{isInstructor ? 'Manual Backup' : 'Notifications'}</Text>
+            <Text style={styles.actionLabel}>Notifications</Text>
           </TouchableOpacity>
         </View>
       </SlideUpView>

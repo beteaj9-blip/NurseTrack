@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 
 let BleManagerClass: any = null;
 let bleManagerInstance: any = null;
@@ -44,6 +44,34 @@ if (isRealAvailable && bleManagerInstance) {
 }
 
 export const BluetoothService = {
+  /**
+   * Request Bluetooth and Location permissions on Android.
+   */
+  async requestBluetoothPermissions(): Promise<boolean> {
+    if (Platform.OS !== 'android') return true;
+
+    try {
+      if (Platform.Version >= 31) {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        ]);
+        return (
+          granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED
+        );
+      } else {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+    } catch (err) {
+      console.warn('Error requesting Bluetooth permissions:', err);
+      return false;
+    }
+  },
+
   /**
    * Returns true if real device BLE Bluetooth hardware manager was successfully initialized.
    */

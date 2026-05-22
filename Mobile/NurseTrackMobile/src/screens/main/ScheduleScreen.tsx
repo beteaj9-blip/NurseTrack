@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock, List, MapPin, Users } from 'lucide-react-native';
+import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, Clock, List, MapPin, Users, RefreshCw } from 'lucide-react-native';
 import { api } from '../../api/axiosConfig';
 import { useAuth } from '../../context/AuthContext';
 import { SkeletonBlock } from '../../components/Skeleton';
@@ -143,14 +143,35 @@ export const ScheduleScreen = () => {
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
 
+  const spinAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isRefreshing) {
+      spinAnim.setValue(0);
+      Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinAnim.setValue(0);
+    }
+  }, [isRefreshing, spinAnim]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   useEffect(() => {
     void fetchSchedules();
   }, [user?.role]);
 
   const fetchSchedules = async () => {
     setIsLoading(true);
-    setIsRefreshing(true);
-
     try {
       const response = await api.get<ScheduleData[]>('/schedules/me');
       setSchedules(response.data.map(normalizeSchedule));
@@ -159,6 +180,18 @@ export const ScheduleScreen = () => {
       setSchedules([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchSchedules();
+    } catch (e) {
+      console.log('Refresh failed', e);
+    } finally {
+      // Ensure the spin animation is shown for at least 800ms to be visually clear and smooth
+      await new Promise(resolve => setTimeout(resolve, 800));
       setIsRefreshing(false);
     }
   };
@@ -173,7 +206,7 @@ export const ScheduleScreen = () => {
   }, [schedules]);
 
   const selectedRoster = useMemo(() => {
-    if (!selectedSchedule) return [];
+    if (!selectedSchedule || selectedSchedule.canceled) return [];
     const roster = schedules
       .filter((schedule) => scheduleSessionKey(schedule) === scheduleSessionKey(selectedSchedule))
       .map((schedule) => getStudentFromSchedule(schedule, user, user?.role))
@@ -399,8 +432,19 @@ export const ScheduleScreen = () => {
             <Text style={styles.kicker}>ASSIGNED SCHEDULES</Text>
             <Text style={styles.pageTitle}>Assigned Schedules</Text>
           </View>
-          <TouchableOpacity style={styles.refreshButton} onPress={fetchSchedules} disabled={isRefreshing}>
-            {isRefreshing ? <ActivityIndicator size="small" color="#8A252C" /> : <Text style={styles.refreshText}>Refresh</Text>}
+          <TouchableOpacity 
+            style={[styles.refreshButton, { flexDirection: 'row', paddingHorizontal: 10 }, (isRefreshing || isLoading) && { opacity: 0.8 }]} 
+            onPress={handleRefresh} 
+            disabled={isRefreshing || isLoading}
+          >
+            {isRefreshing || isLoading ? (
+              <Animated.View style={{ transform: [{ rotate: spin }], marginRight: 6 }}>
+                <RefreshCw color="#8A252C" size={14} />
+              </Animated.View>
+            ) : (
+              <RefreshCw color="#344054" size={14} style={{ marginRight: 6 }} />
+            )}
+            <Text style={styles.refreshText}>Refresh</Text>
           </TouchableOpacity>
         </View>
       </SlideUpView>

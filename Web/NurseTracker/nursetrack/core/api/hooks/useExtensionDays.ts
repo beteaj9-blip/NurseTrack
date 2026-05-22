@@ -7,7 +7,7 @@ function normalizeExtensionDay(record: any) {
     studentId: record.studentId ?? record.student?.id,
     studentName: record.studentName ?? record.student?.fullName ?? '',
     studentSchoolId: record.studentSchoolId ?? record.student?.schoolId ?? '',
-    studentSection: record.studentSection ?? record.student?.sectionInfo ?? '',
+    studentSection: record.studentSection || (record.student?.sectionInfo ? (record.student.groupInfo ? `${record.student.sectionInfo} - ${record.student.groupInfo}` : record.student.sectionInfo) : ''),
     studentProfileImageUrl: record.studentProfileImageUrl ?? record.student?.profileImageUrl ?? '',
     instructorId: record.instructorId ?? record.instructor?.id,
     instructorName: record.instructorName ?? record.instructor?.fullName ?? '',

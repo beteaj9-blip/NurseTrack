@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { CheckCircle, MapPin, Users, Bluetooth } from 'lucide-react-native';
+import { ActivityIndicator, Alert, Animated, Easing, Image, Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { CheckCircle, MapPin, Users, Bluetooth, RefreshCw } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
 import { SkeletonBlock } from '../../components/Skeleton';
@@ -147,6 +147,41 @@ const mergeScheduleOptions = (fallbackOptions: AttendanceScheduleOption[], backe
 
 const isAttendanceForToday = (attendance: AttendanceToday) => !attendance.hasSchedule || attendance.shiftDate === toDateKey(new Date());
 
+const calculateElapsedMinutes = (sessionStartedAt: string | null, shiftDate: string | null, startTime: string | null): number => {
+  let startMs = 0;
+  if (sessionStartedAt) {
+    const parsed = Date.parse(sessionStartedAt);
+    if (!Number.isNaN(parsed)) {
+      startMs = parsed;
+    }
+  }
+  
+  if (startMs === 0 && shiftDate && startTime) {
+    const timePart = startTime.includes(':') ? startTime : '00:00';
+    const parsed = Date.parse(`${shiftDate}T${timePart}`);
+    if (!Number.isNaN(parsed)) {
+      startMs = parsed;
+    }
+  }
+  
+  if (startMs === 0) return 0;
+  
+  const elapsedMs = Date.now() - startMs;
+  if (elapsedMs < 0) return 0;
+  
+  return Math.floor(elapsedMs / (1000 * 60));
+};
+
+const formatElapsed = (minutes: number): string => {
+  if (minutes <= 0) return '0m';
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0) {
+    return `${hrs}h ${mins}m`;
+  }
+  return `${mins}m`;
+};
+
 export const DutyAttendanceScreen = () => {
   const { user } = useAuth();
   const isTeacher = user?.role !== 'STUDENT';
@@ -161,8 +196,42 @@ export const DutyAttendanceScreen = () => {
   const [isSessionDisconnected, setIsSessionDisconnected] = useState(false);
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const refreshRef = useRef<NodeJS.Timeout | null>(null);
+  const [isHosting, setIsHosting] = useState(false);
+  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const spinAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (isRefreshing) {
+      spinAnim.setValue(0);
+      Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinAnim.setValue(0);
+    }
+  }, [isRefreshing, spinAnim]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  useEffect(() => {
+    if (BluetoothService.isRealBleAvailable()) {
+      void BluetoothService.requestBluetoothPermissions().then((granted) => {
+        if (!granted) {
+          console.log('Bluetooth permissions not granted.');
+        }
+      });
+    }
+
     const unsubscribe = BluetoothService.subscribeToState((state) => {
       setIsBluetoothOn(state);
     });
@@ -185,6 +254,9 @@ export const DutyAttendanceScreen = () => {
       }
 
       setAttendance(response.data);
+      if (isTeacher) {
+        setIsHosting(response.data.instructorBroadcasting === true);
+      }
       if (response.data.scheduleId) {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
       }
@@ -251,7 +323,12 @@ export const DutyAttendanceScreen = () => {
       setAttendanceCache((current) => ({ ...current, ...nextCache }));
 
       const defaultScheduleId = selectedScheduleId ?? choices[0]?.scheduleId;
-      if (defaultScheduleId && nextCache[defaultScheduleId]) setAttendance(nextCache[defaultScheduleId]);
+      if (defaultScheduleId && nextCache[defaultScheduleId]) {
+        setAttendance(nextCache[defaultScheduleId]);
+        if (isTeacher) {
+          setIsHosting(nextCache[defaultScheduleId].instructorBroadcasting === true);
+        }
+      }
     } catch (error) {
       console.log('Failed to fetch attendance schedule choices', error);
       setScheduleChoices([]);
@@ -297,15 +374,21 @@ export const DutyAttendanceScreen = () => {
           text: "I've Turned It On",
           onPress: () => {
             if (BluetoothService.isRealBleAvailable()) {
-              void BluetoothService.checkBluetoothState().then((state) => {
-                setIsBluetoothOn(state);
-                if (state) {
-                  if (context === 'instructor' && effectiveScheduleId) {
-                    void updateTeacherBroadcasting(true, effectiveScheduleId);
-                  }
-                } else {
-                  Alert.alert('Bluetooth Offline', 'Please enable Bluetooth in your device settings first.');
+              void BluetoothService.requestBluetoothPermissions().then((granted) => {
+                if (!granted) {
+                  Alert.alert('Permission Denied', 'Please grant Bluetooth permissions to use this feature.');
+                  return;
                 }
+                void BluetoothService.checkBluetoothState().then((state) => {
+                  setIsBluetoothOn(state);
+                  if (state) {
+                    if (context === 'instructor' && effectiveScheduleId) {
+                      void updateTeacherBroadcasting(true, effectiveScheduleId);
+                    }
+                  } else {
+                    Alert.alert('Bluetooth Offline', 'Please enable Bluetooth in your device settings first.');
+                  }
+                });
               });
             } else {
               setIsBluetoothOn(true);
@@ -487,7 +570,7 @@ export const DutyAttendanceScreen = () => {
     }
   };
 
-  const handleTeacherBluetooth = () => {
+  const handleTeacherBluetooth = async () => {
     if (isBluetoothOn) {
       if (BluetoothService.isRealBleAvailable()) {
         Alert.alert('Turn Off Bluetooth', 'Please turn off Bluetooth in your device settings to host offline.');
@@ -495,6 +578,7 @@ export const DutyAttendanceScreen = () => {
       }
       setIsBluetoothOn(false);
       BluetoothService.setSimulatedState(false);
+      setIsHosting(false);
       if (effectiveScheduleId) {
         void updateTeacherBroadcasting(false, effectiveScheduleId);
       }
@@ -502,7 +586,66 @@ export const DutyAttendanceScreen = () => {
     }
     if (!requireSchedule()) return;
     if (!requireScheduleChoice()) return;
+
+    if (BluetoothService.isRealBleAvailable()) {
+      const granted = await BluetoothService.requestBluetoothPermissions();
+      if (!granted) {
+        Alert.alert('Permission Required', 'Bluetooth permissions are required to check/enable Bluetooth.');
+        return;
+      }
+    }
     promptEnableBluetooth('instructor');
+  };
+
+  const handleToggleHosting = async () => {
+    if (!effectiveScheduleId) return;
+    if (!isBluetoothOn) {
+      Alert.alert('Bluetooth Required', 'Please turn on Bluetooth first before starting to host the attendance signal.');
+      return;
+    }
+    const nextHosting = !isHosting;
+    setIsHosting(nextHosting);
+    setAttendanceCache((current) => {
+      const existing = current[effectiveScheduleId];
+      if (existing) {
+        return {
+          ...current,
+          [effectiveScheduleId]: {
+            ...existing,
+            instructorBroadcasting: nextHosting,
+          },
+        };
+      }
+      return current;
+    });
+    setAttendance((current) => {
+      if (current && current.scheduleId === effectiveScheduleId) {
+        return {
+          ...current,
+          instructorBroadcasting: nextHosting,
+        };
+      }
+      return current;
+    });
+    await updateTeacherBroadcasting(nextHosting, effectiveScheduleId);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        fetchAttendance(true), // call silently so fetchAttendance does not toggle isLoading early
+        fetchScheduleChoices()
+      ]);
+    } catch (error) {
+      console.log('Refresh failed', error);
+    } finally {
+      // Ensure the loading skeleton and spin animations are shown for at least 800ms to be visually clear and smooth
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setIsRefreshing(false);
+      setIsLoading(false);
+    }
   };
 
   const handleSelectSchedule = (scheduleId: number) => {
@@ -514,15 +657,38 @@ export const DutyAttendanceScreen = () => {
       setIsBluetoothOn(false);
       BluetoothService.setSimulatedState(false);
     }
+    setIsHosting(false);
     setStudentStatus('ready');
     setIsSessionDisconnected(false);
     if (attendanceCache[scheduleId]) {
       setAttendance(attendanceCache[scheduleId]);
+      setIsHosting(attendanceCache[scheduleId].instructorBroadcasting === true);
       return;
     }
     setAttendance(null);
     void fetchAttendance(true, scheduleId);
   };
+
+  useEffect(() => {
+    if (selectedAttendance) {
+      setIsHosting(selectedAttendance.instructorBroadcasting === true);
+    }
+  }, [selectedAttendance?.instructorBroadcasting]);
+
+  useEffect(() => {
+    const updateElapsed = () => {
+      const startAt = selectedAttendance?.sessionStartedAt ?? null;
+      const sDate = selectedAttendance?.shiftDate ?? selectedOption?.shiftDate ?? null;
+      const sTime = selectedAttendance?.startTime ?? selectedOption?.startTime ?? null;
+      
+      const mins = calculateElapsedMinutes(startAt, sDate, sTime);
+      setElapsedMinutes(mins);
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 30000);
+    return () => clearInterval(interval);
+  }, [selectedAttendance?.sessionStartedAt, selectedAttendance?.shiftDate, selectedAttendance?.startTime, selectedOption?.shiftDate, selectedOption?.startTime]);
 
   useEffect(() => {
     if (isTeacher && !isBluetoothOn && effectiveScheduleId) {
@@ -547,6 +713,26 @@ export const DutyAttendanceScreen = () => {
 
   const locationLabel = hasUsableSchedule ? `${selectedAttendance?.hospital ?? selectedOption?.hospital} - ${selectedAttendance?.ward ?? selectedOption?.ward}` : 'No duty schedule today';
   const scheduleTime = hasUsableSchedule ? `${formatTime(selectedAttendance?.startTime ?? selectedOption?.startTime)} - ${formatTime(selectedAttendance?.endTime ?? selectedOption?.endTime)}` : '--';
+  const getStudentTimeIn = () => {
+    const currentStudent = selectedAttendance?.students?.find((s) => s.studentId === user?.id) 
+      ?? selectedAttendance?.presentStudents?.find((s) => s.studentId === user?.id);
+    if (currentStudent?.timeIn) {
+      return formatTime(currentStudent.timeIn);
+    }
+    if (selectedAttendance?.sessionStartedAt) {
+      try {
+        const timeStr = new Date(selectedAttendance.sessionStartedAt).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        });
+        return formatTime(timeStr);
+      } catch {
+        // ignore
+      }
+    }
+    return formatTime(selectedAttendance?.startTime ?? selectedOption?.startTime);
+  };
   const scheduledCount = selectedAttendance?.scheduledStudentCount ?? selectedOption?.scheduledStudentCount ?? 0;
   const presentCount = selectedAttendance?.presentStudentCount ?? 0;
   const timedOutCount = selectedAttendance?.timedOutStudentCount ?? 0;
@@ -624,29 +810,115 @@ export const DutyAttendanceScreen = () => {
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
           <View style={styles.heroCircle} />
+          
+          {isRefreshing ? (
+            <TouchableOpacity 
+              style={[styles.refreshButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0 }]} 
+              disabled={true}
+            >
+              <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                <RefreshCw color="#FFFFFF" size={18} />
+              </Animated.View>
+            </TouchableOpacity>
+          ) : isLoading ? (
+            <View style={[styles.refreshButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, overflow: 'hidden' }]}>
+              <SkeletonBlock width={38} height={38} radius={19} style={{ opacity: 0.3 }} />
+            </View>
+          ) : (
+            <TouchableOpacity 
+              style={styles.refreshButton} 
+              onPress={handleRefresh}
+              activeOpacity={0.7}
+            >
+              <RefreshCw color="#FFFFFF" size={18} />
+            </TouchableOpacity>
+          )}
+
           <Text style={styles.heroKicker}>TEACHER VIEW</Text>
           <Text style={styles.heroTitle}>Host attendance{String.fromCharCode(10)}signal</Text>
-          <TouchableOpacity style={[styles.primaryHeroButton, (isLoading || !hasUsableSchedule) && styles.disabledButton]} onPress={handleTeacherBluetooth} disabled={isLoading}>
-            <Text style={styles.primaryHeroButtonText}>
-              {isLoading 
-                ? 'Turn Bluetooth On' 
-                : hasUsableSchedule 
-                  ? (hasChosenSchedule 
-                    ? (isBluetoothOn 
-                      ? (BluetoothService.isRealBleAvailable() ? 'Device Bluetooth On' : 'Turn Bluetooth Off') 
-                      : 'Turn Bluetooth On') 
-                    : 'Choose Schedule First') 
-                  : 'No Schedule Today'}
-            </Text>
-          </TouchableOpacity>
+          
+          {isLoading ? (
+            <SkeletonBlock width="100%" height={54} radius={14} style={{ marginBottom: 16, opacity: 0.3 }} />
+          ) : (
+            <TouchableOpacity 
+              style={[
+                styles.primaryHeroButton, 
+                (!hasUsableSchedule || !isBluetoothOn) && styles.disabledButton
+              ]} 
+              onPress={handleToggleHosting} 
+              disabled={!hasUsableSchedule || !isBluetoothOn}
+            >
+              <Text style={styles.primaryHeroButtonText}>
+                {!hasUsableSchedule 
+                  ? 'No Schedule Today' 
+                  : !isBluetoothOn 
+                    ? 'Bluetooth Required to Host' 
+                    : isHosting 
+                      ? 'Stop Hosting Signal' 
+                      : 'Start Hosting'}
+              </Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.heroDescription}>
             {isLoading || hasUsableSchedule
-              ? 'Turn on Bluetooth to accept check-ins. Saved attendance keeps running even if Bluetooth is turned off.'
+              ? 'Turn on Bluetooth and tap "Start Hosting" to accept check-ins. Saved attendance keeps running even if Bluetooth is turned off.'
               : 'Attendance opens only when you have a scheduled duty assignment today.'}
           </Text>
         </View>
 
-        {hasMultipleSchedules && <ScheduleChooser options={displayedScheduleOptions} selectedScheduleId={effectiveScheduleId} onSelect={handleSelectSchedule} formatTime={formatTime} />}
+        {(hasMultipleSchedules || isLoading) && (
+          <ScheduleChooser 
+            options={displayedScheduleOptions} 
+            selectedScheduleId={effectiveScheduleId} 
+            onSelect={handleSelectSchedule} 
+            formatTime={formatTime} 
+            isLoading={isLoading}
+          />
+        )}
+
+        {(hasUsableSchedule || isLoading) && (
+          <View style={styles.bluetoothStatusCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={[styles.bluetoothIconCircle, isBluetoothOn ? styles.bluetoothActive : styles.bluetoothInactive]}>
+                  <Bluetooth color={isBluetoothOn ? '#FFFFFF' : '#64748B'} size={20} />
+                </View>
+                <View style={{ minWidth: 120 }}>
+                  <Text style={styles.bluetoothCardTitle}>
+                    {isLoading ? (
+                      <SkeletonBlock width={120} height={14} radius={7} />
+                    ) : BluetoothService.isRealBleAvailable() ? (
+                      'Device Bluetooth'
+                    ) : (
+                      'Simulated Bluetooth'
+                    )}
+                  </Text>
+                  <Text style={styles.bluetoothCardStatus}>
+                    {isLoading ? (
+                      <SkeletonBlock width={90} height={12} radius={6} style={{ marginTop: 4 }} />
+                    ) : isBluetoothOn ? (
+                      BluetoothService.isRealBleAvailable() ? 'Hardware Connected' : 'Active & Discoverable'
+                    ) : (
+                      BluetoothService.isRealBleAvailable() ? 'Hardware Disabled' : 'Disabled / Off'
+                    )}
+                  </Text>
+                </View>
+              </View>
+              {isLoading ? (
+                <SkeletonBlock width={80} height={32} radius={16} />
+              ) : (
+                <TouchableOpacity
+                  style={[styles.bluetoothToggleBtn, isBluetoothOn ? styles.bluetoothToggleBtnActive : styles.bluetoothToggleBtnInactive]}
+                  onPress={handleTeacherBluetooth}
+                >
+                  <Text style={[styles.bluetoothToggleBtnText, isBluetoothOn ? styles.bluetoothToggleBtnTextActive : styles.bluetoothToggleBtnTextInactive]}>
+                    {BluetoothService.isRealBleAvailable() ? (isBluetoothOn ? 'Device On' : 'Turn On') : (isBluetoothOn ? 'Turn Off' : 'Turn On')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
 
         <View style={styles.teacherStatusCard}>
           <View style={styles.teacherMetric}>
@@ -657,22 +929,34 @@ export const DutyAttendanceScreen = () => {
             <Text style={styles.metricLabel}>TIME OUT</Text>
             {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{timedOutCount}/{presentCount}</Text>}
           </View>
+          <View style={styles.teacherMetric}>
+            <Text style={styles.metricLabel}>ELAPSED</Text>
+            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{formatElapsed(elapsedMinutes)}</Text>}
+          </View>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+            {isLoading ? (
+              <SkeletonBlock width="100%" height={10} radius={5} style={{ opacity: 0.3 }} />
+            ) : (
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+            )}
           </View>
         </View>
 
-        <TouchableOpacity style={[styles.submitAttendanceButton, teacherSubmitDisabled && styles.disabledButton]} onPress={handleSubmitAttendance} disabled={teacherSubmitDisabled}>
-          {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitAttendanceButtonText}>Submit Attendance</Text>}
-        </TouchableOpacity>
+        {isLoading ? (
+          <SkeletonBlock width="91%" height={50} radius={14} style={{ marginHorizontal: 16, marginBottom: 14, opacity: 0.3 }} />
+        ) : (
+          <TouchableOpacity style={[styles.submitAttendanceButton, teacherSubmitDisabled && styles.disabledButton]} onPress={handleSubmitAttendance} disabled={teacherSubmitDisabled}>
+            {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitAttendanceButtonText}>Submit Attendance</Text>}
+          </TouchableOpacity>
+        )}
 
         <View style={styles.infoCard}>
           <View style={styles.infoHeaderRow}>
             <MapPin color="#8A252C" size={18} />
             <Text style={styles.infoKicker}>DUTY LOCATION</Text>
           </View>
-          {isLoading ? <SkeletonBlock width="84%" height={22} radius={10} /> : <Text style={styles.infoTitle}>{locationLabel}</Text>}
-          {isLoading ? <SkeletonBlock width="72%" height={15} radius={7} style={{ marginTop: 14 }} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - ${scheduledCount} assigned student(s)` : 'No assigned duty schedule was found for today.'}</Text>}
+          {isLoading ? <SkeletonBlock width="84%" height={22} radius={10} style={{ marginBottom: 12 }} /> : <Text style={styles.infoTitle}>{locationLabel}</Text>}
+          {isLoading ? <SkeletonBlock width="72%" height={15} radius={7} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - ${scheduledCount} assigned student(s)` : 'No assigned duty schedule was found for today.'}</Text>}
         </View>
 
         <View style={styles.infoCard}>
@@ -720,22 +1004,50 @@ export const DutyAttendanceScreen = () => {
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <View style={styles.heroCard}>
         <View style={styles.heroCircle} />
+        
+        {isRefreshing ? (
+          <TouchableOpacity 
+            style={[styles.refreshButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0 }]} 
+            disabled={true}
+          >
+            <Animated.View style={{ transform: [{ rotate: spin }] }}>
+              <RefreshCw color="#FFFFFF" size={18} />
+            </Animated.View>
+          </TouchableOpacity>
+        ) : isLoading ? (
+          <View style={[styles.refreshButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, overflow: 'hidden' }]}>
+            <SkeletonBlock width={38} height={38} radius={19} style={{ opacity: 0.3 }} />
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={styles.refreshButton} 
+            onPress={handleRefresh}
+            activeOpacity={0.7}
+          >
+            <RefreshCw color="#FFFFFF" size={18} />
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.heroKicker}>STUDENT VIEW</Text>
         <Text style={styles.heroTitle}>Scan and mark{String.fromCharCode(10)}attendance</Text>
-        <TouchableOpacity
-          style={[styles.primaryHeroButton, (isLoading || !hasUsableSchedule || checkedOut || (needsTimeOut && !canTimeOut && studentStatus !== 'scanning' && !isActiveSessionDisconnected)) && styles.disabledButton]}
-          onPress={handleScan}
-          disabled={isLoading}
-        >
-          {studentStatus === 'scanning' ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <ActivityIndicator color="#111827" size="small" />
+        
+        {isLoading ? (
+          <SkeletonBlock width="100%" height={54} radius={14} style={{ marginBottom: 16, opacity: 0.3 }} />
+        ) : (
+          <TouchableOpacity
+            style={[styles.primaryHeroButton, (!hasUsableSchedule || checkedOut || (needsTimeOut && !canTimeOut && studentStatus !== 'scanning' && !isActiveSessionDisconnected)) && styles.disabledButton]}
+            onPress={handleScan}
+          >
+            {studentStatus === 'scanning' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ActivityIndicator color="#111827" size="small" />
+                <Text style={styles.primaryHeroButtonText}>{studentHeroLabel}</Text>
+              </View>
+            ) : (
               <Text style={styles.primaryHeroButtonText}>{studentHeroLabel}</Text>
-            </View>
-          ) : (
-            <Text style={styles.primaryHeroButtonText}>{studentHeroLabel}</Text>
-          )}
-        </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+        )}
         <Text style={styles.heroDescription}>
           {isLoading || hasUsableSchedule
             ? 'Scan for your clinical instructor\'s Bluetooth signal and record attendance for today\'s assigned duty.'
@@ -743,54 +1055,102 @@ export const DutyAttendanceScreen = () => {
         </Text>
       </View>
 
-      {hasMultipleSchedules && <ScheduleChooser options={displayedScheduleOptions} selectedScheduleId={effectiveScheduleId} onSelect={handleSelectSchedule} formatTime={formatTime} />}
+      {(hasMultipleSchedules || isLoading) && (
+        <ScheduleChooser 
+          options={displayedScheduleOptions} 
+          selectedScheduleId={effectiveScheduleId} 
+          onSelect={handleSelectSchedule} 
+          formatTime={formatTime} 
+          isLoading={isLoading}
+        />
+      )}
 
-      {hasUsableSchedule && (
+      {(hasUsableSchedule || isLoading) && (checkedIn || isLoading) && (
+        <View style={styles.studentStatusCard}>
+          <View style={styles.studentMetric}>
+            <Text style={styles.metricLabel}>CHECK-IN TIME</Text>
+            {isLoading ? (
+              <SkeletonBlock width={64} height={18} radius={9} />
+            ) : (
+              <Text style={styles.metricValue}>{getStudentTimeIn()}</Text>
+            )}
+          </View>
+          <View style={styles.studentMetric}>
+            <Text style={styles.metricLabel}>DUTY ELAPSED</Text>
+            {isLoading ? (
+              <SkeletonBlock width={64} height={18} radius={9} />
+            ) : (
+              <Text style={styles.metricValue}>{formatElapsed(elapsedMinutes)}</Text>
+            )}
+          </View>
+        </View>
+      )}
+
+      {(hasUsableSchedule || isLoading) && (
         <View style={styles.bluetoothStatusCard}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={[styles.bluetoothIconCircle, isBluetoothOn ? styles.bluetoothActive : styles.bluetoothInactive]}>
                 <Bluetooth color={isBluetoothOn ? '#FFFFFF' : '#64748B'} size={20} />
               </View>
-              <View>
+              <View style={{ minWidth: 120 }}>
                 <Text style={styles.bluetoothCardTitle}>
-                  {BluetoothService.isRealBleAvailable() ? 'Device Bluetooth' : 'Simulated Bluetooth'}
+                  {isLoading ? (
+                    <SkeletonBlock width={120} height={14} radius={7} />
+                  ) : BluetoothService.isRealBleAvailable() ? (
+                    'Device Bluetooth'
+                  ) : (
+                    'Simulated Bluetooth'
+                  )}
                 </Text>
                 <Text style={styles.bluetoothCardStatus}>
-                  {isBluetoothOn 
-                    ? (BluetoothService.isRealBleAvailable() ? 'Hardware Connected' : 'Active & Discoverable') 
-                    : (BluetoothService.isRealBleAvailable() ? 'Hardware Disabled' : 'Disabled / Off')}
+                  {isLoading ? (
+                    <SkeletonBlock width={90} height={12} radius={6} style={{ marginTop: 4 }} />
+                  ) : isBluetoothOn ? (
+                    BluetoothService.isRealBleAvailable() ? 'Hardware Connected' : 'Active & Discoverable'
+                  ) : (
+                    BluetoothService.isRealBleAvailable() ? 'Hardware Disabled' : 'Disabled / Off'
+                  )}
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={[styles.bluetoothToggleBtn, isBluetoothOn ? styles.bluetoothToggleBtnActive : styles.bluetoothToggleBtnInactive]}
-              onPress={() => {
-                if (BluetoothService.isRealBleAvailable()) {
-                  if (isBluetoothOn) {
-                    Alert.alert('Turn Off Bluetooth', 'Please turn off Bluetooth in your device settings.');
-                  } else {
-                    void openBluetoothSettings();
+            {isLoading ? (
+              <SkeletonBlock width={80} height={32} radius={16} />
+            ) : (
+              <TouchableOpacity
+                style={[styles.bluetoothToggleBtn, isBluetoothOn ? styles.bluetoothToggleBtnActive : styles.bluetoothToggleBtnInactive]}
+                onPress={async () => {
+                  if (BluetoothService.isRealBleAvailable()) {
+                    const granted = await BluetoothService.requestBluetoothPermissions();
+                    if (!granted) {
+                      Alert.alert('Permission Required', 'Bluetooth permissions are required to check/enable Bluetooth.');
+                      return;
+                    }
+                    if (isBluetoothOn) {
+                      Alert.alert('Turn Off Bluetooth', 'Please turn off Bluetooth in your device settings.');
+                    } else {
+                      void openBluetoothSettings();
+                    }
+                    return;
                   }
-                  return;
-                }
-                const nextState = !isBluetoothOn;
-                setIsBluetoothOn(nextState);
-                BluetoothService.setSimulatedState(nextState);
-                if (!nextState) {
-                  if (checkedIn && !checkedOut) {
-                    setIsSessionDisconnected(true);
+                  const nextState = !isBluetoothOn;
+                  setIsBluetoothOn(nextState);
+                  BluetoothService.setSimulatedState(nextState);
+                  if (!nextState) {
+                    if (checkedIn && !checkedOut) {
+                      setIsSessionDisconnected(true);
+                    }
+                    if (studentStatus === 'scanning' || studentStatus === 'found') {
+                      setStudentStatus(checkedIn ? 'connected' : 'ready');
+                    }
                   }
-                  if (studentStatus === 'scanning' || studentStatus === 'found') {
-                    setStudentStatus(checkedIn ? 'connected' : 'ready');
-                  }
-                }
-              }}
-            >
-              <Text style={[styles.bluetoothToggleBtnText, isBluetoothOn ? styles.bluetoothToggleBtnTextActive : styles.bluetoothToggleBtnTextInactive]}>
-                {BluetoothService.isRealBleAvailable() ? (isBluetoothOn ? 'Device On' : 'Turn On') : (isBluetoothOn ? 'Turn Off' : 'Turn On')}
-              </Text>
-            </TouchableOpacity>
+                }}
+              >
+                <Text style={[styles.bluetoothToggleBtnText, isBluetoothOn ? styles.bluetoothToggleBtnTextActive : styles.bluetoothToggleBtnTextInactive]}>
+                  {BluetoothService.isRealBleAvailable() ? (isBluetoothOn ? 'Device On' : 'Turn On') : (isBluetoothOn ? 'Turn Off' : 'Turn On')}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -841,12 +1201,22 @@ export const DutyAttendanceScreen = () => {
       )}
 
       <View style={[styles.infoCard, isSignalPanelHidden && { marginTop: 14 }]}>
-        <Text style={styles.infoTitle}>{getStudentInfoTitle()}</Text>
-        <Text style={styles.infoBody}>{getStudentInfoBody()}</Text>
-        {studentStatus === 'found' && !isActiveSessionDisconnected && (
-          <TouchableOpacity style={styles.connectButton} onPress={handleConnect} disabled={isSubmitting}>
-            {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>{needsTimeOut ? 'Connect and Time Out' : 'Connect and Time In'}</Text>}
-          </TouchableOpacity>
+        {isLoading ? (
+          <View>
+            <SkeletonBlock width="60%" height={18} radius={9} style={{ marginBottom: 10 }} />
+            <SkeletonBlock width="90%" height={14} radius={7} style={{ marginBottom: 6 }} />
+            <SkeletonBlock width="45%" height={14} radius={7} />
+          </View>
+        ) : (
+          <>
+            <Text style={styles.infoTitle}>{getStudentInfoTitle()}</Text>
+            <Text style={styles.infoBody}>{getStudentInfoBody()}</Text>
+            {studentStatus === 'found' && !isActiveSessionDisconnected && (
+              <TouchableOpacity style={styles.connectButton} onPress={handleConnect} disabled={isSubmitting}>
+                {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>{needsTimeOut ? 'Connect and Time Out' : 'Connect and Time In'}</Text>}
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </View>
 
@@ -855,8 +1225,8 @@ export const DutyAttendanceScreen = () => {
           <MapPin color="#8A252C" size={18} />
           <Text style={styles.infoKicker}>DUTY LOCATION</Text>
         </View>
-        {isLoading ? <SkeletonBlock width="84%" height={22} radius={10} /> : <Text style={styles.infoTitle}>{locationLabel}</Text>}
-        {isLoading ? <SkeletonBlock width="76%" height={15} radius={7} style={{ marginTop: 14 }} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>}
+        {isLoading ? <SkeletonBlock width="84%" height={22} radius={10} style={{ marginBottom: 12 }} /> : <Text style={styles.infoTitle}>{locationLabel}</Text>}
+        {isLoading ? <SkeletonBlock width="76%" height={15} radius={7} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>}
       </View>
     </ScrollView>
     </SlideUpView>
@@ -868,37 +1238,54 @@ const ScheduleChooser = ({
   selectedScheduleId,
   onSelect,
   formatTime,
+  isLoading,
 }: {
   options: AttendanceScheduleOption[];
   selectedScheduleId: number | null;
   onSelect: (scheduleId: number) => void;
   formatTime: (time?: string | null) => string;
+  isLoading?: boolean;
 }) => (
   <View style={styles.scheduleChooserCard}>
     <View style={styles.scheduleChooserHeader}>
       <Text style={styles.infoKicker}>CHOOSE DUTY SCHEDULE</Text>
       <View style={styles.scheduleCountPill}>
-        <Text style={styles.scheduleCountText}>{options.length} today</Text>
+        {isLoading ? (
+          <SkeletonBlock width={40} height={12} radius={6} style={{ opacity: 0.5 }} />
+        ) : (
+          <Text style={styles.scheduleCountText}>{options.length} today</Text>
+        )}
       </View>
     </View>
-    {options.map((option) => {
-      const isSelected = selectedScheduleId === option.scheduleId;
-      return (
-        <TouchableOpacity
-          key={option.scheduleId}
-          style={[styles.scheduleOptionCard, isSelected && styles.scheduleOptionSelected]}
-          onPress={() => onSelect(option.scheduleId)}
-          activeOpacity={0.85}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={styles.scheduleOptionTitle}>{option.ward} Duty</Text>
-            <Text style={styles.scheduleOptionHospital}>{option.hospital}</Text>
-            <Text style={styles.scheduleOptionMeta}>{formatTime(option.startTime)} - {formatTime(option.endTime)} - {option.scheduledStudentCount} student(s)</Text>
-          </View>
-          <Text style={[styles.scheduleOptionAction, isSelected && styles.scheduleOptionActionSelected]}>{isSelected ? 'Selected' : 'Choose'}</Text>
-        </TouchableOpacity>
-      );
-    })}
+    {isLoading ? (
+      <View style={[styles.scheduleOptionCard, { borderLeftColor: '#E2E8F0', borderColor: '#EEF1F5' }]}>
+        <View style={{ flex: 1 }}>
+          <SkeletonBlock width="40%" height={14} radius={7} style={{ marginBottom: 6, opacity: 0.5 }} />
+          <SkeletonBlock width="60%" height={12} radius={6} style={{ marginBottom: 6, opacity: 0.5 }} />
+          <SkeletonBlock width="50%" height={10} radius={5} style={{ opacity: 0.5 }} />
+        </View>
+        <SkeletonBlock width={45} height={16} radius={8} style={{ opacity: 0.5 }} />
+      </View>
+    ) : (
+      options.map((option) => {
+        const isSelected = selectedScheduleId === option.scheduleId;
+        return (
+          <TouchableOpacity
+            key={option.scheduleId}
+            style={[styles.scheduleOptionCard, isSelected && styles.scheduleOptionSelected]}
+            onPress={() => onSelect(option.scheduleId)}
+            activeOpacity={0.85}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.scheduleOptionTitle}>{option.ward} Duty</Text>
+              <Text style={styles.scheduleOptionHospital}>{option.hospital}</Text>
+              <Text style={styles.scheduleOptionMeta}>{formatTime(option.startTime)} - {formatTime(option.endTime)} - {option.scheduledStudentCount} student(s)</Text>
+            </View>
+            <Text style={[styles.scheduleOptionAction, isSelected && styles.scheduleOptionActionSelected]}>{isSelected ? 'Selected' : 'Choose'}</Text>
+          </TouchableOpacity>
+        );
+      })
+    )}
   </View>
 );
 
@@ -1373,5 +1760,35 @@ const styles = StyleSheet.create({
   },
   bluetoothToggleBtnTextInactive: {
     color: '#FFFFFF',
+  },
+  studentStatusCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#D8DFEA',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 14,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  studentMetric: {
+    flex: 1,
+    minWidth: 84,
+  },
+  refreshButton: {
+    position: 'absolute',
+    top: 24,
+    right: 20,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    zIndex: 10,
   },
 });

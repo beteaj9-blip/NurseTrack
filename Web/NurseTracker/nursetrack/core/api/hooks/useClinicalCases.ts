@@ -7,7 +7,7 @@ function normalizeClinicalCase(clinicalCase: any) {
     studentId: clinicalCase.studentId ?? clinicalCase.student?.id,
     studentName: clinicalCase.studentName ?? clinicalCase.student?.fullName ?? '',
     studentSchoolId: clinicalCase.studentSchoolId ?? clinicalCase.student?.schoolId ?? '',
-    studentSection: clinicalCase.studentSection ?? clinicalCase.student?.sectionInfo ?? '',
+    studentSection: clinicalCase.studentSection || (clinicalCase.student?.sectionInfo ? (clinicalCase.student.groupInfo ? `${clinicalCase.student.sectionInfo} - ${clinicalCase.student.groupInfo}` : clinicalCase.student.sectionInfo) : ''),
     studentAssignedLevels: clinicalCase.studentAssignedLevels ?? clinicalCase.student?.assignedLevels ?? [],
     studentProfileImageUrl: clinicalCase.studentProfileImageUrl ?? clinicalCase.student?.profileImageUrl ?? '',
     instructorId: clinicalCase.instructorId ?? clinicalCase.instructor?.id,

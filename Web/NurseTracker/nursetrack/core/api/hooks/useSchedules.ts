@@ -17,7 +17,7 @@ function normalizeSchedule(schedule: any) {
     studentId: schedule.studentId ?? schedule.student?.id,
     studentName: schedule.studentName ?? schedule.student?.fullName ?? '',
     studentSchoolId: schedule.studentSchoolId ?? schedule.student?.schoolId ?? '',
-    studentSection: schedule.studentSection ?? schedule.student?.sectionInfo ?? '',
+    studentSection: schedule.studentSection || (schedule.student?.sectionInfo ? (schedule.student.groupInfo ? `${schedule.student.sectionInfo} - ${schedule.student.groupInfo}` : schedule.student.sectionInfo) : ''),
     studentProfileImageUrl: schedule.studentProfileImageUrl ?? schedule.student?.profileImageUrl ?? '',
     instructorId: schedule.instructorId ?? schedule.instructor?.id,
     instructorName: schedule.instructorName ?? schedule.instructor?.fullName ?? '',
