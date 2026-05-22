@@ -23,8 +23,11 @@ function levelsFromText(value?: string) {
 }
 
 function fmt(hours: number) {
-  const rounded = Math.round(Number(hours || 0) * 100) / 100;
-  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(2).replace(/0$/, "")} hrs`;
+  const m = Math.round(Number(hours || 0) * 60);
+  if (m === 0) return "0m";
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return (h > 0 ? `${h}h ` : "") + (rem > 0 ? `${rem}m` : "").trim();
 }
 
 function monthLabel(date: Date) {

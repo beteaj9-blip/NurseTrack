@@ -133,7 +133,7 @@ export function LiveAttendanceContent({ basePath }: { basePath?: string } = {}) 
                       ["Time Out", selectedSession.timeOut],
                       ["Connection", selectedSession.liveMin],
                       ["Status", selectedSession.status],
-                      ["Counted Hours", `${Number(selectedSession.hours || 0).toFixed(2)}h`],
+                      ["Counted Hours", (function(h){ const m = Math.round(Number(h||0)*60); return m===0 ? "0m" : (Math.floor(m/60)>0 ? Math.floor(m/60)+"h " : "") + (m%60>0 ? (m%60)+"m" : ""); })(selectedSession.hours)],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-lg border border-[#e2e8f0] bg-white p-3">
                         <p className="m-0 !text-[#64748b] !text-[0.7rem] !font-[900] uppercase">{label}</p>

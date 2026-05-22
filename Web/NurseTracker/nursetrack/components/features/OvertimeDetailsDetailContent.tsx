@@ -12,8 +12,11 @@ function overtimeHours(record: any) {
 }
 
 function formatHours(hours: number) {
-  const rounded = Math.round(hours * 10) / 10;
-  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)} hrs`;
+  const m = Math.round(Number(hours || 0) * 60);
+  if (m === 0) return "0m";
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return (h > 0 ? `${h}h ` : "") + (rem > 0 ? `${rem}m` : "").trim();
 }
 
 function formatPeriod(date?: string) {

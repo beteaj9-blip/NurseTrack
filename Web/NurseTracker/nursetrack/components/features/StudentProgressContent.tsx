@@ -23,8 +23,11 @@ type RequirementGroup = {
 };
 
 function formatHours(hours: number) {
-  const cleanHours = Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
-  return Number(hours) === 1 ? `${cleanHours} hr` : `${cleanHours} hrs`;
+  const m = Math.round(Number(hours || 0) * 60);
+  if (m === 0) return "0m";
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return (h > 0 ? `${h}h ` : "") + (rem > 0 ? `${rem}m` : "").trim();
 }
 
 function formatDutyDate(date?: string) {
