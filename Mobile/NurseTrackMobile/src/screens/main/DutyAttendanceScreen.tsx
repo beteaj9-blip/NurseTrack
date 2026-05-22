@@ -197,6 +197,15 @@ export const DutyAttendanceScreen = () => {
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const studentStatusRef = useRef(studentStatus);
+  useEffect(() => { studentStatusRef.current = studentStatus; }, [studentStatus]);
+
+  const verifiedSignalScheduleIdRef = useRef(verifiedSignalScheduleId);
+  useEffect(() => { verifiedSignalScheduleIdRef.current = verifiedSignalScheduleId; }, [verifiedSignalScheduleId]);
+
+  const isBluetoothOnRef = useRef(isBluetoothOn);
+  useEffect(() => { isBluetoothOnRef.current = isBluetoothOn; }, [isBluetoothOn]);
+
   const spinAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -282,9 +291,12 @@ export const DutyAttendanceScreen = () => {
             setVerifiedSignalScheduleId(null);
           } else {
             const isBroadcasting = response.data.instructorBroadcasting === true;
-            const stillConnected = isBroadcasting && verifiedSignalScheduleId === response.data.scheduleId && isBluetoothOn;
+            const currentStatus = studentStatusRef.current;
+            const currentVerifiedId = verifiedSignalScheduleIdRef.current;
+            const currentBluetooth = isBluetoothOnRef.current;
+            const stillConnected = isBroadcasting && currentVerifiedId === response.data.scheduleId && currentBluetooth;
             
-            if (studentStatus !== 'scanning' && studentStatus !== 'found') {
+            if (currentStatus !== 'scanning' && currentStatus !== 'found') {
               if (stillConnected) {
                 setStudentStatus('connected');
               } else {
@@ -298,9 +310,12 @@ export const DutyAttendanceScreen = () => {
           }
         } else {
           const isBroadcasting = response.data.instructorBroadcasting === true;
-          const stillConnected = isBroadcasting && verifiedSignalScheduleId === response.data.scheduleId && isBluetoothOn;
+          const currentStatus = studentStatusRef.current;
+          const currentVerifiedId = verifiedSignalScheduleIdRef.current;
+          const currentBluetooth = isBluetoothOnRef.current;
+          const stillConnected = isBroadcasting && currentVerifiedId === response.data.scheduleId && currentBluetooth;
           
-          if (studentStatus !== 'scanning' && studentStatus !== 'found') {
+          if (currentStatus !== 'scanning' && currentStatus !== 'found') {
             if (stillConnected) {
               setStudentStatus('connected');
             } else {

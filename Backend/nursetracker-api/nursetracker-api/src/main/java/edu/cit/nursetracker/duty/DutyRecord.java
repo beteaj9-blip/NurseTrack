@@ -74,6 +74,27 @@ public class DutyRecord {
         return 0.0;
     }
 
+    @Transient
+    public Double getOvertime() {
+        Double total = getTotalHours();
+        if (total == null || total == 0.0) return 0.0;
+        
+        if (this.schedule != null) {
+            try {
+                long scheduledMinutes = java.time.Duration.between(
+                    this.schedule.getStartTime(), 
+                    this.schedule.getEndTime()
+                ).toMinutes();
+                double scheduledHours = scheduledMinutes / 60.0;
+                double overtime = total - scheduledHours;
+                return Math.max(0.0, overtime);
+            } catch (Exception e) {
+                // Ignore lazy init exception
+            }
+        }
+        return Math.max(0.0, total - 8.0);
+    }
+
     private LocalDateTime attendanceSubmittedAt;
 
     @Enumerated(EnumType.STRING)

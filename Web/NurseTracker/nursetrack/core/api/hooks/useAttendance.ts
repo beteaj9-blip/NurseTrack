@@ -31,6 +31,7 @@ function normalizeDuty(record: any) {
     timeInLabel: record.timeInLabel ?? formatTime(record.timeIn),
     timeOutLabel: record.timeOutLabel ?? formatTime(record.timeOut),
     hours: Number(record.totalHours ?? record.hours ?? 0),
+    overtime: Number(record.overtime ?? 0),
   };
 }
 

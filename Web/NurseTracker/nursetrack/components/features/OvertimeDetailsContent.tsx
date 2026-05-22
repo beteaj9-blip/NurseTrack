@@ -62,7 +62,7 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
 
   const people = Object.values((attendance as any[]).reduce((acc: Record<string, any>, record: any) => {
     if (monthKey(record.dutyDate) !== periodKey) return acc;
-    const overtime = Math.max(Number(record.hours || 0) - 8, 0);
+    const overtime = Number(record.overtime ?? Math.max(Number(record.hours || 0) - 8, 0));
     if (overtime <= 0) return acc;
     const key = `student-${record.studentId}`;
     const current = acc[key] ?? {

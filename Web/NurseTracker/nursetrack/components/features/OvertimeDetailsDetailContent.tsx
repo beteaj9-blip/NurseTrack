@@ -8,7 +8,7 @@ import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
 
 function overtimeHours(record: any) {
-  return Math.max(Number(record.hours || 0) - 8, 0);
+  return Number(record.overtime ?? Math.max(Number(record.hours || 0) - 8, 0));
 }
 
 function formatHours(hours: number) {
