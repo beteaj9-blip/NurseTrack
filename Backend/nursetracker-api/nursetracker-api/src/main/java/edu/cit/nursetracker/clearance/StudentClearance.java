@@ -25,11 +25,20 @@ public class StudentClearance {
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "instructor_id")
+    private User instructor;
+
     @Column(nullable = false)
     private String schoolYear;
 
     @Column(nullable = false)
     private String semester;
+
+    private String remarks;
+
+    @Column(name = "attachment_url")
+    private String attachmentUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

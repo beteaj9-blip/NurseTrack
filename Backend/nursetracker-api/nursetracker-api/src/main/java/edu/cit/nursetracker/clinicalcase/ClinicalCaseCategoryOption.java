@@ -17,6 +17,13 @@ public class ClinicalCaseCategoryOption {
     @Column(nullable = false, unique = true)
     private String value;
 
-    @Column(nullable = false)
+    @Column(name = "category_name", nullable = false)
     private String label;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "case_type")
+    private CaseType caseType;
+
+    @Column(name = "required_count")
+    private Integer requiredCount;
 }

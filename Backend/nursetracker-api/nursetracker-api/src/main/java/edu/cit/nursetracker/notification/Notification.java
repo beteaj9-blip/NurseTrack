@@ -34,11 +34,12 @@ public class Notification {
     @Column(nullable = false)
     private NotificationType type;
 
+    @Column(name = "action_url")
+    private String actionUrl;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean isRead = false;
-
-    private String actionUrl;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

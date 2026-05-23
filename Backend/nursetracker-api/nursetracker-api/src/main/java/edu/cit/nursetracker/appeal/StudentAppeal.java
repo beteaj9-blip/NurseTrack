@@ -41,15 +41,16 @@ public class StudentAppeal {
     @Column(nullable = false)
     private String dutyArea;
 
-    @Column(nullable = false)
+    @Column(name = "subject", nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 2000)
+    @Column(name = "details", nullable = false, length = 2000)
     private String studentReason;
 
     @Column(length = 2000)
     private String evidenceNotes;
 
+    @Column(name = "attachment_url")
     private String supportingFiles;
 
     @Enumerated(EnumType.STRING)
@@ -57,10 +58,17 @@ public class StudentAppeal {
     @Builder.Default
     private AppealStatus status = AppealStatus.PENDING;
 
+    @Column(name = "instructor_recommendation")
     private String instructorRemarks;
 
     @Enumerated(EnumType.STRING)
     private AppealStatus instructorDecision;
+
+    @Column(name = "chair_decision")
+    private String chairDecision;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
