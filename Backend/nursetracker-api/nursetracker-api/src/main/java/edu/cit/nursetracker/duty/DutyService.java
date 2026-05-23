@@ -91,11 +91,15 @@ public class DutyService {
     }
 
     public List<DutyRecord> getInstructorValidations(Long instructorId) {
-        return dutyRepository.findByInstructorIdOrderByTimeInDesc(instructorId);
+        return dutyRepository.findByInstructorIdOrderByTimeInDesc(instructorId).stream()
+                .filter(record -> record.getStudent() != null && record.getStudent().getRole() == UserRole.STUDENT)
+                .toList();
     }
 
     public List<DutyRecord> getAllDuties() {
-        return dutyRepository.findAll();
+        return dutyRepository.findAll().stream()
+                .filter(record -> record.getStudent() != null && record.getStudent().getRole() == UserRole.STUDENT)
+                .toList();
     }
 
     public List<DutyRecord> getDutiesVisibleTo(Long viewerId) {

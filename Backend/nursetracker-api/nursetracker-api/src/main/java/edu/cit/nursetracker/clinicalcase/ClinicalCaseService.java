@@ -35,7 +35,9 @@ public class ClinicalCaseService {
     }
 
     public List<ClinicalCase> getAllCases() {
-        return caseRepository.findAllByOrderByCaseDateDesc();
+        return caseRepository.findAllByOrderByCaseDateDesc().stream()
+                .filter(c -> c.getStudent() != null && c.getStudent().getRole() == UserRole.STUDENT)
+                .toList();
     }
 
     public List<ClinicalCase> getCasesVisibleTo(Long viewerId) {
@@ -99,13 +101,14 @@ public class ClinicalCaseService {
     }
 
     public List<ClinicalCase> getInstructorCases(Long instructorId) {
-        return caseRepository.findByInstructorIdOrderByCaseDateDesc(instructorId);
+        return caseRepository.findByInstructorIdOrderByCaseDateDesc(instructorId).stream()
+                .filter(c -> c.getStudent() != null && c.getStudent().getRole() == UserRole.STUDENT)
+                .toList();
     }
 
     public ClinicalCase validateCase(Long caseId, CaseStatus status, String feedback) {
         ClinicalCase clinicalCase = caseRepository.findById(caseId)
                 .orElseThrow(() -> new RuntimeException("Clinical Case not found."));
-        
         clinicalCase.setStatus(status);
         if (feedback != null) {
             clinicalCase.setInstructorFeedback(feedback);

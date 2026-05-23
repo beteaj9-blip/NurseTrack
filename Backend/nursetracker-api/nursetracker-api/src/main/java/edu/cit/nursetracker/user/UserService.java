@@ -419,10 +419,8 @@ public class UserService {
             return block.instructorText();
         }
         User ci = instructor.get();
-        if (ci.getAssignedLevels() == null || !ci.getAssignedLevels().contains(level)) {
-            Set<Integer> levels = new HashSet<>(ci.getAssignedLevels() == null ? Set.of() : ci.getAssignedLevels());
-            levels.add(level);
-            ci.setAssignedLevels(levels);
+        if (ci.getAssignedLevels() == null || !ci.getAssignedLevels().equals(Set.of(level))) {
+            ci.setAssignedLevels(new HashSet<>(Set.of(level)));
             userRepository.save(ci);
         }
         int blockCreated = 0;

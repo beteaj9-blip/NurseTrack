@@ -146,7 +146,7 @@ export function ClinicalCasesSelectionContent({ basePath }: { basePath: string; 
             <>
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-[16px] border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] mb-[14px] p-[14px] max-[680px]:grid-cols-1">
                 <ProfileAvatar name={firstCase.studentName} imageUrl={firstCase.studentProfileImageUrl} size={48} />
-                <div className="w-full"><strong className="block !text-[#111827] !text-[1rem] !font-[800] leading-[1.3] mb-[4px]">{firstCase.studentName}</strong><p className="m-0 !text-[#64748b] !text-[0.86rem] !font-[700]">{firstCase.studentSection} - Student ID {firstCase.studentSchoolId}</p></div>
+                <div className="w-full"><strong className="block !text-[#111827] !text-[1rem] !font-[800] leading-[1.3] mb-[4px]">{firstCase.studentName}</strong><p className="m-0 !text-[#64748b] !text-[0.86rem] !font-[700]">{firstCase.studentSection} - ID {firstCase.studentSchoolId}</p></div>
                 <span className="inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">For review</span>
               </div>
               <CaseSection title="DR" subtitle="Delivery Room Cases" records={drCases} basePath={basePath} />

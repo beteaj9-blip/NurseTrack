@@ -27,6 +27,7 @@ public class ExtensionDayController {
     public ResponseEntity<List<ExtensionDay>> getAll(@RequestParam(required = false) Long studentId, @RequestParam(required = false) Long viewerId, HttpServletRequest request) {
         Long effectiveViewerId = viewerId != null ? viewerId : jwtService.getUserId(request);
         return ResponseEntity.ok(filterVisible(extensionDayRepository.findAllByOrderByCreatedAtDesc(), effectiveViewerId).stream()
+                .filter(record -> record.getStudent() != null && record.getStudent().getRole() == edu.cit.nursetracker.user.UserRole.STUDENT)
                 .filter(record -> studentId == null || record.getStudent().getId().equals(studentId))
                 .toList());
     }
@@ -44,7 +45,9 @@ public class ExtensionDayController {
     @GetMapping("/instructor/{instructorId}")
     public ResponseEntity<List<ExtensionDay>> getByInstructor(@PathVariable Long instructorId, @RequestParam(required = false) Long studentId) {
         if (studentId != null) return ResponseEntity.ok(extensionDayRepository.findByInstructorIdAndStudentIdOrderByCreatedAtDesc(instructorId, studentId));
-        return ResponseEntity.ok(extensionDayRepository.findByInstructorIdOrderByCreatedAtDesc(instructorId));
+        return ResponseEntity.ok(extensionDayRepository.findByInstructorIdOrderByCreatedAtDesc(instructorId).stream()
+                .filter(record -> record.getStudent() != null && record.getStudent().getRole() == edu.cit.nursetracker.user.UserRole.STUDENT)
+                .toList());
     }
 
     @GetMapping("/instructor")
