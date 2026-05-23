@@ -16,9 +16,10 @@
   }
 
   body {
+    height: 100vh;
     min-height: 100vh;
     margin: 0;
-    overflow-x: hidden;
+    overflow: hidden;
     background: #f4f6fa;
     color: #111827;
     font-family: var(--font-kumbh-sans), "Kumbh Sans", system-ui, sans-serif;
