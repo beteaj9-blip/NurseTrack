@@ -1,3 +1,9 @@
+SET FOREIGN_KEY_CHECKS = 0;
+ALTER TABLE clinical_case_categories DROP COLUMN IF EXISTS label;
+ALTER TABLE student_appeals DROP COLUMN IF EXISTS title;
+ALTER TABLE student_appeals DROP COLUMN IF EXISTS student_reason;
+SET FOREIGN_KEY_CHECKS = 1;
+
 -- Test mock data seed for one nursing student and one clinical instructor.
 -- Student: 23-0509-324
 -- Clinical Instructor: 23-0509-234
@@ -112,7 +118,7 @@ AND sc.shift_date IN ('2026-05-20', '2026-05-21', '2026-05-22')
 AND sc.ward IN ('Emergency Room', 'Delivery Room', 'Operating Room');
 
 INSERT INTO system_info (version, last_updated)
-SELECT '1.0', '2026-05-16'
+SELECT 1.0', 2026-05-16', 2026-05-16'
 WHERE NOT EXISTS (SELECT 1 FROM system_info);
 
 UPDATE system_info
@@ -148,7 +154,7 @@ EXECUTE drop_system_semester_stmt;
 DEALLOCATE PREPARE drop_system_semester_stmt;
 
 INSERT INTO academic_terms (school_year, semester, active, created_at, updated_at)
-SELECT '2025 - 2026', '2nd Semester', TRUE, NOW(), NOW()
+SELECT 2025 - 2026', 2nd Semester', 2nd Semester', TRUE, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM academic_terms WHERE school_year = '2025 - 2026' AND semester = '2nd Semester');
 
 UPDATE academic_terms
@@ -200,7 +206,7 @@ SELECT 'Labor Watch', 'Labor Watch'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Labor Watch');
 
 INSERT INTO users (school_id, full_name, email, mobile_number, password_hash, role, section_info, status, created_at, updated_at)
-SELECT '23-0509-324', 'Jay Yan C. Tiongzon', 'jayyan.tiongzon@cit.edu', '+63 917 050 9324', 'NurseTrack123', 'STUDENT', 'BSN 3A', 'ACTIVE', NOW(), NOW()
+SELECT 23-0509-324', Jay Yan C. Tiongzon', Jay Yan C. Tiongzon', 'jayyan.tiongzon@cit.edu', '+63 917 050 9324', 'NurseTrack123', 'STUDENT', 'BSN 3A', 'ACTIVE', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE school_id = '23-0509-324');
 
 UPDATE users
@@ -212,7 +218,7 @@ SET full_name = 'Jay Yan C. Tiongzon',
 WHERE school_id = '23-0509-324';
 
 INSERT INTO users (school_id, full_name, email, mobile_number, password_hash, role, section_info, status, created_at, updated_at)
-SELECT '23-0509-234', 'Clinical Instructor Test', 'clinical.instructor.234@cit.edu', '+63 917 050 9234', 'NurseTrack123', 'INSTRUCTOR', 'Clinical Instructor - BSN 3A', 'ACTIVE', NOW(), NOW()
+SELECT 23-0509-234', Clinical Instructor Test', Clinical Instructor Test', 'clinical.instructor.234@cit.edu', '+63 917 050 9234', 'NurseTrack123', 'INSTRUCTOR', 'Clinical Instructor - BSN 3A', 'ACTIVE', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE school_id = '23-0509-234');
 
 UPDATE users
@@ -265,91 +271,92 @@ WHERE s.school_id = '23-0509-324';
 ALTER TABLE hospitals MODIFY COLUMN active BIT(1) NOT NULL DEFAULT b'1';
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'VSMMC', 'Vicente Sotto Memorial Medical Center', 'Hospital / Medical Center', 'Vicente Sotto Memorial Medical Center'
+INSERT INTO hospitals (name, full_name, label, address)
+SELECT 'VSMMC', 'Vicente Sotto Memorial Medical Center', 'Vicente Sotto Memorial Medical Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'VSMMC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'LCH', 'Lapu-Lapu City Hospital', 'Hospital', 'Lapu-Lapu City Hospital'
+SELECT 'LCH', 'Lapu-Lapu City Hospital', 'Lapu-Lapu City Hospital'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'LCH');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'PSH', 'Perpetual Succour Hospital', 'Hospital', 'Perpetual Succour Hospital'
+SELECT 'PSH', 'Perpetual Succour Hospital', 'Perpetual Succour Hospital'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'PSH');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'CCMC', 'Cebu City Medical Center', 'Hospital / Medical Center', 'Cebu City Medical Center'
+SELECT 'CCMC', 'Cebu City Medical Center', 'Cebu City Medical Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'CCMC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'CBS', 'Center for Behavioral Sciences', 'Clinical Area / Behavioral Health Area', 'Center for Behavioral Sciences'
+SELECT 'CBS', 'Center for Behavioral Sciences', 'Center for Behavioral Sciences'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'CBS');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'SAMCH', 'St. Anthony Mother and Child Hospital', 'Hospital', 'St. Anthony Mother and Child Hospital'
+SELECT 'SAMCH', 'St. Anthony Mother and Child Hospital', 'St. Anthony Mother and Child Hospital'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'SAMCH');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'MMC', 'Mactan Medical Hospital', 'Hospital', 'Mactan Medical Hospital'
+SELECT 'MMC', 'Mactan Medical Hospital', 'Mactan Medical Hospital'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'MMC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'VMH', 'VisayasMed Hospital', 'Hospital', 'VisayasMed Hospital'
+SELECT 'VMH', 'VisayasMed Hospital', 'VisayasMed Hospital'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'VMH');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'VMCH', 'Vicente Mendiola Center for Health', 'Clinical Area / Health Facility', 'Vicente Mendiola Center for Health'
+SELECT 'VMCH', 'Vicente Mendiola Center for Health', 'Vicente Mendiola Center for Health'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'VMCH');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'CSMC', 'Cebu South Medical Center', 'Hospital / Medical Center', 'Cebu South Medical Center'
+SELECT 'CSMC', 'Cebu South Medical Center', 'Cebu South Medical Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'CSMC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'ECS', 'Eversley Childs Sanitarium and General Hospital', 'Hospital / Specialty Hospital', 'Eversley Childs Sanitarium and General Hospital'
+SELECT 'ECS', 'Eversley Childs Sanitarium and General Hospital', 'Eversley Childs Sanitarium and General Hospital'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'ECS');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'CCHD', 'Cebu City Health Department', 'Community Exposure Area / Public Health Office', 'Cebu City Health Department'
+SELECT 'CCHD', 'Cebu City Health Department', 'Cebu City Health Department'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'CCHD');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'SHN', 'School Health Nursing', 'Community Exposure Area / School/Barangay Health Nursing', 'School Health Nursing'
+SELECT 'SHN', 'School Health Nursing', 'School Health Nursing'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'SHN');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'CHN', 'Community Health Nursing', 'Community Exposure Area / Barangay Health Exposure', 'Community Health Nursing'
+SELECT 'CHN', 'Community Health Nursing', 'Community Health Nursing'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'CHN');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'MMH', 'Mactan Medical Hospital', 'Hospital', 'Mactan Medical Hospital'
+SELECT 'MMH', 'Mactan Medical Hospital', 'Mactan Medical Hospital'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'MMH');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'VMCHI', 'Vicente Mendiola Center for Health Infirmary', 'Clinical Area / Infirmary', 'Vicente Mendiola Center for Health Infirmary'
+SELECT 'VMCHI', 'Vicente Mendiola Center for Health Infirmary', 'Vicente Mendiola Center for Health Infirmary'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'VMCHI');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'HHDC', 'Healing Hands Dialysis Center', 'Clinical Area / Dialysis Center', 'Healing Hands Dialysis Center'
+SELECT 'HHDC', 'Healing Hands Dialysis Center', 'Healing Hands Dialysis Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'HHDC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'MBC', 'Mabolo Birthing Center', 'Clinical Area / Birthing Center', 'Mabolo Birthing Center'
+SELECT 'MBC', 'Mabolo Birthing Center', 'Mabolo Birthing Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'MBC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'IBC', 'Inayawan Birthing Center', 'Clinical Area / Birthing Center', 'Inayawan Birthing Center'
+SELECT 'IBC', 'Inayawan Birthing Center', 'Inayawan Birthing Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'IBC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'QBC', 'Quiot Birthing Center', 'Clinical Area / Birthing Center', 'Quiot Birthing Center'
+SELECT 'QBC', 'Quiot Birthing Center', 'Quiot Birthing Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'QBC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'TBC', 'Tejero Birthing Center', 'Clinical Area / Birthing Center', 'Tejero Birthing Center'
+SELECT 'TBC', 'Tejero Birthing Center', 'Tejero Birthing Center'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'TBC');
 
 INSERT INTO hospitals (name, full_name, label, address)
-SELECT 'PPBL', 'Preventive Promotive Brgy. Lagtang', 'Community Exposure Area / Preventive-Promotive Barangay Area', 'Preventive Promotive Brgy. Lagtang'
+SELECT 'PPBL', 'Preventive Promotive Brgy. Lagtang', 'Preventive Promotive Brgy. Lagtang'
 WHERE NOT EXISTS (SELECT 1 FROM hospitals WHERE name = 'PPBL');
 
 UPDATE hospitals SET full_name = 'Vicente Sotto Memorial Medical Center', label = 'Hospital / Medical Center', address = 'Vicente Sotto Memorial Medical Center' WHERE name = 'VSMMC';
@@ -611,7 +618,7 @@ AND NOT EXISTS (
     WHERE n.user_id = i.id AND n.title = 'Student Appeal Pending'
 );
 
-INSERT INTO student_appeals (student_id, instructor_id, appeal_type, related_duty_date, clinical_site, duty_area, title, student_reason, evidence_notes, supporting_files, status, created_at, updated_at)
+INSERT INTO student_appeals (student_id, instructor_id, appeal_type, related_duty_date, clinical_site, duty_area, subject, details, evidence_notes, supporting_files, status, created_at, updated_at)
 SELECT s.id, i.id, 'Attendance', '2026-05-21', 'CCMC', 'Delivery Room', 'Late arrival due to transport delay', 'Public transportation was delayed during the route to the clinical site.', 'Transport advisory and arrival timestamp are available.', '', 'PENDING', NOW(), NOW()
 FROM users s
 JOIN users i ON i.school_id = '23-0509-234'
@@ -621,7 +628,7 @@ AND NOT EXISTS (
     WHERE sa.student_id = s.id AND sa.title = 'Late arrival due to transport delay'
 );
 
-INSERT INTO student_appeals (student_id, instructor_id, appeal_type, related_duty_date, clinical_site, duty_area, title, student_reason, evidence_notes, supporting_files, status, created_at, updated_at)
+INSERT INTO student_appeals (student_id, instructor_id, appeal_type, related_duty_date, clinical_site, duty_area, subject, details, evidence_notes, supporting_files, status, created_at, updated_at)
 SELECT s.id, i.id, 'Clinical Case', '2026-05-22', 'VSMMC', 'Operating Room', 'Case documentation clarification', 'I would like to clarify the required supporting note for my OR case.', 'Awaiting CI recommendation.', '', 'ACCEPTED', NOW(), NOW()
 FROM users s
 JOIN users i ON i.school_id = '23-0509-234'
