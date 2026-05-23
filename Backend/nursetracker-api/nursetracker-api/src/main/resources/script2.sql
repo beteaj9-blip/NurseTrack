@@ -13,35 +13,35 @@ SET level = (
 )
 WHERE EXISTS (SELECT 1 FROM user_assigned_levels ual WHERE ual.user_id = u.id);
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Major Cases - Assist', 'Major Case - Assist'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Assist');
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Major Cases - Scrub', 'Major Case - Scrub'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Scrub');
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Major Cases - Circulating', 'Major Case - Circulating'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Circulating');
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Minor Case', 'Minor Case'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Minor Case');
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Handled Cases', 'Handled Case'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Handled Cases');
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Assisted Case', 'Assisted Case'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Assisted Case');
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Newborn Care', 'Newborn Care'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Newborn Care');
 
-INSERT INTO clinical_case_categories (value, label)
+INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Labor Watch', 'Labor Watch'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Labor Watch');
 
