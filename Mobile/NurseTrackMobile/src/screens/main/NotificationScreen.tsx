@@ -35,6 +35,7 @@ interface NotificationData {
   isRead: boolean;
   read?: boolean;
   createdAt: string;
+  actionUrl?: string;
 }
 
 const normalizeNotification = (notification: NotificationData): NotificationData => ({

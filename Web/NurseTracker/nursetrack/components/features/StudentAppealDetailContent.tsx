@@ -74,8 +74,8 @@ const emptyForm = {
   clinicalSite: "",
   dutyArea: "",
   instructorId: "",
-  title: "",
-  studentReason: "",
+  subject: "",
+  details: "",
   evidenceNotes: "",
   supportingFiles: "",
 };
@@ -125,8 +125,8 @@ export function StudentAppealDetailContent() {
       clinicalSite: appeal.clinicalSite ?? "",
       dutyArea: appeal.dutyArea ?? "",
       instructorId: appeal.instructorId != null ? String(appeal.instructorId) : "",
-      title: appeal.title ?? "",
-      studentReason: appeal.studentReason ?? "",
+      subject: appeal.subject ?? "",
+      details: appeal.details ?? "",
       evidenceNotes: appeal.evidenceNotes ?? "",
       supportingFiles: appeal.supportingFiles ?? "",
     });
@@ -178,7 +178,7 @@ export function StudentAppealDetailContent() {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (form.supportingFiles) {
-      showToast({ variant: "error", title: "Remove current file", message: "Only one supporting file can be attached. Remove the current file first." });
+      showToast({ variant: "error", subject: "Remove current file", message: "Only one supporting file can be attached. Remove the current file first." });
       event.target.value = "";
       return;
     }
@@ -190,10 +190,10 @@ export function StudentAppealDetailContent() {
       const uploaded = await uploadAppealFile.mutateAsync(file);
       updateForm("supportingFiles", uploaded.secure_url ?? uploaded.url ?? file.name);
       setMessage("Supporting file uploaded.");
-      showToast({ variant: "success", title: "File uploaded", message: "Supporting file was attached to the appeal." });
+      showToast({ variant: "success", subject: "File uploaded", message: "Supporting file was attached to the appeal." });
     } catch {
       setMessage("Supporting file could not be uploaded. Check Cloudinary configuration.");
-      showToast({ variant: "error", title: "Upload failed", message: "Check Cloudinary configuration and try again." });
+      showToast({ variant: "error", subject: "Upload failed", message: "Check Cloudinary configuration and try again." });
     } finally {
       event.target.value = "";
     }
@@ -202,20 +202,20 @@ export function StudentAppealDetailContent() {
   const removeFile = () => {
     updateForm("supportingFiles", "");
     setMessage("Supporting file removed. Save changes to update the appeal.");
-    showToast({ variant: "success", title: "File removed", message: "Save changes to remove it from this appeal." });
+    showToast({ variant: "success", subject: "File removed", message: "Save changes to remove it from this appeal." });
   };
 
   const saveAppeal = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!canEdit) {
       setMessage("Accepted appeals can no longer be edited.");
-      showToast({ variant: "error", title: "Appeal locked", message: "Accepted appeals can no longer be edited." });
+      showToast({ variant: "error", subject: "Appeal locked", message: "Accepted appeals can no longer be edited." });
       return;
     }
     const isNotApplicable = selectedScheduleId === NOT_APPLICABLE_VALUE;
-    if (!appealId || !user || !form.appealType || (!isNotApplicable && !form.relatedDutyDate) || !form.clinicalSite || !form.dutyArea || (!isNotApplicable && !form.instructorId) || !form.title || !form.studentReason) {
+    if (!appealId || !user || !form.appealType || (!isNotApplicable && !form.relatedDutyDate) || !form.clinicalSite || !form.dutyArea || (!isNotApplicable && !form.instructorId) || !form.subject || !form.details) {
       setMessage("Complete the appeal details before saving.");
-      showToast({ variant: "error", title: "Missing appeal details", message: "Complete the appeal details before saving." });
+      showToast({ variant: "error", subject: "Missing appeal details", message: "Complete the appeal details before saving." });
       return;
     }
 
@@ -229,18 +229,18 @@ export function StudentAppealDetailContent() {
           relatedDutyDate: isNotApplicable ? null : form.relatedDutyDate,
           clinicalSite: isNotApplicable ? NOT_APPLICABLE_LABEL : form.clinicalSite,
           dutyArea: isNotApplicable ? NOT_APPLICABLE_LABEL : form.dutyArea,
-          title: form.title,
-          studentReason: form.studentReason,
+          subject: form.subject,
+          details: form.details,
           evidenceNotes: form.evidenceNotes,
           supportingFiles: form.supportingFiles,
         },
       });
       setIsEditing(false);
       setMessage("Appeal changes saved.");
-      showToast({ variant: "success", title: "Appeal updated", message: "Your appeal changes were saved." });
+      showToast({ variant: "success", subject: "Appeal updated", message: "Your appeal changes were saved." });
     } catch {
       setMessage("Appeal changes could not be saved.");
-      showToast({ variant: "error", title: "Update failed", message: "Appeal changes could not be saved." });
+      showToast({ variant: "error", subject: "Update failed", message: "Appeal changes could not be saved." });
     }
   };
 
@@ -263,10 +263,10 @@ export function StudentAppealDetailContent() {
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-2">
           {isEditing ? (
-            <input className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] text-[1rem] font-[800] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01]" value={form.title} onChange={(event) => updateForm("title", event.target.value)} placeholder="Enter appeal title" />
+            <input className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] text-[1rem] font-[800] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01]" value={form.subject} onChange={(event) => updateForm("subject", event.target.value)} placeholder="Enter appeal subject" />
           ) : (
             <h3 className="text-[1.15rem] font-[800] text-[#111827] m-0 leading-[1.3]">
-              {appeal?.title ?? "Appeal details"}
+              {appeal?.subject ?? "Appeal details"}
             </h3>
           )}
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appealStageKey(appeal))}`}>
@@ -327,10 +327,10 @@ export function StudentAppealDetailContent() {
           <div className="border border-[#e2e8f0] border-l-[4px] border-l-[#ffc107] rounded-lg bg-[#f8fafc] p-4 pl-5">
             <span className="block text-[#8A252C] text-[0.7rem] font-[900] uppercase tracking-wider mb-1.5">Student Reason</span>
             {isEditing ? (
-              <textarea className="w-full p-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white resize-y" rows={4} value={form.studentReason} onChange={(event) => updateForm("studentReason", event.target.value)} />
+              <textarea className="w-full p-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white resize-y" rows={4} value={form.details} onChange={(event) => updateForm("details", event.target.value)} />
             ) : (
               <p className="m-0 text-[#111827] text-[0.9rem] font-semibold leading-[1.5]">
-                {appeal?.studentReason ?? ""}
+                {appeal?.details ?? ""}
               </p>
             )}
           </div>

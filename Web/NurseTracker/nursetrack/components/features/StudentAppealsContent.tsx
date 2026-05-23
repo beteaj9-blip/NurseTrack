@@ -76,8 +76,8 @@ const emptyForm = {
   clinicalSite: "",
   dutyArea: "",
   instructorId: "",
-  title: "",
-  studentReason: "",
+  subject: "",
+  details: "",
   evidenceNotes: "",
   supportingFiles: "",
 };
@@ -115,8 +115,8 @@ export function StudentAppealsContent() {
       clinicalSite: editingAppeal.clinicalSite ?? "",
       dutyArea: editingAppeal.dutyArea ?? "",
       instructorId: editingAppeal.instructorId != null ? String(editingAppeal.instructorId) : "",
-      title: editingAppeal.title ?? "",
-      studentReason: editingAppeal.studentReason ?? "",
+      subject: editingAppeal.subject ?? "",
+      details: editingAppeal.details ?? "",
       evidenceNotes: editingAppeal.evidenceNotes ?? "",
       supportingFiles: editingAppeal.supportingFiles ?? "",
     });
@@ -219,7 +219,7 @@ export function StudentAppealsContent() {
   const submitAppeal = async (event: React.FormEvent) => {
     event.preventDefault();
     const isNotApplicable = selectedScheduleId === NOT_APPLICABLE_VALUE;
-    if (!user || !form.appealType || (!isNotApplicable && !form.relatedDutyDate) || !form.clinicalSite || !form.dutyArea || (!isNotApplicable && !form.instructorId) || !form.title || !form.studentReason) {
+    if (!user || !form.appealType || (!isNotApplicable && !form.relatedDutyDate) || !form.clinicalSite || !form.dutyArea || (!isNotApplicable && !form.instructorId) || !form.subject || !form.details) {
       setMessage("Complete the appeal details to submit it for CI recommendation.");
       showToast({ variant: "error", title: "Missing appeal details", message: "Complete the appeal details before submitting." });
       return;
@@ -233,8 +233,8 @@ export function StudentAppealsContent() {
         relatedDutyDate: isNotApplicable ? null : form.relatedDutyDate,
         clinicalSite: isNotApplicable ? NOT_APPLICABLE_LABEL : form.clinicalSite,
         dutyArea: isNotApplicable ? NOT_APPLICABLE_LABEL : form.dutyArea,
-        title: form.title,
-        studentReason: form.studentReason,
+        subject: form.subject,
+        details: form.details,
         evidenceNotes: form.evidenceNotes,
         supportingFiles: form.supportingFiles,
       };
@@ -303,12 +303,12 @@ export function StudentAppealsContent() {
 
           {/* Row 4 */}
           <div className="flex flex-col">
-            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Appeal Title</label>
+            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Appeal Subject</label>
             <input
               type="text"
-              value={form.title}
-              onChange={(event) => updateForm("title", event.target.value)}
-              placeholder="Enter appeal title"
+              value={form.subject}
+              onChange={(event) => updateForm("subject", event.target.value)}
+              placeholder="Enter appeal subject"
               className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] shadow-sm text-[0.9rem] placeholder:text-[#94a3b8]"
             />
           </div>
@@ -318,8 +318,8 @@ export function StudentAppealsContent() {
             <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Student Reason</label>
             <textarea
               rows={4}
-              value={form.studentReason}
-              onChange={(event) => updateForm("studentReason", event.target.value)}
+              value={form.details}
+              onChange={(event) => updateForm("details", event.target.value)}
               placeholder="Explain why the appeal should be considered."
               className="w-full p-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] shadow-sm text-[0.9rem] placeholder:text-[#94a3b8] resize-y"
             ></textarea>
@@ -401,7 +401,7 @@ export function StudentAppealsContent() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-1">
-                            <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 leading-[1.3] truncate">{appeal.title}</h3>
+                            <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 leading-[1.3] truncate">{appeal.subject}</h3>
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appealStageKey(appeal))}`}>
                               {statusLabel(appealStageKey(appeal))}
                             </span>

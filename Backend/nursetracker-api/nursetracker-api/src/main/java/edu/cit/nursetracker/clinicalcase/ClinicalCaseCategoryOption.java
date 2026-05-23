@@ -18,7 +18,6 @@ public class ClinicalCaseCategoryOption {
     @Column(nullable = false, unique = true)
     private String value;
 
-    @JsonProperty("label")
     @Column(name = "category_name", nullable = false)
     private String categoryName;
 

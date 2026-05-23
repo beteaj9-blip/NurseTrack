@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 
 type CaseCategoryOption = {
   value: string;
-  label: string;
+  categoryName: string;
 };
 
 function formatScheduleDate(date?: string) {
@@ -95,7 +95,7 @@ export default function AddClinicalCaseContent() {
   }, [selectedHospital, allDutyAreas]);
   const hospitalOptions = useMemo(() => appendOption((hospitals as any[]).map((item: any) => ({ value: item.name, label: `${item.name}${item.fullName ? ` - ${item.fullName}` : ""}` })), hospital), [hospitals, hospital]);
   const wardOptions = useMemo(() => appendOption(wards.map((ward: string) => ({ value: ward, label: ward })), dutyArea), [wards, dutyArea]);
-  const categoryOptions = useMemo(() => categories.map((item) => ({ value: item.value, label: item.label })), [categories]);
+  const categoryOptions = useMemo(() => categories.map((item) => ({ value: item.value, label: item.categoryName })), [categories]);
   const instructorOptions = useMemo(() => appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), instructorId, selectedSchedule?.instructorName ?? editCase?.instructorName), [instructors, instructorId, selectedSchedule?.instructorName, editCase?.instructorName]);
   const eligibleSchedules = useMemo(() => {
     const today = new Date();

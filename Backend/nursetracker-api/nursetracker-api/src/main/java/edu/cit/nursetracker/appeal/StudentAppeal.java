@@ -43,11 +43,9 @@ public class StudentAppeal {
     @Column(nullable = false)
     private String dutyArea;
 
-    @JsonProperty("title")
     @Column(name = "subject", nullable = false)
     private String subject;
 
-    @JsonProperty("studentReason")
     @Column(name = "details", nullable = false, length = 2000)
     private String details;
 
