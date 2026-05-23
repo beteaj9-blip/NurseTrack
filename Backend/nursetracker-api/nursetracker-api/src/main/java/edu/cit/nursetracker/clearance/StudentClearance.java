@@ -45,6 +45,13 @@ public class StudentClearance {
     @Builder.Default
     private ClearanceStatus status = ClearanceStatus.LOCKED;
 
+    @Column(name = "is_cleared", nullable = false)
+    @Builder.Default
+    private Boolean isCleared = false;
+
+    @Column(name = "term_info")
+    private String termInfo;
+
     private LocalDateTime submittedAt;
 
     @CreationTimestamp

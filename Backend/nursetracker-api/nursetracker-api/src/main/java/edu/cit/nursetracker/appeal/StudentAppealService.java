@@ -57,8 +57,8 @@ public class StudentAppealService {
         appeal.setRelatedDutyDate(updatedAppeal.getRelatedDutyDate());
         appeal.setClinicalSite(updatedAppeal.getClinicalSite());
         appeal.setDutyArea(updatedAppeal.getDutyArea());
-        appeal.setTitle(updatedAppeal.getTitle());
-        appeal.setStudentReason(updatedAppeal.getStudentReason());
+        appeal.setSubject(updatedAppeal.getSubject());
+        appeal.setDetails(updatedAppeal.getDetails());
         appeal.setEvidenceNotes(updatedAppeal.getEvidenceNotes());
         appeal.setSupportingFiles(updatedAppeal.getSupportingFiles());
         appeal.setStatus(AppealStatus.PENDING);
@@ -77,7 +77,7 @@ public class StudentAppealService {
         notificationService.createNotification(Notification.builder()
                 .user(saved.getStudent())
                 .title(status == AppealStatus.ACCEPTED ? "Appeal accepted" : "Appeal rejected")
-                .message("Your appeal \"" + saved.getTitle() + "\" was " + status.name().toLowerCase() + ".")
+                .message("Your appeal \"" + saved.getSubject() + "\" was " + status.name().toLowerCase() + ".")
                 .type(status == AppealStatus.ACCEPTED ? NotificationType.APPROVAL : NotificationType.RETURNED)
                 .actionUrl("/nursing-student/appeals")
                 .build());
@@ -93,7 +93,7 @@ public class StudentAppealService {
             notificationService.createNotification(Notification.builder()
                     .user(saved.getStudent())
                     .title("Appeal rejected by CI")
-                    .message("Your appeal \"" + saved.getTitle() + "\" was rejected by your Clinical Instructor.")
+                    .message("Your appeal \"" + saved.getSubject() + "\" was rejected by your Clinical Instructor.")
                     .type(NotificationType.RETURNED)
                     .actionUrl("/nursing-student/appeals")
                     .build());

@@ -9,6 +9,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
 @Table(name = "student_appeals")
 @Getter
@@ -41,11 +43,13 @@ public class StudentAppeal {
     @Column(nullable = false)
     private String dutyArea;
 
+    @JsonProperty("title")
     @Column(name = "subject", nullable = false)
-    private String title;
+    private String subject;
 
+    @JsonProperty("studentReason")
     @Column(name = "details", nullable = false, length = 2000)
-    private String studentReason;
+    private String details;
 
     @Column(length = 2000)
     private String evidenceNotes;

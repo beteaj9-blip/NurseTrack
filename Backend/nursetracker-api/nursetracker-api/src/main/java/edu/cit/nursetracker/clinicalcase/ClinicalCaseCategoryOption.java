@@ -2,6 +2,7 @@ package edu.cit.nursetracker.clinicalcase;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "clinical_case_categories")
@@ -17,8 +18,9 @@ public class ClinicalCaseCategoryOption {
     @Column(nullable = false, unique = true)
     private String value;
 
+    @JsonProperty("label")
     @Column(name = "category_name", nullable = false)
-    private String label;
+    private String categoryName;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "case_type")
