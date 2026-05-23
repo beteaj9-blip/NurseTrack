@@ -35,9 +35,24 @@ public class DutyService {
     private final Map<String, Boolean> activeBroadcastingSignals = new java.util.concurrent.ConcurrentHashMap<>();
 
     public void setBroadcasting(Long scheduleId, boolean broadcasting) {
-        scheduleRepository.findById(scheduleId).ifPresent(schedule -> 
-            activeBroadcastingSignals.put(scheduleSessionKey(schedule), broadcasting)
-        );
+        scheduleRepository.findById(scheduleId).ifPresent(schedule -> {
+            activeBroadcastingSignals.put(scheduleSessionKey(schedule), broadcasting);
+            if (broadcasting) {
+                // Ensure instructor has a duty record for their own time tracking
+                Optional<DutyRecord> instructorRecord = dutyRepository.findFirstByScheduleIdAndStudentIdOrderByTimeInAsc(schedule.getId(), schedule.getInstructor().getId());
+                if (instructorRecord.isEmpty()) {
+                    dutyRepository.save(DutyRecord.builder()
+                            .student(schedule.getInstructor())
+                            .instructor(schedule.getInstructor())
+                            .schedule(schedule)
+                            .hospital(schedule.getHospital())
+                            .ward(schedule.getWard())
+                            .timeIn(LocalDateTime.now(APP_ZONE))
+                            .status(DutyStatus.VERIFIED)
+                            .build());
+                }
+            }
+        });
     }
 
     public DutyRecord timeIn(DutyRecord record) {
@@ -96,9 +111,29 @@ public class DutyService {
                 .toList();
     }
 
+    public List<DutyRecord> getDutiesVisibleTo(Long viewerId, boolean includeInstructors) {
+        if (viewerId == null) return getAllDuties(includeInstructors);
+        User viewer = userRepository.findById(viewerId).orElse(null);
+        if (viewer == null || viewer.getRole() == UserRole.STUDENT) return List.of();
+        
+        if (viewer.getRole() == UserRole.INSTRUCTOR) {
+            return dutyRepository.findByInstructorIdOrderByTimeInDesc(viewerId).stream()
+                    .filter(record -> record.getStudent() != null && 
+                           (record.getStudent().getRole() == UserRole.STUDENT || (includeInstructors && record.getStudent().getRole() == UserRole.INSTRUCTOR)))
+                    .toList();
+        }
+        
+        return getAllDuties(includeInstructors);
+    }
+
     public List<DutyRecord> getAllDuties() {
+        return getAllDuties(false);
+    }
+
+    public List<DutyRecord> getAllDuties(boolean includeInstructors) {
         return dutyRepository.findAll().stream()
-                .filter(record -> record.getStudent() != null && record.getStudent().getRole() == UserRole.STUDENT)
+                .filter(record -> record.getStudent() != null && 
+                       (record.getStudent().getRole() == UserRole.STUDENT || (includeInstructors && record.getStudent().getRole() == UserRole.INSTRUCTOR)))
                 .toList();
     }
 
@@ -231,6 +266,12 @@ public class DutyService {
             record.setAttendanceSubmittedAt(submittedAt);
             if (record.getStatus() == DutyStatus.PENDING) {
                 record.setStatus(DutyStatus.VERIFIED);
+            }
+            // If this is the instructor's own record, mark the time out
+            if (record.getStudent().getId().equals(record.getInstructor().getId()) && record.getTimeOut() == null) {
+                record.setTimeOut(submittedAt);
+                long minutes = Duration.between(effectiveDutyStart(record, schedule), record.getTimeOut()).toMinutes();
+                record.setTotalHours(minutes / 60.0);
             }
         });
         dutyRepository.saveAll(records);

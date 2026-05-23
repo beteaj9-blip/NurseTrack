@@ -55,7 +55,7 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
   const user = useAuthStore((state) => state.user);
   const canFilterByLevel = basePath === "/admin" || basePath === "/coordinator";
   const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
-  const { data: attendance = [], isLoading } = useAllAttendance(true, scopedViewerId);
+  const { data: attendance = [], isLoading } = useAllAttendance(true, scopedViewerId, true);
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -70,7 +70,7 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
     const key = `student-${record.studentId}`;
     const current = acc[key] ?? {
       id: record.studentId,
-      role: "Student",
+      role: record.studentId === record.instructorId ? "Instructor" : "Student",
       name: record.studentName || "Nursing Student",
       profileImageUrl: record.studentProfileImageUrl,
       identifier: record.studentSchoolId,

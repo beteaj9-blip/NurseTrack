@@ -55,11 +55,14 @@ export const useInstructorAttendance = (instructorId?: string) => {
   });
 };
 
-export const useAllAttendance = (enabled = true, viewerId?: string) => {
+export const useAllAttendance = (enabled = true, viewerId?: string, includeInstructors = false) => {
   return useQuery({
-    queryKey: ['attendance', 'all', viewerId],
+    queryKey: ['attendance', 'all', viewerId, includeInstructors],
     queryFn: async () => {
-      const { data } = await apiClient.get('/duties', { params: viewerId ? { viewerId } : undefined });
+      const params: any = {};
+      if (viewerId) params.viewerId = viewerId;
+      if (includeInstructors) params.includeInstructors = 'true';
+      const { data } = await apiClient.get('/duties', { params: Object.keys(params).length ? params : undefined });
       return data.map(normalizeDuty);
     },
     enabled,

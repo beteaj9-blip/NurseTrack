@@ -14,6 +14,7 @@ public interface DutyRepository extends JpaRepository<DutyRecord, Long> {
     List<DutyRecord> findByStatus(DutyStatus status);
     List<DutyRecord> findByScheduleIdInOrderByTimeInAsc(List<Long> scheduleIds);
     Optional<DutyRecord> findFirstByScheduleIdOrderByTimeInAsc(Long scheduleId);
+    Optional<DutyRecord> findFirstByScheduleIdAndStudentIdOrderByTimeInAsc(Long scheduleId, Long studentId);
     List<DutyRecord> findByInstructorIdAndHospitalIgnoreCaseAndWardIgnoreCaseAndTimeInBetweenOrderByTimeInAsc(
             Long instructorId,
             String hospital,

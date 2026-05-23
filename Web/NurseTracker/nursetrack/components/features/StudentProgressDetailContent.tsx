@@ -50,7 +50,7 @@ function buildDutyEntries(records: any[]) {
       date: formatDate(record.dutyDate),
       area: record.area ?? record.ward ?? "No duty area recorded",
       hours,
-      overtime: Math.max(hours - 8, 0),
+      overtime: Number(record.overtime ?? 0),
     };
   });
 }

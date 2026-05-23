@@ -8,7 +8,7 @@ import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
 
 function overtimeHours(record: any) {
-  return Number(record.overtime ?? Math.max(Number(record.hours || 0) - 8, 0));
+  return Number(record.overtime ?? 0);
 }
 
 function formatHours(hours: number) {
@@ -52,7 +52,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
   const user = useAuthStore((state) => state.user);
   const personId = searchParams.get("id");
   const viewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
-  const { data: attendance = [], isLoading: isAttendanceLoading } = useAllAttendance(true, viewerId);
+  const { data: attendance = [], isLoading: isAttendanceLoading } = useAllAttendance(true, viewerId, true);
   const { data: schedules = [], isLoading: isSchedulesLoading } = useSchedules(viewerId, user?.role);
   const records = (attendance as any[]).filter((record) => String(record.studentId) === String(personId) && overtimeHours(record) > 0);
   const first = records[0] ?? (attendance as any[]).find((record) => String(record.studentId) === String(personId));
@@ -65,15 +65,15 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
       <section className="bg-white rounded-xl border border-[#e2e8f0] shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-[1.6rem_1.75rem_1.75rem]">
         {isLoading ? <LoadingState message="Loading overtime records..." /> : first ? <div className="grid gap-5">
           <div className="grid grid-cols-4 gap-3 max-[980px]:grid-cols-2 max-[640px]:grid-cols-1">
-            <Summary label="Name" value={first.studentName || "Nursing Student"} />
-            <Summary label="Role" value="Student" />
+            <Summary label="Name" value={first.studentName || "Instructor / Student"} />
+            <Summary label="Role" value={first.instructorId === first.studentId ? "Instructor" : "Student"} />
             <Summary label="Period" value={period} />
             <Summary label="Total Overtime" value={formatHours(total)} />
           </div>
 
           <div className="rounded-xl border border-[#e2e8f0] overflow-hidden">
             <div className="min-h-[52px] flex items-center justify-center px-4 bg-[#fff8d6] !text-[#8A0000] !text-[0.95rem] !font-[900] text-center uppercase">
-              CNAHS Student who rendered overtime for the period of {period}
+              CNAHS Student / Instructor who rendered overtime for the period of {period}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[920px] border-collapse text-left">
@@ -82,6 +82,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
                     <th className="p-5 text-center border-r border-white/40 w-[90px]">No.</th>
                     <th className="p-5 border-r border-white/40">Date</th>
                     <th className="p-5 border-r border-white/40">Schedule</th>
+                    <th className="p-5 border-r border-white/40">Instructor</th>
                     <th className="p-5 border-r border-white/40">Actual Time</th>
                     <th className="p-5">OT Hours</th>
                   </tr>
@@ -95,6 +96,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
                         <td className="p-4 text-center border-r border-[#e2e8f0]">{index + 1}</td>
                         <td className="p-4 border-r border-[#e2e8f0]">{formatTableDate(record.dutyDate)}</td>
                         <td className="p-4 border-r border-[#e2e8f0]">{scheduleTime}</td>
+                        <td className="p-4 border-r border-[#e2e8f0]">{record.instructorName || "No instructor"}</td>
                         <td className="p-4 border-r border-[#e2e8f0]">{formatTimeRange(record.timeInLabel, record.timeOutLabel)}</td>
                         <td className="p-4">{formatHours(overtimeHours(record))}</td>
                       </tr>
@@ -106,7 +108,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
           </div>
 
           <div className="rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-4 !text-[#64748b] !text-[0.86rem] !font-[900]">
-            {first.studentName || "Student"} has {formatHours(total)} recorded for {period}.
+            {first.studentName || "User"} has {formatHours(total)} recorded for {period}.
           </div>
         </div> : <div className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-6 text-center !text-[#64748b] !font-bold">No overtime records found.</div>}
       </section>
