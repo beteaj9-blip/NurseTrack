@@ -92,7 +92,7 @@ export const useSubmitCase = () => {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['clinical-cases', 'student', data.student?.id ?? data.studentId] });
+      queryClient.invalidateQueries({ queryKey: ['clinical-cases'] });
     },
   });
 };

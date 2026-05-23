@@ -145,7 +145,7 @@ public class DutyService {
         }
 
         LocalDate today = LocalDate.now(APP_ZONE);
-        List<Schedule> todaysSchedules = scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(userId, today);
+        List<Schedule> todaysSchedules = getTodaySchedulesForViewer(student, today, true);
         Schedule schedule = findRequestedSchedule(todaysSchedules, scheduleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
 
@@ -176,11 +176,11 @@ public class DutyService {
         }
 
         LocalDate today = LocalDate.now(APP_ZONE);
-        List<Schedule> todaysSchedules = scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(userId, today);
+        List<Schedule> todaysSchedules = getTodaySchedulesForViewer(student, today, true);
         Schedule schedule = findRequestedSchedule(todaysSchedules, scheduleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
 
-        if (LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime())) {
+        if (LocalDateTime.now(APP_ZONE).isBefore(getScheduledEnd(schedule))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time out is not open yet.");
         }
 
@@ -211,7 +211,7 @@ public class DutyService {
         Schedule schedule = findRequestedSchedule(scheduleOptions, scheduleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
 
-        if (LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime())) {
+        if (LocalDateTime.now(APP_ZONE).isBefore(getScheduledEnd(schedule))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attendance can be submitted after the scheduled time out.");
         }
 
@@ -248,11 +248,18 @@ public class DutyService {
     private Optional<Schedule> selectCurrentSchedule(List<Schedule> schedules) {
         if (schedules.isEmpty()) return Optional.empty();
 
-        LocalTime now = LocalTime.now(APP_ZONE);
+        LocalDateTime now = LocalDateTime.now(APP_ZONE);
         return schedules.stream()
-                .filter(schedule -> !now.isBefore(schedule.getStartTime()) && !now.isAfter(schedule.getEndTime()))
+                .filter(schedule -> {
+                    LocalDateTime start = schedule.getShiftDate().atTime(schedule.getStartTime());
+                    LocalDateTime end = getScheduledEnd(schedule);
+                    return !now.isBefore(start) && !now.isAfter(end);
+                })
                 .findFirst()
-                .or(() -> schedules.stream().filter(schedule -> now.isBefore(schedule.getStartTime())).findFirst())
+                .or(() -> schedules.stream().filter(schedule -> {
+                    LocalDateTime start = schedule.getShiftDate().atTime(schedule.getStartTime());
+                    return now.isBefore(start);
+                }).findFirst())
                 .or(() -> schedules.stream().max(Comparator.comparing(Schedule::getStartTime)));
     }
 
@@ -266,19 +273,24 @@ public class DutyService {
     }
 
     private List<Schedule> getTodaySchedulesForViewer(User viewer, LocalDate today, boolean isMobile) {
+        List<Schedule> schedules = new java.util.ArrayList<>();
         if (viewer.getRole() == UserRole.STUDENT) {
-            return scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today);
+            schedules.addAll(scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today.minusDays(1)));
+            schedules.addAll(scheduleRepository.findByStudentIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today));
+        } else if (isMobile || viewer.getRole() == UserRole.INSTRUCTOR) {
+            schedules.addAll(scheduleRepository.findByInstructorIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today.minusDays(1)));
+            schedules.addAll(scheduleRepository.findByInstructorIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today));
+        } else {
+            schedules.addAll(scheduleRepository.findAll().stream()
+                    .filter(schedule -> schedule.getShiftDate().equals(today) || schedule.getShiftDate().equals(today.minusDays(1)))
+                    .filter(schedule -> !Boolean.TRUE.equals(schedule.getCanceled()))
+                    .filter(schedule -> AccessScope.canViewRecord(viewer, schedule.getStudent(), schedule.getInstructor()))
+                    .toList());
         }
 
-        // On mobile, all non-student roles are treated as instructors: only see their own assigned schedules
-        if (isMobile || viewer.getRole() == UserRole.INSTRUCTOR) {
-            return scheduleRepository.findByInstructorIdAndShiftDateAndCanceledFalseOrderByStartTimeAsc(viewer.getId(), today);
-        }
-
-        return scheduleRepository.findAll().stream()
-                .filter(schedule -> schedule.getShiftDate().equals(today))
-                .filter(schedule -> !Boolean.TRUE.equals(schedule.getCanceled()))
-                .filter(schedule -> AccessScope.canViewRecord(viewer, schedule.getStudent(), schedule.getInstructor()))
+        LocalDateTime now = LocalDateTime.now(APP_ZONE);
+        return schedules.stream()
+                .filter(schedule -> getScheduledEnd(schedule).plusHours(8).isAfter(now))
                 .sorted(Comparator.comparing(Schedule::getStartTime).thenComparing(Schedule::getWard, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
@@ -350,7 +362,7 @@ public class DutyService {
 
         boolean checkedIn = currentStudentId != null && presentRecords.containsKey(currentStudentId);
         boolean checkedOut = checkedIn && presentRecords.get(currentStudentId).getTimeOut() != null;
-        boolean timeOutOpen = !LocalTime.now(APP_ZONE).isBefore(schedule.getEndTime());
+        boolean timeOutOpen = !LocalDateTime.now(APP_ZONE).isBefore(getScheduledEnd(schedule));
 
         boolean instructorBroadcasting = activeBroadcastingSignals.getOrDefault(scheduleSessionKey(schedule), false);
 
@@ -411,7 +423,16 @@ public class DutyService {
             return 0L;
         }
         LocalDateTime effectiveStart = effectiveDutyStart(record, schedule);
-        LocalDateTime endCalculation = record.getTimeOut() != null ? record.getTimeOut() : LocalDateTime.now(APP_ZONE);
+        LocalDateTime endCalculation;
+        if (record.getTimeOut() != null) {
+            endCalculation = record.getTimeOut();
+        } else if (record.getAttendanceSubmittedAt() != null) {
+            LocalDateTime scheduledEnd = getScheduledEnd(schedule);
+            endCalculation = record.getAttendanceSubmittedAt().isAfter(scheduledEnd) ? scheduledEnd : record.getAttendanceSubmittedAt();
+        } else {
+            endCalculation = LocalDateTime.now(APP_ZONE);
+        }
+
         if (endCalculation.isBefore(effectiveStart)) {
             return 0L;
         }
@@ -424,6 +445,14 @@ public class DutyService {
             return scheduledStart;
         }
         return record.getTimeIn();
+    }
+
+    private LocalDateTime getScheduledEnd(Schedule schedule) {
+        LocalDateTime scheduledEnd = schedule.getShiftDate().atTime(schedule.getEndTime());
+        if (schedule.getEndTime().isBefore(schedule.getStartTime())) {
+            scheduledEnd = scheduledEnd.plusDays(1);
+        }
+        return scheduledEnd;
     }
 
     private DutyAttendanceStudent toStudentDto(User student, String timeIn) {

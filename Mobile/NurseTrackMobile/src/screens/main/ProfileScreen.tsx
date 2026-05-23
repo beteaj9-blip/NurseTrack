@@ -6,7 +6,6 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  Alert, 
   ActivityIndicator, 
   Image,
   Clipboard,
@@ -19,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/axiosConfig';
 import { SkeletonPage } from '../../components/Skeleton';
 import { SlideUpView } from '../../components/SlideUpView';
+import { CustomAlert } from '../../components/CustomAlert';
 import { 
   User as UserIcon, 
   Mail, 
@@ -45,6 +45,14 @@ export const ProfileScreen = () => {
     fullName: user?.fullName || '',
     mobileNumber: user?.mobileNumber || '',
   });
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    primaryButtonText?: string;
+    onPrimaryPress?: () => void;
+    secondaryButtonText?: string;
+    onSecondaryPress?: () => void;
+  } | null>(null);
 
   const spinAnim = useRef(new Animated.Value(0)).current;
 
@@ -103,7 +111,7 @@ export const ProfileScreen = () => {
   const handleCopyId = () => {
     if (profileData?.schoolId) {
       Clipboard.setString(profileData.schoolId);
-      Alert.alert('Success', 'School ID copied to clipboard!');
+      setAlertConfig({ title: 'Success', message: 'School ID copied to clipboard!' });
     }
   };
 
@@ -120,7 +128,7 @@ export const ProfileScreen = () => {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission Required', 'Allow photo access to choose a profile picture.');
+      setAlertConfig({ title: 'Permission Required', message: 'Allow photo access to choose a profile picture.' });
       return;
     }
 
@@ -153,7 +161,7 @@ export const ProfileScreen = () => {
       setProfileData(response.data);
     } catch (e) {
       console.log('Profile photo upload failed', e);
-      Alert.alert('Upload Failed', 'Could not update your profile picture right now.');
+      setAlertConfig({ title: 'Upload Failed', message: 'Could not update your profile picture right now.' });
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -168,7 +176,7 @@ export const ProfileScreen = () => {
     };
 
     if (!updates.fullName || !updates.mobileNumber) {
-      Alert.alert('Incomplete Profile', 'Please fill in your name and mobile number.');
+      setAlertConfig({ title: 'Incomplete Profile', message: 'Please fill in your name and mobile number.' });
       return;
     }
 
@@ -179,7 +187,7 @@ export const ProfileScreen = () => {
       setIsEditModalVisible(false);
     } catch (e) {
       console.log('Profile update failed', e);
-      Alert.alert('Update Failed', 'Could not save your profile changes right now.');
+      setAlertConfig({ title: 'Update Failed', message: 'Could not save your profile changes right now.' });
     } finally {
       setIsSavingProfile(false);
     }
@@ -441,6 +449,16 @@ export const ProfileScreen = () => {
           </View>
         </View>
       </Modal>
+      <CustomAlert 
+        visible={!!alertConfig} 
+        title={alertConfig?.title || ''} 
+        message={alertConfig?.message || ''} 
+        onClose={() => setAlertConfig(null)}
+        primaryButtonText={alertConfig?.primaryButtonText}
+        onPrimaryPress={alertConfig?.onPrimaryPress}
+        secondaryButtonText={alertConfig?.secondaryButtonText}
+        onSecondaryPress={alertConfig?.onSecondaryPress}
+      />
     </ScrollView>
   );
 };
