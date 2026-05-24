@@ -712,8 +712,12 @@ export const DutyAttendanceScreen = () => {
   useEffect(() => {
     const updateElapsed = () => {
       const startAt = selectedAttendance?.sessionStartedAt ?? null;
-      const sDate = selectedAttendance?.shiftDate ?? selectedOption?.shiftDate ?? null;
-      const sTime = selectedAttendance?.startTime ?? selectedOption?.startTime ?? null;
+      if (!startAt) {
+        setElapsedMinutes(0);
+        return;
+      }
+      const sDate = selectedAttendance?.shiftDate ?? null;
+      const sTime = selectedAttendance?.startTime ?? null;
       
       const mins = calculateElapsedMinutes(startAt, sDate, sTime);
       setElapsedMinutes(mins);
@@ -722,7 +726,7 @@ export const DutyAttendanceScreen = () => {
     updateElapsed();
     const interval = setInterval(updateElapsed, 30000);
     return () => clearInterval(interval);
-  }, [selectedAttendance?.sessionStartedAt, selectedAttendance?.shiftDate, selectedAttendance?.startTime, selectedOption?.shiftDate, selectedOption?.startTime]);
+  }, [selectedAttendance?.sessionStartedAt, selectedAttendance?.shiftDate, selectedAttendance?.startTime]);
 
   useEffect(() => {
     if (isTeacher && !isBluetoothOn && effectiveScheduleId) {
@@ -1338,6 +1342,16 @@ export const DutyAttendanceScreen = () => {
         {isLoading ? <SkeletonBlock width="76%" height={15} radius={7} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Clinical Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Clinical Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>}
       </View>
     </ScrollView>
+    <CustomAlert 
+      visible={!!alertConfig} 
+      title={alertConfig?.title || ''} 
+      message={alertConfig?.message || ''} 
+      onClose={() => setAlertConfig(null)}
+      primaryButtonText={alertConfig?.primaryButtonText}
+      onPrimaryPress={alertConfig?.onPrimaryPress}
+      secondaryButtonText={alertConfig?.secondaryButtonText}
+      onSecondaryPress={alertConfig?.onSecondaryPress}
+    />
     </SlideUpView>
   );
 };
