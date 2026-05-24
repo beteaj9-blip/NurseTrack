@@ -39,7 +39,7 @@ public class CloudinaryUploadService {
 
         long timestamp = System.currentTimeMillis() / 1000;
         String folder = "nursetrack/appeals";
-        String signature = sha1("folder=" + folder + "&timestamp=" + timestamp + secretKey);
+        String signature = sha1("folder=" + folder + "&timestamp=" + timestamp + "&use_filename=true" + secretKey);
 
         ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
             @Override

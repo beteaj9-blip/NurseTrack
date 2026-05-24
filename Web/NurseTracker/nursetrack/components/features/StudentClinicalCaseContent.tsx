@@ -61,6 +61,38 @@ function isOperatingRoomCase(clinicalCase: any) {
   return clinicalCase.caseType === "OPERATING_ROOM" || clinicalCase.dutyArea === "Operating Room" || clinicalCase.area === "Operating Room";
 }
 
+function PrintCaseTable({ title, cases }: { title: string; cases: any[] }) {
+  return (
+    <section className="print-section">
+      <h2>{title}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Procedure Performed</th>
+            <th>Status</th>
+            <th>Case Date</th>
+            <th>Date Submitted</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cases.length > 0 ? cases.map((clinicalCase: any) => (
+            <tr key={`print-${clinicalCase.id}`}>
+              <td>{caseCategoryLabel(clinicalCase.category)}</td>
+              <td>{clinicalCase.procedurePerformed || "-"}</td>
+              <td>{clinicalCase.status === "APPROVED" ? "Approved" : clinicalCase.status === "RETURNED" ? "Returned" : "Pending"}</td>
+              <td>{formatDate(clinicalCase.procedureDate)}</td>
+              <td>{formatDate(clinicalCase.createdAt ?? clinicalCase.submittedAt ?? clinicalCase.updatedAt)}</td>
+              <td>{formatTime(clinicalCase.shiftTime) || "-"}</td>
+            </tr>
+          )) : <tr><td colSpan={6}>No cases recorded.</td></tr>}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 function CaseTable({ title, cases, isLoading }: { title: string; cases: any[]; isLoading: boolean }) {
   const [page, setPage] = React.useState(1);
   const [statusFilter, setStatusFilter] = React.useState("all");
@@ -182,6 +214,101 @@ export default function StudentClinicalCaseContent() {
 
   return (
     <div className="min-w-0 overflow-x-hidden p-[clamp(24px,4vw,42px)]">
+      <style jsx global>{`
+        .clinical-clearance-print { display: none; }
+        @media print {
+          @page { margin: 0.55in; }
+          body * { visibility: hidden !important; }
+          .clinical-clearance-print, .clinical-clearance-print * { visibility: visible !important; }
+          .clinical-clearance-print {
+            display: block !important;
+            position: absolute !important;
+            inset: 0 auto auto 0 !important;
+            width: 100% !important;
+            min-height: auto !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+            font-family: Arial, sans-serif !important;
+          }
+          .clinical-clearance-print h1 {
+            margin: 0 0 6px !important;
+            font-size: 18px !important;
+            line-height: 1.25 !important;
+          }
+          .clinical-clearance-print h2 {
+            margin: 18px 0 8px !important;
+            font-size: 13px !important;
+            color: #8A252C !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.02em !important;
+          }
+          .clinical-clearance-print p {
+            margin: 3px 0 !important;
+            font-size: 11px !important;
+            line-height: 1.4 !important;
+          }
+          .clinical-clearance-print .print-meta {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 6px 18px !important;
+            margin: 14px 0 10px !important;
+            padding: 10px !important;
+            border: 1px solid #cbd5e1 !important;
+          }
+          .clinical-clearance-print table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+            page-break-inside: auto !important;
+          }
+          .clinical-clearance-print th,
+          .clinical-clearance-print td {
+            border: 1px solid #cbd5e1 !important;
+            padding: 6px !important;
+            font-size: 10px !important;
+            line-height: 1.35 !important;
+            vertical-align: top !important;
+            word-break: break-word !important;
+          }
+          .clinical-clearance-print th {
+            background: #f1f5f9 !important;
+            font-weight: 700 !important;
+            text-align: left !important;
+          }
+          .clinical-clearance-print .print-footer {
+            margin-top: 18px !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 24px !important;
+          }
+          .clinical-clearance-print .signature-line {
+            margin-top: 34px !important;
+            border-top: 1px solid #111827 !important;
+            padding-top: 5px !important;
+            text-align: center !important;
+            font-size: 10px !important;
+          }
+        }
+      `}</style>
+      <section className="clinical-clearance-print" aria-hidden="true">
+        <h1>NurseTrack Clinical Case Clearance Report</h1>
+        <p>Generated on {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
+        <div className="print-meta">
+          <p><strong>Student:</strong> {user?.fullName ?? "Nursing Student"}</p>
+          <p><strong>Student ID:</strong> {user?.schoolId ?? "-"}</p>
+          <p><strong>Section:</strong> {user?.sectionInfo ?? "-"}</p>
+          <p><strong>School Year:</strong> {activeTerm?.schoolYear ?? "-"}</p>
+          <p><strong>Semester:</strong> {activeTerm?.semester ?? "-"}</p>
+          <p><strong>Clearance Status:</strong> {clearanceLabel}</p>
+        </div>
+        <PrintCaseTable title="Delivery Room Cases" cases={deliveryRoomCases} />
+        <PrintCaseTable title="Operating Room Cases" cases={operatingRoomCases} />
+        <div className="print-footer">
+          <div className="signature-line">Student Signature</div>
+          <div className="signature-line">Clinical Instructor / Reviewer</div>
+        </div>
+      </section>
       <div className="min-w-0 rounded-xl border border-gray-100 bg-white p-[clamp(18px,3vw,32px)] shadow-sm">
 
         {/* Header Section */}

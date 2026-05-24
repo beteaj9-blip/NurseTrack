@@ -87,8 +87,7 @@ export const useVerifyAttendance = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (recordId: string) => {
-      // By default setting status to VALIDATED or APPROVED. The new backend expects DutyStatus status.
-      const { data } = await apiClient.put(`/duties/${recordId}/validate?status=VALIDATED`);
+      const { data } = await apiClient.put(`/duties/${recordId}/validate?status=VERIFIED`);
       return data;
     },
     onSuccess: (data) => {

@@ -33,7 +33,7 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
     { label: "Clinical Cases", href: "/admin/clinical-cases", icon: ClinicalCasesIcon },
     { label: "CI Recommendations", href: "/admin/ci-recommendations", icon: CiRecommendationsIcon },
     { label: "Overtime Details", href: "/admin/overtime-details", icon: OvertimeDetailsIcon },
-    { label: "Reports", href: "/admin/reports", icon: ReportsIcon },
+    { label: "Generate Report", href: "/admin/reports", icon: ReportsIcon },
     { label: "Audit Logs", href: "/admin/audit-logs", icon: SectionImportIcon },
   ],
   chair: [
@@ -83,7 +83,7 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
     { label: "Student Progress", href: "/clinical-instructor/student-progress", icon: StudentProgressIcon },
     { label: "Extension Days", href: "/clinical-instructor/extension-days", icon: ExtensionDaysIcon },
     { label: "Student Appeals", href: "/clinical-instructor/ci-recommendations", icon: CiRecommendationsIcon },
-    { label: "Reports", href: "/clinical-instructor/reports", icon: ReportsIcon },
+    { label: "Generate Report", href: "/clinical-instructor/reports", icon: ReportsIcon },
   ],
   "enrollment-team": [
     { label: "Student Progress", href: "/enrollment-team/student-progress", icon: StudentProgressIcon },
@@ -94,7 +94,7 @@ export const roleNavConfigs: Record<string, Omit<NavItem, 'isActive'>[]> = {
     { label: "Assigned Schedules", href: "/nursing-student/schedules", icon: SchedulesIcon },
     { label: "Progress", href: "/nursing-student/student-progress", icon: StudentProgressIcon },
     { label: "Student Appeals", href: "/nursing-student/appeals", icon: CiRecommendationsIcon },
-    { label: "Reports", href: "/nursing-student/reports", icon: ReportsIcon },
+    { label: "Generate Report", href: "/nursing-student/reports", icon: ReportsIcon },
   ],
 };
 

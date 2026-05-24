@@ -109,10 +109,17 @@ public class DutyController {
     @PutMapping("/{id}/validate")
     public ResponseEntity<DutyRecord> validateDuty(
             @PathVariable Long id,
-            @RequestParam DutyStatus status,
+            @RequestParam String status,
             @RequestParam(required = false) String feedback) {
-        return ResponseEntity.ok(dutyService.validateDuty(id, status, feedback));
+        return ResponseEntity.ok(dutyService.validateDuty(id, parseDutyStatus(status), feedback));
     }
+
+    private DutyStatus parseDutyStatus(String value) {
+        if (value != null && value.equalsIgnoreCase("VALIDATED")) return DutyStatus.VERIFIED;
+        if (value != null && value.equalsIgnoreCase("APPROVED")) return DutyStatus.VERIFIED;
+        return DutyStatus.valueOf(String.valueOf(value).toUpperCase());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDuty(@PathVariable Long id) {
         dutyService.deleteDutyRecord(id);

@@ -27,6 +27,8 @@ export const useStudentCases = (studentId?: string) => {
       const { data } = await apiClient.get(studentId ? `/cases/student/${studentId}` : '/cases/student');
       return data.map(normalizeClinicalCase);
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
@@ -37,6 +39,8 @@ export const useStudentRequirementProgress = (studentId?: string) => {
       const { data } = await apiClient.get(studentId ? `/cases/student/${studentId}/requirements` : '/cases/student/requirements');
       return data;
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 };
 
@@ -132,8 +136,14 @@ export const useReviewCase = () => {
       });
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
+      const studentId = data?.studentId != null ? String(data.studentId) : undefined;
       queryClient.invalidateQueries({ queryKey: ['clinical-cases'] });
+      queryClient.invalidateQueries({ queryKey: ['clinical-cases', 'detail', variables.caseId] });
+      if (studentId) {
+        queryClient.invalidateQueries({ queryKey: ['clinical-cases', 'student', studentId] });
+        queryClient.invalidateQueries({ queryKey: ['clinical-cases', 'student', studentId, 'requirements'] });
+      }
     },
   });
 };

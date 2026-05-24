@@ -9,8 +9,10 @@ import edu.cit.nursetracker.duty.DutyRepository;
 import edu.cit.nursetracker.schedule.Schedule;
 import edu.cit.nursetracker.schedule.ScheduleRepository;
 import edu.cit.nursetracker.user.User;
+import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.JwtService;
 import edu.cit.nursetracker.user.UserRepository;
+import edu.cit.nursetracker.user.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -29,9 +31,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -177,6 +183,44 @@ public class StudentReportController {
         return exportStudentReport(student.getId(), startDate, endDate, includeProfile, includeSchedules, includeCases, includeProgress, includeAppeals);
     }
 
+    @GetMapping("/section/export")
+    public ResponseEntity<byte[]> exportSectionReport(
+            @RequestParam String section,
+            @RequestParam(required = false, defaultValue = "2025-06-01") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false, defaultValue = "2026-05-31") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        List<User> students = userRepository.findByRole(UserRole.STUDENT).stream()
+                .filter(student -> equalsIgnoreCase(student.getSectionInfo(), section))
+                .sorted(Comparator.comparing(User::getFullName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+        byte[] bytes = buildAggregatePdfReport("Section Report", section, students, startDate, endDate);
+        return pdf(bytes, "section-report-" + safeFileName(section) + ".pdf");
+    }
+
+    @GetMapping("/instructor/{instructorId}/export")
+    public ResponseEntity<byte[]> exportInstructorReport(
+            @PathVariable Long instructorId,
+            @RequestParam(required = false, defaultValue = "2025-06-01") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false, defaultValue = "2026-05-31") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        User instructor = userRepository.findById(instructorId).orElseThrow(() -> new RuntimeException("Clinical Instructor not found."));
+        List<User> students = studentsForInstructor(instructorId);
+        byte[] bytes = buildAggregatePdfReport("Clinical Instructor Report", instructor.getFullName(), students, startDate, endDate);
+        return pdf(bytes, "clinical-instructor-report-" + instructorId + ".pdf");
+    }
+
+    @GetMapping("/scope/{targetId}/export")
+    public ResponseEntity<byte[]> exportScopeReport(
+            @PathVariable Long targetId,
+            @RequestParam(required = false, defaultValue = "2025-06-01") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false, defaultValue = "2026-05-31") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        User target = userRepository.findById(targetId).orElseThrow(() -> new RuntimeException("Report target not found."));
+        List<User> students = userRepository.findByRole(UserRole.STUDENT).stream()
+                .filter(student -> AccessScope.canViewRecord(target, student, null))
+                .sorted(Comparator.comparing(User::getFullName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+        byte[] bytes = buildAggregatePdfReport(target.getRole().name().replace('_', ' ') + " Report", target.getFullName(), students, startDate, endDate);
+        return pdf(bytes, "scope-report-" + targetId + ".pdf");
+    }
+
     private byte[] buildPdfReport(Map<String, Object> report) {
         try (PDDocument document = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             PDPage page = new PDPage(PDRectangle.LETTER);
@@ -228,6 +272,108 @@ public class StudentReportController {
         }
     }
 
+    private byte[] buildAggregatePdfReport(String title, String target, List<User> students, LocalDate startDate, LocalDate endDate) {
+        try (PDDocument document = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            PDPage page = new PDPage(PDRectangle.LETTER);
+            document.addPage(page);
+            PDPageContentStream content = new PDPageContentStream(document, page);
+            float y = drawAggregateHeader(document, content, page, title, target, startDate, endDate, students.size());
+            y = aggregateTableHeader(content, y);
+
+            for (User student : students) {
+                if (y < 76) {
+                    content.close();
+                    page = new PDPage(PDRectangle.LETTER);
+                    document.addPage(page);
+                    content = new PDPageContentStream(document, page);
+                    y = drawAggregateHeader(document, content, page, title, target, startDate, endDate, students.size());
+                    y = aggregateTableHeader(content, y);
+                }
+                Map<String, Object> report = getStudentReport(student.getId(), startDate, endDate, true, true, true, true, true).getBody();
+                y = aggregateRow(content, report, y);
+            }
+
+            if (students.isEmpty()) {
+                content.setNonStrokingColor(100, 116, 139);
+                content.setFont(PDType1Font.HELVETICA, 10);
+                writeText(content, "No student records found for this report target.", 54, y);
+            }
+            content.close();
+            document.save(output);
+            return output.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to generate aggregate PDF report.", e);
+        }
+    }
+
+    private float drawAggregateHeader(PDDocument document, PDPageContentStream content, PDPage page, String title, String target, LocalDate startDate, LocalDate endDate, int studentCount) throws IOException {
+        float pageWidth = page.getMediaBox().getWidth();
+        float y = page.getMediaBox().getHeight() - 54;
+        drawLogo(document, content, 54, y - 42);
+        content.setNonStrokingColor(138, 37, 44);
+        content.setFont(PDType1Font.HELVETICA_BOLD, 16);
+        writeText(content, "Cebu Institute of Technology - University", 118, y);
+        content.setNonStrokingColor(17, 24, 39);
+        content.setFont(PDType1Font.HELVETICA_BOLD, 14);
+        writeText(content, sanitize(title), 118, y - 20);
+        content.setNonStrokingColor(100, 116, 139);
+        content.setFont(PDType1Font.HELVETICA, 10);
+        writeText(content, "Target: " + sanitize(target) + " | Coverage: " + startDate + " to " + endDate + " | Students: " + studentCount, 118, y - 36);
+        content.setStrokingColor(226, 232, 240);
+        content.moveTo(54, y - 62);
+        content.lineTo(pageWidth - 54, y - 62);
+        content.stroke();
+        return y - 92;
+    }
+
+    private float aggregateTableHeader(PDPageContentStream content, float y) throws IOException {
+        content.setNonStrokingColor(138, 37, 44);
+        content.setFont(PDType1Font.HELVETICA_BOLD, 8);
+        writeText(content, "STUDENT", 54, y);
+        writeText(content, "SCHOOL ID", 190, y);
+        writeText(content, "SECTION", 265, y);
+        writeText(content, "SCHEDULES", 345, y);
+        writeText(content, "CASES", 405, y);
+        writeText(content, "APPROVED", 452, y);
+        writeText(content, "DUTIES", 518, y);
+        return y - 14;
+    }
+
+    private float aggregateRow(PDPageContentStream content, Map<String, Object> report, float y) throws IOException {
+        Map<?, ?> profile = report == null ? null : (Map<?, ?>) report.get("profile");
+        content.setNonStrokingColor(17, 24, 39);
+        content.setFont(PDType1Font.HELVETICA, 8);
+        writeText(content, truncate(value(profile, "studentName"), 25), 54, y);
+        writeText(content, truncate(value(profile, "schoolId"), 13), 190, y);
+        writeText(content, truncate(value(profile, "sectionInfo"), 14), 265, y);
+        writeText(content, value(report, "scheduleCount"), 345, y);
+        writeText(content, value(report, "caseCount"), 405, y);
+        writeText(content, value(report, "approvedCaseCount"), 452, y);
+        writeText(content, value(report, "dutyRecordCount"), 518, y);
+        return y - 13;
+    }
+
+    private List<User> studentsForInstructor(Long instructorId) {
+        Set<Long> studentIds = new LinkedHashSet<>();
+        scheduleRepository.findByInstructorIdOrderByShiftDateAsc(instructorId).forEach(schedule -> {
+            if (schedule.getStudent() != null) studentIds.add(schedule.getStudent().getId());
+        });
+        caseRepository.findByInstructorIdOrderByCaseDateDesc(instructorId).forEach(clinicalCase -> {
+            if (clinicalCase.getStudent() != null) studentIds.add(clinicalCase.getStudent().getId());
+        });
+        List<User> students = new ArrayList<>();
+        studentIds.forEach(id -> userRepository.findById(id).filter(student -> student.getRole() == UserRole.STUDENT).ifPresent(students::add));
+        students.sort(Comparator.comparing(User::getFullName, Comparator.nullsLast(String::compareToIgnoreCase)));
+        return students;
+    }
+
+    private ResponseEntity<byte[]> pdf(byte[] bytes, String fileName) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(bytes);
+    }
+
     private void drawLogo(PDDocument document, PDPageContentStream content, float x, float y) throws IOException {
         try (InputStream logo = getClass().getResourceAsStream("/assets/cit-u-logo.png")) {
             if (logo == null) return;
@@ -267,5 +413,19 @@ public class StudentReportController {
 
     private String sanitize(String text) {
         return text == null ? "" : text.replaceAll("[^\\x20-\\x7E]", "-");
+    }
+
+    private boolean equalsIgnoreCase(String first, String second) {
+        return first != null && second != null && first.trim().equalsIgnoreCase(second.trim());
+    }
+
+    private String truncate(String value, int max) {
+        if (value == null) return "";
+        return value.length() <= max ? value : value.substring(0, Math.max(0, max - 3)) + "...";
+    }
+
+    private String safeFileName(String value) {
+        String safe = sanitize(value).trim().replaceAll("[^A-Za-z0-9._-]+", "-");
+        return safe.isBlank() ? "report" : safe;
     }
 }

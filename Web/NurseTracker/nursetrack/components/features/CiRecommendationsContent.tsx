@@ -75,7 +75,7 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
     const q = search.toLowerCase();
     const stage = appealStageKey(appeal);
     const reachesReviewerQueue = !isReviewerQueue || appeal.status !== "PENDING" || appeal.instructorDecision !== "RETURNED";
-    return (!search || String(appeal.studentName ?? "").toLowerCase().includes(q) || String(appeal.schoolId ?? "").toLowerCase().includes(q) || String(appeal.sectionInfo ?? "").toLowerCase().includes(q) || String(appeal.subject ?? "").toLowerCase().includes(q))
+    return (!search || String(appeal.studentName ?? "").toLowerCase().includes(q) || String(appeal.schoolId ?? "").toLowerCase().includes(q) || String(appeal.sectionInfo ?? "").toLowerCase().includes(q) || String(appeal.title ?? appeal.subject ?? "").toLowerCase().includes(q))
       && reachesReviewerQueue
       && (sectionFilter === "all" || appeal.sectionInfo === sectionFilter)
       && (!canFilterByLevel || levelFilter === "all" || levelsFromAppeal(appeal).includes(Number(levelFilter)))
@@ -105,7 +105,7 @@ export function CiRecommendationsContent({ basePath }: { basePath: string }) {
             <Link key={appeal.id} href={`${basePath}/ci-recommendations/detail?id=${appeal.id}`} className="grid w-full grid-cols-[32px_34px_minmax(0,1fr)_auto] items-center gap-[1rem] p-[1rem_1.5rem] border-b border-[#e2e8f0] bg-white hover:bg-[#f8fafc] transition-colors cursor-pointer no-underline text-inherit last:border-b-0 max-[520px]:grid-cols-[32px_34px_minmax(0,1fr)] max-[520px]:gap-3 max-[520px]:p-3" tabIndex={0}>
               <div className="grid place-items-center w-[32px] h-[32px] border border-[#8a252c]/16 rounded-full bg-white !text-[#8a252c] !text-[0.82rem] !font-[900]">{(currentPage - 1) * PER_PAGE + i + 1}.</div>
               <ProfileAvatar name={appeal.studentName} imageUrl={appeal.studentProfileImageUrl} size={34} />
-              <span className="min-w-0 flex flex-col gap-[0.125rem]"><strong className="truncate !text-[#0f172a] !text-[1rem] !font-[850] leading-[1.25] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.studentName}</strong><small className="truncate !text-[#64748b] !text-[0.875rem] !font-[700] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.sectionInfo || "No section"} - {appeal.schoolId || "No student ID"}</small><small className="truncate !text-[#475569] !text-[0.875rem] !font-[600] mt-[2px] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.subject || "Student appeal"}</small></span>
+              <span className="min-w-0 flex flex-col gap-[0.125rem]"><strong className="truncate !text-[#0f172a] !text-[1rem] !font-[850] leading-[1.25] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.studentName}</strong><small className="truncate !text-[#64748b] !text-[0.875rem] !font-[700] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.sectionInfo || "No section"} - {appeal.schoolId || "No student ID"}</small><small className="truncate !text-[#475569] !text-[0.875rem] !font-[600] mt-[2px] max-[520px]:whitespace-normal max-[520px]:break-words">{appeal.title || appeal.subject || "Student appeal"}</small></span>
               <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap ${statusClass(appealStageKey(appeal))} max-[520px]:col-start-3 max-[520px]:mt-1`}>{statusLabel(appealStageKey(appeal))}</span>
             </Link>
           ))}

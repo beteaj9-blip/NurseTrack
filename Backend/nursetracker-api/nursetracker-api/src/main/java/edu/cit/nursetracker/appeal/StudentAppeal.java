@@ -47,8 +47,16 @@ public class StudentAppeal {
     @Column(name = "subject", nullable = false)
     private String subject;
 
+    @Column(name = "title", nullable = false)
+    @JsonAlias({"title"})
+    private String title;
+
     @Column(name = "details", nullable = false, length = 2000)
     private String details;
+
+    @Column(name = "student_reason", nullable = false, length = 2000)
+    @JsonAlias({"studentReason", "student_reason"})
+    private String studentReason;
 
     @Column(length = 2000)
     private String evidenceNotes;
@@ -56,6 +64,10 @@ public class StudentAppeal {
     @Column(name = "attachment_url")
     @JsonAlias({"supporting_files", "attachmentUrl"})
     private String supportingFiles;
+
+    @Column(name = "supporting_file_name")
+    @JsonAlias({"supporting_file_name", "attachmentName", "attachment_name"})
+    private String supportingFileName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -85,6 +97,11 @@ public class StudentAppeal {
         return supportingFiles;
     }
 
+    @JsonProperty("supporting_file_name")
+    public String getSupportingFileNameSnakeCase() {
+        return supportingFileName;
+    }
+
     @JsonProperty("instructorRecommendation")
     public String getInstructorRecommendation() {
         return instructorRemarks;
@@ -93,5 +110,32 @@ public class StudentAppeal {
     @JsonProperty("instructor_recommendation")
     public String getInstructorRecommendationSnakeCase() {
         return instructorRemarks;
+    }
+
+    @JsonProperty("studentReason")
+    public String getStudentReasonCamelCase() {
+        return studentReason;
+    }
+
+    @JsonProperty("student_reason")
+    public String getStudentReasonSnakeCase() {
+        return studentReason;
+    }
+
+    @JsonProperty("title")
+    public String getTitleAlias() {
+        return title;
+    }
+
+    @JsonProperty("sddStatus")
+    public String getSddStatus() {
+        if (status == AppealStatus.RETURNED) return "REJECTED";
+        return status == null ? null : status.name();
+    }
+
+    @JsonProperty("sddInstructorDecision")
+    public String getSddInstructorDecision() {
+        if (instructorDecision == AppealStatus.RETURNED) return "REJECTED";
+        return instructorDecision == null ? null : instructorDecision.name();
     }
 }

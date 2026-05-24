@@ -60,16 +60,21 @@ public class StudentAppealController {
     @PutMapping("/{id}/status")
     public ResponseEntity<StudentAppeal> updateAppealStatus(
             @PathVariable Long id,
-            @RequestParam AppealStatus status,
+            @RequestParam String status,
             @RequestParam(required = false) String instructorRemarks) {
-        return ResponseEntity.ok(appealService.updateAppealStatus(id, status, instructorRemarks));
+        return ResponseEntity.ok(appealService.updateAppealStatus(id, parseAppealStatus(status), instructorRemarks));
     }
 
     @PutMapping("/{id}/recommendation")
     public ResponseEntity<StudentAppeal> updateInstructorRecommendation(
             @PathVariable Long id,
-            @RequestParam AppealStatus instructorDecision,
+            @RequestParam String instructorDecision,
             @RequestParam(required = false) String instructorRemarks) {
-        return ResponseEntity.ok(appealService.updateInstructorRecommendation(id, instructorDecision, instructorRemarks));
+        return ResponseEntity.ok(appealService.updateInstructorRecommendation(id, parseAppealStatus(instructorDecision), instructorRemarks));
+    }
+
+    private AppealStatus parseAppealStatus(String value) {
+        if (value != null && value.equalsIgnoreCase("REJECTED")) return AppealStatus.RETURNED;
+        return AppealStatus.valueOf(String.valueOf(value).toUpperCase());
     }
 }

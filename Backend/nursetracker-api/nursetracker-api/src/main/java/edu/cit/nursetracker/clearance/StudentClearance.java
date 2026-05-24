@@ -1,5 +1,6 @@
 package edu.cit.nursetracker.clearance;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.cit.nursetracker.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -59,4 +60,16 @@ public class StudentClearance {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @JsonProperty("sddStatus")
+    public String getSddStatus() {
+        if (status == ClearanceStatus.CLEARED) return "APPROVED";
+        if (status == ClearanceStatus.IN_REVIEW) return "PENDING";
+        return "CANCELLED";
+    }
+
+    @JsonProperty("clearanceStatus")
+    public String getClearanceStatus() {
+        return getSddStatus();
+    }
 }

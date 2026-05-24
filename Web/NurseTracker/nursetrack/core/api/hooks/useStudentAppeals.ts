@@ -4,6 +4,10 @@ import { apiClient } from '../axios';
 function normalizeAppeal(appeal: any) {
   return {
     ...appeal,
+    subject: appeal.subject ?? appeal.title ?? '',
+    title: appeal.title ?? appeal.subject ?? '',
+    details: appeal.details ?? appeal.studentReason ?? appeal.student_reason ?? '',
+    studentReason: appeal.studentReason ?? appeal.student_reason ?? appeal.details ?? '',
     studentId: appeal.studentId ?? appeal.student?.id,
     instructorId: appeal.instructorId ?? appeal.instructor?.id,
     instructorName: appeal.instructorName ?? appeal.instructor?.fullName ?? '',
@@ -14,6 +18,7 @@ function normalizeAppeal(appeal: any) {
     sectionInfo: appeal.sectionInfo ?? appeal.student?.sectionInfo ?? '',
     studentAssignedLevels: appeal.studentAssignedLevels ?? appeal.student?.assignedLevels ?? [],
     instructorDecision: appeal.instructorDecision ?? '',
+    supportingFileName: appeal.supportingFileName ?? appeal.supporting_file_name ?? '',
   };
 }
 

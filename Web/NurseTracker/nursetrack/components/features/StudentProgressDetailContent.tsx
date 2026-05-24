@@ -12,6 +12,7 @@ import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
 
 type RequirementItem = { label: string; completed: number; total: number };
 type RequirementGroup = { code: string; label: string; items: RequirementItem[] };
+const DUTY_ENTRIES_PER_PAGE = 5;
 
 function formatHours(hours: number) {
   const m = Math.round(Number(hours || 0) * 60);
@@ -58,6 +59,7 @@ function buildDutyEntries(records: any[]) {
 export function StudentProgressDetailContent({ basePath }: { basePath: string; searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId") ?? undefined;
+  const [dutyPage, setDutyPage] = React.useState(1);
   const { data: studentUser, isLoading: isStudentLoading } = useUserById(studentId);
   const { data: cases = [], isLoading: isCasesLoading } = useStudentCases(studentId);
   const { data: requirements = [], isLoading: isRequirementsLoading } = useStudentRequirementProgress(studentId) as { data: RequirementGroup[]; isLoading: boolean };
@@ -74,15 +76,22 @@ export function StudentProgressDetailContent({ basePath }: { basePath: string; s
   const approvedCaseDates = new Set((cases as any[]).filter((clinicalCase: any) => clinicalCase.status === "APPROVED").map(getRecordDate).filter(Boolean));
   const approvedDutyRecords = (dutyRecords as any[]).filter((record: any) => approvedCaseDates.has(getRecordDate(record)));
   const dutyEntries = buildDutyEntries(approvedDutyRecords);
+  const dutyTotalPages = Math.max(1, Math.ceil(dutyEntries.length / DUTY_ENTRIES_PER_PAGE));
+  const currentDutyPage = Math.min(dutyPage, dutyTotalPages);
+  const pagedDutyEntries = dutyEntries.slice((currentDutyPage - 1) * DUTY_ENTRIES_PER_PAGE, currentDutyPage * DUTY_ENTRIES_PER_PAGE);
   const totalHours = dutyEntries.reduce((sum: number, entry: any) => sum + entry.hours, 0);
   const totalOvertime = dutyEntries.reduce((sum: number, entry: any) => sum + entry.overtime, 0);
   const activeExtensionDays = (extensionDays as any[]).filter((record: any) => record.status === "ACTIVE");
   const activeExtensionDayTotal = activeExtensionDays.reduce((sum: number, record: any) => sum + Number(record.days ?? 0), 0);
-  const pending = (cases as any[]).filter((clinicalCase: any) => clinicalCase.status === "PENDING").length + (dutyRecords as any[]).filter((record: any) => record.status === "PENDING").length;
+  const pendingCaseValidations = (cases as any[]).filter((clinicalCase: any) => clinicalCase.status === "PENDING").length;
   const completedCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.completed, 0), 0);
   const totalRequiredCases = requirements.reduce((sum, group) => sum + group.items.reduce((itemSum, item) => itemSum + item.total, 0), 0);
   const isLoading = isStudentLoading || isCasesLoading || isRequirementsLoading || isDutyLoading || isExtensionDaysLoading;
   const showPendingItemsButton = basePath !== "/enrollment-team";
+
+  React.useEffect(() => {
+    setDutyPage((page) => Math.min(page, dutyTotalPages));
+  }, [dutyTotalPages]);
 
   if (!studentId) {
     return <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)]"><div className="rounded-xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-6 !text-[#64748b] !font-[800]">Select a student to view progress.</div></main>;
@@ -97,7 +106,7 @@ export function StudentProgressDetailContent({ basePath }: { basePath: string; s
       <section className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-[18px] mb-[18px]" aria-label="Student progress summary">
         <SummaryCard icon="calendar" status={activeExtensionDayTotal > 0 ? "Open" : "Clear"} title="Extension Days" description={`${activeExtensionDayTotal} extension days recorded`} isLoading={isExtensionDaysLoading} />
         <SummaryCard icon="cases" status={totalRequiredCases > 0 && completedCases >= totalRequiredCases ? "Completed" : "In progress"} title="Clinical Cases" description={`${completedCases} of ${totalRequiredCases} case(s) completed`} isLoading={isRequirementsLoading} />
-        <SummaryCard icon="alert" status={pending > 0 ? "Open" : "Clear"} title="Pending Items" description={`${pending} record(s) need student or clinical instructor action`} isLoading={isCasesLoading || isDutyLoading} />
+        <SummaryCard icon="alert" status={pendingCaseValidations > 0 ? "Open" : "Clear"} title="Pending Items" description={`${pendingCaseValidations} clinical case validation${pendingCaseValidations === 1 ? "" : "s"} need review`} isLoading={isCasesLoading} />
       </section>
 
       <div className="grid min-w-0 grid-cols-1 min-[1400px]:grid-cols-2 gap-[18px] items-start">
@@ -114,7 +123,8 @@ export function StudentProgressDetailContent({ basePath }: { basePath: string; s
           <div className="flex justify-between items-start gap-[22px] mb-[20px]"><h2 className="m-0 !text-[#111827] !text-[1.24rem] !font-bold">Weekly Duty Record</h2></div>
           {isLoading ? <LoadingState message="Loading weekly duty record" className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <><div className="flex items-center justify-between gap-[14px] border border-[rgba(138,37,44,0.14)] rounded-[8px] mb-[14px] p-[16px] max-[640px]:flex-col max-[640px]:items-start" style={{ background: "linear-gradient(135deg, rgba(255,207,1,0.22), rgba(138,37,44,0.04) 62%), #ffffff" }}><div><span className="block mb-[5px] !text-[#8A252C] !text-[0.72rem] !font-[900] uppercase">This week</span><strong className="block !text-[#111827] !text-[1.25rem] leading-[1.2]">{formatHours(totalHours)} recorded</strong></div><p className="m-0 max-w-[240px] !text-[#64748b] !text-[0.84rem] !font-[800] leading-[1.45] text-right max-[640px]:text-left">{formatHours(totalOvertime)} overtime across {dutyEntries.length} duty day{dutyEntries.length === 1 ? "" : "s"}.</p></div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,120px),1fr))] gap-[12px] mb-[16px]" aria-label="Weekly duty summary">{[{ label: "Duty Days", value: String(dutyEntries.length) }, { label: "Total Hours", value: formatHours(totalHours) }, { label: "Overtime", value: formatHours(totalOvertime) }].map((stat) => <div key={stat.label} className="relative overflow-hidden border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] p-[13px_14px_13px_16px] before:content-[''] before:absolute before:inset-[0_auto_0_0] before:w-[4px] before:bg-[linear-gradient(180deg,#8A252C,#ffc107)]"><span className="block mb-[5px] !text-[#64748b] !text-[0.74rem] !font-[800] uppercase">{stat.label}</span><strong className="!text-[#111827] !text-[1.05rem]">{stat.value}</strong></div>)}</div>
-          <div className="grid gap-[12px] mb-[14px]">{dutyEntries.map((entry: any) => { const hasOvertime = entry.overtime > 0; const badgeClass = hasOvertime ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#e9f8ef] !text-[#03703c]"; const badgeLabel = hasOvertime ? `Overtime +${formatHours(entry.overtime)}` : "No overtime"; const [month = "", dayNumber = ""] = entry.date.split(" "); return <article key={`${entry.id}-${entry.date}-${entry.day}-${entry.area}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-[14px] items-center border rounded-[8px] p-[12px_14px] max-[720px]:grid-cols-1 ${hasOvertime ? "border-[rgba(180,35,24,0.2)] bg-[linear-gradient(90deg,#ffffff,#fff8f7)]" : "border-[#e2e8f0] bg-[linear-gradient(90deg,#ffffff,#f8fafc)]"}`}><div className="grid place-items-center min-w-[52px] min-h-[56px] border border-[rgba(255,207,1,0.45)] rounded-[8px] bg-[rgba(255,207,1,0.12)] !text-[#6c4c00] p-[7px] text-center"><span className="m-0 !text-[0.66rem] !font-[900] uppercase leading-[1]">{month}</span><strong className="mt-[3px] !text-[1.04rem] leading-[1] !font-bold">{dayNumber}</strong></div><div><strong className="block mb-[4px] !text-[0.94rem] !text-[#111827]">{entry.day}</strong><p className="m-0 !text-[#64748b] !text-[0.82rem] !font-[700] leading-[1.4]">{entry.area}</p></div><span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${badgeClass}`}>{badgeLabel}</span><div className="grid gap-[2px] text-right max-[720px]:text-left"><span className="!text-[#111827] !text-[0.96rem] !font-[900] whitespace-nowrap">{formatHours(entry.hours)}</span><small className="!text-[#64748b] !text-[0.67rem] !font-[800] uppercase whitespace-nowrap">Duty Record</small></div></article>; })}</div>
+          <div className="grid gap-[12px] mb-[14px]">{pagedDutyEntries.map((entry: any) => { const hasOvertime = entry.overtime > 0; const badgeClass = hasOvertime ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#e9f8ef] !text-[#03703c]"; const badgeLabel = hasOvertime ? `Overtime +${formatHours(entry.overtime)}` : "No overtime"; const [month = "", dayNumber = ""] = entry.date.split(" "); return <article key={`${entry.id}-${entry.date}-${entry.day}-${entry.area}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto_auto] gap-[14px] items-center border rounded-[8px] p-[12px_14px] max-[720px]:grid-cols-1 ${hasOvertime ? "border-[rgba(180,35,24,0.2)] bg-[linear-gradient(90deg,#ffffff,#fff8f7)]" : "border-[#e2e8f0] bg-[linear-gradient(90deg,#ffffff,#f8fafc)]"}`}><div className="grid place-items-center min-w-[52px] min-h-[56px] border border-[rgba(255,207,1,0.45)] rounded-[8px] bg-[rgba(255,207,1,0.12)] !text-[#6c4c00] p-[7px] text-center"><span className="m-0 !text-[0.66rem] !font-[900] uppercase leading-[1]">{month}</span><strong className="mt-[3px] !text-[1.04rem] leading-[1] !font-bold">{dayNumber}</strong></div><div><strong className="block mb-[4px] !text-[0.94rem] !text-[#111827]">{entry.day}</strong><p className="m-0 !text-[#64748b] !text-[0.82rem] !font-[700] leading-[1.4]">{entry.area}</p></div><span className={`inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap ${badgeClass}`}>{badgeLabel}</span><div className="grid gap-[2px] text-right max-[720px]:text-left"><span className="!text-[#111827] !text-[0.96rem] !font-[900] whitespace-nowrap">{formatHours(entry.hours)}</span><small className="!text-[#64748b] !text-[0.67rem] !font-[800] uppercase whitespace-nowrap">Duty Record</small></div></article>; })}</div>
+          {dutyTotalPages > 1 && <div className="mb-[14px] flex items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-[0.85rem_1rem]"><button type="button" disabled={currentDutyPage === 1} onClick={() => setDutyPage((page) => Math.max(1, page - 1))} className="min-h-[36px] rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.82rem] !font-[900] !text-[#334155] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Previous</button><span className="whitespace-nowrap !text-[0.82rem] !font-[800] !text-[#64748b]">Page {currentDutyPage} of {dutyTotalPages}</span><button type="button" disabled={currentDutyPage === dutyTotalPages} onClick={() => setDutyPage((page) => Math.min(dutyTotalPages, page + 1))} className="min-h-[36px] rounded-lg border border-[#e2e8f0] bg-white px-4 !text-[0.82rem] !font-[900] !text-[#334155] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">Next</button></div>}
           <div className="mt-[14px] p-[12px_16px] border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] !text-[#475569] !text-[0.9rem] !font-[700] leading-[1.5]" role="status" aria-live="polite">Showing {student.name || "this student's"} weekly duty attendance and overtime status.</div></>}
         </article>
       </div>

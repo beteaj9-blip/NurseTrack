@@ -114,20 +114,21 @@ public class StudentClearanceController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<StudentClearance> updateClearanceStatus(@PathVariable Long id, @RequestParam ClearanceStatus status, HttpServletRequest request) {
+    public ResponseEntity<StudentClearance> updateClearanceStatus(@PathVariable Long id, @RequestParam String status, HttpServletRequest request) {
+        ClearanceStatus normalizedStatus = parseClearanceStatus(status);
         StudentClearance clearance = clearanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Clearance record not found."));
         User viewer = userRepository.findById(jwtService.getUserId(request)).orElse(null);
         if (viewer == null || !AccessScope.canViewRecord(viewer, clearance.getStudent(), null) || !accessPermissionService.canEdit(viewer.getRole(), "clearance")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        if (status == ClearanceStatus.CLEARED 
+        if (normalizedStatus == ClearanceStatus.CLEARED 
                 && clearance.getStatus() != ClearanceStatus.IN_REVIEW 
                 && clearance.getStatus() != ClearanceStatus.CLEARED) {
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot approve a clearance that has not been submitted.");
         }
-        clearance.setStatus(status);
-        if (status == ClearanceStatus.IN_REVIEW && clearance.getSubmittedAt() == null) {
+        clearance.setStatus(normalizedStatus);
+        if (normalizedStatus == ClearanceStatus.IN_REVIEW && clearance.getSubmittedAt() == null) {
             clearance.setSubmittedAt(LocalDateTime.now());
         }
         return ResponseEntity.ok(clearanceRepository.save(clearance));
@@ -157,6 +158,13 @@ public class StudentClearanceController {
     private ClearanceSettings currentSettings() {
         return settingsRepository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> settingsRepository.save(ClearanceSettings.builder().enabled(true).build()));
+    }
+
+    private ClearanceStatus parseClearanceStatus(String value) {
+        if (value != null && value.equalsIgnoreCase("APPROVED")) return ClearanceStatus.CLEARED;
+        if (value != null && (value.equalsIgnoreCase("PENDING") || value.equalsIgnoreCase("SUBMITTED"))) return ClearanceStatus.IN_REVIEW;
+        if (value != null && value.equalsIgnoreCase("CANCELLED")) return ClearanceStatus.LOCKED;
+        return ClearanceStatus.valueOf(String.valueOf(value).toUpperCase());
     }
 
 }

@@ -24,6 +24,10 @@ function getFileName(fileUrl?: string) {
   }
 }
 
+function displayFileName(fileUrl?: string, fileName?: string) {
+  return fileName || getFileName(fileUrl);
+}
+
 function formatSubmitted(date?: string) {
   if (!date) return "Submitted";
   return `Submitted ${new Date(date).toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`;
@@ -78,6 +82,7 @@ const emptyForm = {
   details: "",
   evidenceNotes: "",
   supportingFiles: "",
+  supportingFileName: "",
 };
 
 export function StudentAppealDetailContent() {
@@ -125,10 +130,11 @@ export function StudentAppealDetailContent() {
       clinicalSite: appeal.clinicalSite ?? "",
       dutyArea: appeal.dutyArea ?? "",
       instructorId: appeal.instructorId != null ? String(appeal.instructorId) : "",
-      subject: appeal.subject ?? "",
-      details: appeal.details ?? "",
+      subject: appeal.title ?? appeal.subject ?? "",
+      details: appeal.studentReason ?? appeal.details ?? "",
       evidenceNotes: appeal.evidenceNotes ?? "",
       supportingFiles: appeal.supportingFiles ?? "",
+      supportingFileName: appeal.supportingFileName ?? "",
     });
     const matchingSchedule = (schedules as any[]).find((schedule: any) =>
       schedule.date === appeal.relatedDutyDate &&
@@ -188,7 +194,7 @@ export function StudentAppealDetailContent() {
     try {
       setMessage("Uploading supporting file...");
       const uploaded = await uploadAppealFile.mutateAsync(file);
-      updateForm("supportingFiles", uploaded.secure_url ?? uploaded.url ?? file.name);
+      setForm((current) => ({ ...current, supportingFiles: uploaded.secure_url ?? uploaded.url ?? file.name, supportingFileName: file.name }));
       setMessage("Supporting file uploaded.");
       showToast({ variant: "success", title: "File uploaded", message: "Supporting file was attached successfully." });
     } catch {
@@ -200,7 +206,7 @@ export function StudentAppealDetailContent() {
   };
 
   const removeFile = () => {
-    updateForm("supportingFiles", "");
+    setForm((current) => ({ ...current, supportingFiles: "", supportingFileName: "" }));
     setMessage("Supporting file removed. Save changes to update the appeal.");
     showToast({ variant: "success", title: "File removed", message: "Save changes to remove the file completely." });
   };
@@ -230,9 +236,12 @@ export function StudentAppealDetailContent() {
           clinicalSite: isNotApplicable ? NOT_APPLICABLE_LABEL : form.clinicalSite,
           dutyArea: isNotApplicable ? NOT_APPLICABLE_LABEL : form.dutyArea,
           subject: form.subject,
+          title: form.subject,
           details: form.details,
+          studentReason: form.details,
           evidenceNotes: form.evidenceNotes,
           supportingFiles: form.supportingFiles,
+          supportingFileName: form.supportingFileName,
         },
       });
       setIsEditing(false);
@@ -263,10 +272,10 @@ export function StudentAppealDetailContent() {
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-2">
           {isEditing ? (
-            <input className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] text-[1rem] font-[800] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01]" value={form.subject} onChange={(event) => updateForm("subject", event.target.value)} placeholder="Enter appeal subject" />
+            <input className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] text-[1rem] font-[800] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01]" value={form.subject} onChange={(event) => updateForm("subject", event.target.value)} placeholder="Enter appeal title" aria-label="Title" />
           ) : (
             <h3 className="text-[1.15rem] font-[800] text-[#111827] m-0 leading-[1.3]">
-              {appeal?.subject ?? "Appeal details"}
+              {appeal?.title ?? appeal?.subject ?? "Appeal details"}
             </h3>
           )}
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appealStageKey(appeal))}`}>
@@ -358,7 +367,7 @@ export function StudentAppealDetailContent() {
                   <div className="inline-flex max-w-full items-center gap-2">
                     <a href={form.supportingFiles} target="_blank" rel="noreferrer" className="inline-flex min-w-0 items-center gap-2 rounded-md border border-[#e2e8f0] bg-white px-3 py-2 text-[#344054] text-[0.85rem] font-bold no-underline hover:border-[#cbd5e1] hover:bg-[#f8fafc] transition-colors">
                       <span aria-hidden="true">File</span>
-                      <span className="truncate">{getFileName(form.supportingFiles)}</span>
+                      <span className="truncate">{displayFileName(form.supportingFiles, form.supportingFileName)}</span>
                       <span className="text-[#8A252C]">Open</span>
                     </a>
                     <button type="button" onClick={removeFile} disabled={isUploading || isSaving} className="h-[36px] px-3 rounded-md border border-[#fecaca] bg-[#fef2f2] text-[#991b1b] text-[0.78rem] font-bold hover:bg-[#fee2e2] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Remove</button>
@@ -371,7 +380,7 @@ export function StudentAppealDetailContent() {
               appeal?.supportingFiles ? (
                 <a href={appeal.supportingFiles} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 max-w-full rounded-md border border-[#e2e8f0] bg-white px-3 py-2 text-[#344054] text-[0.85rem] font-bold no-underline hover:border-[#cbd5e1] hover:bg-[#f8fafc] transition-colors">
                   <span aria-hidden="true">File</span>
-                  <span className="truncate">{getFileName(appeal.supportingFiles)}</span>
+                  <span className="truncate">{displayFileName(appeal.supportingFiles, appeal.supportingFileName)}</span>
                   <span className="text-[#8A252C]">Open</span>
                 </a>
               ) : (

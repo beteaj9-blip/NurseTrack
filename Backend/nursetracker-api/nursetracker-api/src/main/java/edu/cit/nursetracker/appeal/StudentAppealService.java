@@ -6,7 +6,9 @@ import edu.cit.nursetracker.notification.NotificationType;
 import edu.cit.nursetracker.user.AccessScope;
 import edu.cit.nursetracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -19,6 +21,8 @@ public class StudentAppealService {
     private final UserRepository userRepository;
 
     public StudentAppeal createAppeal(StudentAppeal appeal) {
+        syncAppealText(appeal);
+        validateAppeal(appeal);
         appeal.setAppealType(clean(appeal.getAppealType()));
         appeal.setStatus(AppealStatus.PENDING);
         appeal.setInstructorDecision(null);
@@ -51,6 +55,8 @@ public class StudentAppealService {
     }
 
     public StudentAppeal updateAppeal(Long id, StudentAppeal updatedAppeal) {
+        syncAppealText(updatedAppeal);
+        validateAppeal(updatedAppeal);
         StudentAppeal appeal = getAppeal(id);
         appeal.setInstructor(updatedAppeal.getInstructor());
         appeal.setAppealType(clean(updatedAppeal.getAppealType()));
@@ -58,9 +64,12 @@ public class StudentAppealService {
         appeal.setClinicalSite(updatedAppeal.getClinicalSite());
         appeal.setDutyArea(updatedAppeal.getDutyArea());
         appeal.setSubject(updatedAppeal.getSubject());
+        appeal.setTitle(updatedAppeal.getTitle());
         appeal.setDetails(updatedAppeal.getDetails());
+        appeal.setStudentReason(updatedAppeal.getStudentReason());
         appeal.setEvidenceNotes(updatedAppeal.getEvidenceNotes());
         appeal.setSupportingFiles(updatedAppeal.getSupportingFiles());
+        appeal.setSupportingFileName(updatedAppeal.getSupportingFileName());
         appeal.setStatus(AppealStatus.PENDING);
         appeal.setInstructorDecision(null);
         appeal.setInstructorRemarks(null);
@@ -103,5 +112,29 @@ public class StudentAppealService {
 
     private String clean(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private void validateAppeal(StudentAppeal appeal) {
+        if (appeal.getStudent() == null || appeal.getStudent().getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Student is required before submitting an appeal.");
+        }
+        if (clean(appeal.getAppealType()).isBlank() || clean(appeal.getClinicalSite()).isBlank() || clean(appeal.getDutyArea()).isBlank() || clean(appeal.getSubject()).isBlank() || clean(appeal.getDetails()).isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Complete the required appeal details before submitting.");
+        }
+    }
+
+    private void syncAppealText(StudentAppeal appeal) {
+        if (clean(appeal.getSubject()).isBlank()) {
+            appeal.setSubject(clean(appeal.getTitle()));
+        }
+        if (clean(appeal.getTitle()).isBlank()) {
+            appeal.setTitle(clean(appeal.getSubject()));
+        }
+        if (clean(appeal.getDetails()).isBlank()) {
+            appeal.setDetails(clean(appeal.getStudentReason()));
+        }
+        if (clean(appeal.getStudentReason()).isBlank()) {
+            appeal.setStudentReason(clean(appeal.getDetails()));
+        }
     }
 }

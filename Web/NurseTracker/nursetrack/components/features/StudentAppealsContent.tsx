@@ -31,6 +31,10 @@ function getFileName(fileUrl?: string) {
   }
 }
 
+function displayFileName(fileUrl?: string, fileName?: string) {
+  return fileName || getFileName(fileUrl);
+}
+
 function appealStageKey(appeal: any) {
   if (appeal?.status === "ACCEPTED" || appeal?.status === "RETURNED") return appeal.status;
   if (appeal?.instructorDecision === "ACCEPTED") return "CI_ACCEPTED";
@@ -57,6 +61,14 @@ function appendOption(options: { value: string; label: string }[], value?: strin
   return [...options, { value, label: label || value }];
 }
 
+function errorMessage(error: unknown, fallback: string) {
+  const response = (error as { response?: { data?: { message?: string; error?: string } | string } })?.response;
+  if (typeof response?.data === "string" && response.data.trim()) return response.data;
+  if (typeof response?.data === "object" && response.data?.message) return response.data.message;
+  if (typeof response?.data === "object" && response.data?.error) return response.data.error;
+  return fallback;
+}
+
 const NOT_APPLICABLE_VALUE = "not-applicable";
 const NOT_APPLICABLE_LABEL = "Not Applicable";
 const notApplicableOption = { value: NOT_APPLICABLE_VALUE, label: NOT_APPLICABLE_LABEL };
@@ -80,6 +92,7 @@ const emptyForm = {
   details: "",
   evidenceNotes: "",
   supportingFiles: "",
+  supportingFileName: "",
 };
 
 export function StudentAppealsContent() {
@@ -115,10 +128,11 @@ export function StudentAppealsContent() {
       clinicalSite: editingAppeal.clinicalSite ?? "",
       dutyArea: editingAppeal.dutyArea ?? "",
       instructorId: editingAppeal.instructorId != null ? String(editingAppeal.instructorId) : "",
-      subject: editingAppeal.subject ?? "",
-      details: editingAppeal.details ?? "",
+      subject: editingAppeal.title ?? editingAppeal.subject ?? "",
+      details: editingAppeal.studentReason ?? editingAppeal.details ?? "",
       evidenceNotes: editingAppeal.evidenceNotes ?? "",
       supportingFiles: editingAppeal.supportingFiles ?? "",
+      supportingFileName: editingAppeal.supportingFileName ?? "",
     });
     setSelectedScheduleId(isNotApplicableAppeal(editingAppeal) ? NOT_APPLICABLE_VALUE : matchingSchedule ? String(matchingSchedule.id) : editingAppeal.relatedDutyDate ? `appeal-${editingAppeal.id}` : "");
     setMessage("Edit the appeal details and submit changes for CI recommendation.");
@@ -199,7 +213,7 @@ export function StudentAppealsContent() {
     try {
       setMessage("Uploading supporting file...");
       const uploaded = await uploadAppealFile.mutateAsync(file);
-      updateForm("supportingFiles", uploaded.secure_url ?? uploaded.url ?? file.name);
+      setForm((current) => ({ ...current, supportingFiles: uploaded.secure_url ?? uploaded.url ?? file.name, supportingFileName: file.name }));
       setMessage("Supporting file uploaded.");
       showToast({ variant: "success", title: "File uploaded", message: "Supporting file was attached to the appeal." });
     } catch {
@@ -211,7 +225,7 @@ export function StudentAppealsContent() {
   };
 
   const removeFile = () => {
-    updateForm("supportingFiles", "");
+    setForm((current) => ({ ...current, supportingFiles: "", supportingFileName: "" }));
     setMessage("Supporting file removed.");
     showToast({ variant: "success", title: "File removed", message: "The supporting file was removed from this appeal." });
   };
@@ -234,9 +248,12 @@ export function StudentAppealsContent() {
         clinicalSite: isNotApplicable ? NOT_APPLICABLE_LABEL : form.clinicalSite,
         dutyArea: isNotApplicable ? NOT_APPLICABLE_LABEL : form.dutyArea,
         subject: form.subject,
+        title: form.subject,
         details: form.details,
+        studentReason: form.details,
         evidenceNotes: form.evidenceNotes,
         supportingFiles: form.supportingFiles,
+        supportingFileName: form.supportingFileName,
       };
       if (editingAppealId) {
         await updateAppeal.mutateAsync({ appealId: editingAppealId, appeal: appealPayload });
@@ -246,9 +263,10 @@ export function StudentAppealsContent() {
       clearForm();
       setMessage(editingAppealId ? "Appeal changes submitted for CI recommendation." : "Appeal submitted for CI recommendation.");
       showToast({ variant: "success", title: editingAppealId ? "Appeal updated" : "Appeal submitted", message: editingAppealId ? "Your appeal changes were saved." : "Your appeal was submitted for CI recommendation." });
-    } catch {
-      setMessage("Appeal could not be submitted.");
-      showToast({ variant: "error", title: "Appeal failed", message: "Appeal could not be submitted." });
+    } catch (error) {
+      const backendMessage = errorMessage(error, "Appeal could not be submitted.");
+      setMessage(backendMessage);
+      showToast({ variant: "error", title: "Appeal failed", message: backendMessage });
     }
   };
 
@@ -303,12 +321,12 @@ export function StudentAppealsContent() {
 
           {/* Row 4 */}
           <div className="flex flex-col">
-            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Appeal Subject</label>
+            <label className="block text-[0.85rem] font-bold text-[#344054] mb-2">Title</label>
             <input
               type="text"
               value={form.subject}
               onChange={(event) => updateForm("subject", event.target.value)}
-              placeholder="Enter appeal subject"
+              placeholder="Enter appeal title"
               className="w-full h-[42px] px-3 border border-[#dbe3ee] rounded-lg text-[#111827] font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#FFCF01]/50 focus:border-[#FFCF01] shadow-sm text-[0.9rem] placeholder:text-[#94a3b8]"
             />
           </div>
@@ -347,7 +365,7 @@ export function StudentAppealsContent() {
               </label>
               {form.supportingFiles ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <a href={form.supportingFiles} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate text-[#344054] text-[0.85rem] font-bold underline-offset-2 hover:underline">{getFileName(form.supportingFiles)}</a>
+                  <a href={form.supportingFiles} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate text-[#344054] text-[0.85rem] font-bold underline-offset-2 hover:underline">{displayFileName(form.supportingFiles, form.supportingFileName)}</a>
                   <button type="button" onClick={removeFile} disabled={isUploading || isSubmitting} className="h-[32px] px-3 rounded-md border border-[#fecaca] bg-[#fef2f2] text-[#991b1b] text-[0.78rem] font-bold hover:bg-[#fee2e2] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">Remove</button>
                 </div>
               ) : (
@@ -401,7 +419,7 @@ export function StudentAppealsContent() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-1">
-                            <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 leading-[1.3] truncate">{appeal.subject}</h3>
+                            <h3 className="text-[1.1rem] font-[800] text-[#111827] m-0 leading-[1.3] truncate">{appeal.title || appeal.subject}</h3>
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-[0.75rem] font-bold shrink-0 ${statusClass(appealStageKey(appeal))}`}>
                               {statusLabel(appealStageKey(appeal))}
                             </span>

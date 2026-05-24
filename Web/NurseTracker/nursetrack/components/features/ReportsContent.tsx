@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 type Person = {
   name: string;
   role: string;
+  roleValue?: string;
   id: string;
   userId?: number;
   section: string;
@@ -27,8 +28,9 @@ export function ReportsContent() {
   const { data: instructorCases = [], isLoading: isInstructorCasesLoading } = useInstructorCases(undefined, !hasAllCaseAccess);
   const { data: allCases = [], isLoading: isAllCasesLoading } = useAllClinicalCases(hasAllCaseAccess, viewerId);
   const { data: studentUsers = [], isLoading: isStudentsLoading } = useUsers("STUDENT", hasAllCaseAccess ? viewerId : undefined);
+  const { data: visibleUsers = [], isLoading: isUsersLoading } = useUsers(undefined, hasAllCaseAccess ? viewerId : undefined, hasAllCaseAccess);
   const cases = hasAllCaseAccess ? allCases : instructorCases;
-  const isCasesLoading = (hasAllCaseAccess ? isAllCasesLoading : isInstructorCasesLoading) || isStudentsLoading;
+  const isCasesLoading = (hasAllCaseAccess ? isAllCasesLoading : isInstructorCasesLoading) || isStudentsLoading || (hasAllCaseAccess && isUsersLoading);
   const [reportScope, setReportScope] = useState("person");
   const [isGenerating, setIsGenerating] = useState(false);
   const getDefaultReportRange = () => {
@@ -45,6 +47,8 @@ export function ReportsContent() {
   const [sectionTarget, setSectionTarget] = useState("");
   const [siteTarget, setSiteTarget] = useState("");
   const [groupTarget, setGroupTarget] = useState("");
+  const [instructorTarget, setInstructorTarget] = useState("");
+  const [chairTarget, setChairTarget] = useState("");
   
   const [startDate, setStartDate] = useState(() => getDefaultReportRange().start);
   const [endDate, setEndDate] = useState(() => getDefaultReportRange().end);
@@ -59,11 +63,12 @@ export function ReportsContent() {
       acc[key] = {
         name: student.fullName || "Nursing Student",
         role: "Student",
-        id: student.schoolId || "",
-        userId: student.id,
-        section: student.sectionInfo || "Nursing Student",
-        site: student.hospital || "Assigned Site",
-        group: student.groupInfo || student.sectionInfo || "Assigned Group",
+          id: student.schoolId || "",
+          userId: student.id,
+          roleValue: student.role,
+          section: student.sectionInfo || "Nursing Student",
+          site: student.hospital || "Assigned Site",
+          group: student.groupInfo || student.sectionInfo || "Assigned Group",
       };
       return acc;
     }, (cases as any[]).reduce((acc: Record<string, Person>, clinicalCase: any) => {
@@ -74,6 +79,7 @@ export function ReportsContent() {
         role: "Student",
         id: clinicalCase.studentSchoolId || "",
         userId: clinicalCase.studentId,
+        roleValue: "STUDENT",
         section: clinicalCase.studentSection || "Nursing Student",
         site: clinicalCase.hospital || "Assigned Site",
         group: clinicalCase.studentSection || "Assigned Group",
@@ -83,9 +89,21 @@ export function ReportsContent() {
   const sections = Array.from(new Set(reportPeople.map((person) => person.section).filter(Boolean))).sort();
   const sites = Array.from(new Set(reportPeople.map((person) => person.site).filter(Boolean))).sort();
   const groups = Array.from(new Set(reportPeople.map((person) => person.group).filter(Boolean))).sort();
+  const nonStudentTargets = (visibleUsers as any[])
+    .filter((target) => target.role && target.role !== "STUDENT")
+    .map((target) => ({ value: String(target.id), label: `${target.fullName} - ${target.role.replaceAll("_", " ")}` }));
+  const instructorOptions = (visibleUsers as any[])
+    .filter((target) => target.role === "INSTRUCTOR")
+    .map((target) => ({ value: String(target.id), label: target.fullName }));
+  const chairAdminOptions = nonStudentTargets.filter((target) => {
+    if (target.label.includes("CHAIR") || target.label.includes("COORDINATOR") || target.label.includes("ASSISTANT")) return true;
+    return user?.role === "ADMIN" && target.label.includes("ADMIN");
+  });
   const reportScopeOptions = [
     { value: "person", label: "One student" },
     { value: "section", label: "Whole section" },
+    ...(hasAllCaseAccess ? [{ value: "instructor", label: "Clinical Instructor" }] : []),
+    ...(hasAllCaseAccess ? [{ value: "chair", label: user?.role === "ADMIN" ? "Admin / Chair / Coordinator / Assistant" : "Chair / Coordinator / Assistant" }] : []),
   ];
   const sectionOptions = sections.map((section) => ({ value: section, label: section }));
   const siteOptions = sites.map((site) => ({ value: site, label: site }));
@@ -125,6 +143,8 @@ export function ReportsContent() {
     setSectionTarget("");
     setSiteTarget("");
     setGroupTarget("");
+    setInstructorTarget("");
+    setChairTarget("");
     const defaultRange = getDefaultReportRange();
     setStartDate(defaultRange.start);
     setEndDate(defaultRange.end);
@@ -133,6 +153,31 @@ export function ReportsContent() {
 
   const generateReport = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const downloadStudentReport = async (person: Person) => {
+      const { data } = await apiClient.get('/reports/student/export-by-school-id', {
+        params: { schoolId: person.id, startDate, endDate },
+        responseType: "blob",
+      });
+      downloadBlob(data, `student-report-${person.id || person.userId}.pdf`);
+    };
+
+    const downloadAggregateReport = async (urlPath: string, params: Record<string, string>, fileName: string) => {
+      const { data } = await apiClient.get(urlPath, {
+        params: { ...params, startDate, endDate },
+        responseType: "blob",
+      });
+      downloadBlob(data, fileName);
+    };
+
+    const downloadBlob = (data: Blob, fileName: string) => {
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    };
     
     if (reportScope === "person") {
       const person = selectedPerson ?? reportPeople.find(p => p.name === personSearch);
@@ -150,16 +195,7 @@ export function ReportsContent() {
       if (person.role === "Student" && person.userId != null) {
         try {
           setIsGenerating(true);
-          const { data } = await apiClient.get('/reports/student/export-by-school-id', {
-            params: { schoolId: person.id, startDate, endDate },
-            responseType: "blob",
-          });
-          const url = window.URL.createObjectURL(data);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `student-report-${person.id || person.userId}.pdf`;
-          link.click();
-          window.URL.revokeObjectURL(url);
+          await downloadStudentReport(person);
           setMessage({ text: `General report generated for ${person.name}.`, type: "is-success" });
           showToast({ variant: "success", title: "Report downloaded", message: `Report generated for ${person.name}.` });
         } catch {
@@ -178,23 +214,53 @@ export function ReportsContent() {
       }
       try {
         setIsGenerating(true);
-        for (const person of sectionStudents) {
-          const { data } = await apiClient.get('/reports/student/export-by-school-id', {
-            params: { schoolId: person.id, startDate, endDate },
-            responseType: "blob",
-          });
-          const url = window.URL.createObjectURL(data);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `student-report-${person.id || person.userId}.pdf`;
-          link.click();
-          window.URL.revokeObjectURL(url);
-        }
-        setMessage({ text: `Generated ${sectionStudents.length} report(s) for ${sectionTarget}.`, type: "is-success" });
-        showToast({ variant: "success", title: "Reports downloaded", message: `${sectionStudents.length} student report(s) generated for ${sectionTarget}.` });
+        await downloadAggregateReport('/reports/section/export', { section: sectionTarget }, `section-report-${sectionTarget}.pdf`);
+        setMessage({ text: `Combined section report generated for ${sectionTarget}.`, type: "is-success" });
+        showToast({ variant: "success", title: "Report downloaded", message: `Combined section report generated for ${sectionTarget}.` });
       } catch {
-        setMessage({ text: "One or more section reports could not be generated. Please check the selected date range and try again.", type: "is-error" });
-        showToast({ variant: "error", title: "Report failed", message: "One or more section reports could not be generated." });
+        setMessage({ text: "The section report could not be generated. Please check the selected date range and try again.", type: "is-error" });
+        showToast({ variant: "error", title: "Report failed", message: "The section report could not be generated." });
+      } finally {
+        setIsGenerating(false);
+      }
+    } else if (reportScope === "instructor") {
+      if (!instructorTarget) {
+        setMessage({ text: "Choose a Clinical Instructor before generating a report.", type: "is-error" });
+        showToast({ variant: "error", title: "Choose Clinical Instructor", message: "Choose a Clinical Instructor before generating a report." });
+        return;
+      }
+      try {
+        setIsGenerating(true);
+        await downloadAggregateReport(`/reports/instructor/${instructorTarget}/export`, {}, `clinical-instructor-report-${instructorTarget}.pdf`);
+        setMessage({ text: "Clinical Instructor aggregate report generated.", type: "is-success" });
+        showToast({ variant: "success", title: "Report downloaded", message: "Clinical Instructor aggregate report generated." });
+      } catch {
+        setMessage({ text: "The Clinical Instructor report could not be generated.", type: "is-error" });
+        showToast({ variant: "error", title: "Report failed", message: "The Clinical Instructor report could not be generated." });
+      } finally {
+        setIsGenerating(false);
+      }
+    } else if (reportScope === "chair") {
+      if (!chairTarget) {
+        const targetLabel = user?.role === "ADMIN" ? "Admin, Chair, Coordinator, or Assistant" : "Chair, Coordinator, or Assistant";
+        setMessage({ text: `Choose a ${targetLabel} before generating a report.`, type: "is-error" });
+        showToast({ variant: "error", title: "Choose report target", message: `Choose a ${targetLabel} before generating a report.` });
+        return;
+      }
+      const targetStudents = reportPeople.filter((person) => person.role === "Student" && person.id);
+      if (targetStudents.length === 0) {
+        setMessage({ text: "No visible student records are available for this report.", type: "is-error" });
+        showToast({ variant: "error", title: "Report unavailable", message: "No visible student records are available for this report." });
+        return;
+      }
+      try {
+        setIsGenerating(true);
+        await downloadAggregateReport(`/reports/scope/${chairTarget}/export`, {}, `scope-report-${chairTarget}.pdf`);
+        setMessage({ text: "Aggregate report generated for the selected target.", type: "is-success" });
+        showToast({ variant: "success", title: "Report downloaded", message: "Aggregate report generated for the selected target." });
+      } catch {
+        setMessage({ text: "The selected target report could not be generated.", type: "is-error" });
+        showToast({ variant: "error", title: "Report failed", message: "The selected target report could not be generated." });
       } finally {
         setIsGenerating(false);
       }
@@ -265,6 +331,7 @@ export function ReportsContent() {
                     )}
                   </div>
                 )}
+                {selectedPerson && <div className="mt-4 grid grid-cols-2 gap-[1rem] max-[760px]:grid-cols-1"><label className={labelClass}>Section<input className={inputClass} value={selectedPerson.section} readOnly /></label><label className={labelClass}>Student ID<input className={inputClass} value={selectedPerson.id} readOnly /></label></div>}
               </div>
             )}
 
@@ -272,6 +339,20 @@ export function ReportsContent() {
               <label className={labelClass} htmlFor="section-target" id="section-field">
                 Select section
                 <InlineSelect value={sectionTarget} options={sectionOptions} placeholder="Choose section" onChange={setSectionTarget} />
+              </label>
+            )}
+
+            {reportScope === "instructor" && (
+              <label className={labelClass} htmlFor="instructor-target" id="instructor-field">
+                Select Clinical Instructor
+                <InlineSelect value={instructorTarget} options={instructorOptions} placeholder="Choose Clinical Instructor" onChange={setInstructorTarget} />
+              </label>
+            )}
+
+            {reportScope === "chair" && (
+              <label className={labelClass} htmlFor="chair-target" id="chair-field">
+                {user?.role === "ADMIN" ? "Select Admin / Chair / Coordinator / Assistant" : "Select Chair / Coordinator / Assistant"}
+                <InlineSelect value={chairTarget} options={chairAdminOptions} placeholder={user?.role === "ADMIN" ? "Choose Admin, Chair, Coordinator, or Assistant" : "Choose Chair, Coordinator, or Assistant"} onChange={setChairTarget} />
               </label>
             )}
 

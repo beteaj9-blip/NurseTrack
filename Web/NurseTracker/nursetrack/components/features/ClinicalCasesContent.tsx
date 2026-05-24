@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useSchedules } from "@/core/api/hooks/useSchedules";
 import { useAuthStore } from "@/core/store/authStore";
 import { useUsers } from "@/core/api/hooks/useUsers";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -30,8 +31,9 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
     const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
     const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isAllCaseScope, scopedViewerId);
     const { data: allStudentsData = [], isLoading: isUsersLoading } = useUsers("STUDENT", scopedViewerId, isAllCaseScope);
+    const { data: assignedSchedules = [], isLoading: isSchedulesLoading } = useSchedules(undefined, user?.role);
     const cases = isAllCaseScope ? allCases : instructorCases;
-    const isLoading = isAllCaseScope ? (isAllLoading || isUsersLoading) : isInstructorLoading;
+    const isLoading = isAllCaseScope ? (isAllLoading || isUsersLoading) : (isInstructorLoading || isSchedulesLoading);
     const canFilterByLevel = user?.role === "ADMIN" || user?.role === "COORDINATOR";
     const [search, setSearch] = useState("");
     const [sectionFilter, setSectionFilter] = useState("all");
@@ -51,6 +53,24 @@ export function ClinicalCasesContent({ basePath }: { basePath: string }) {
         };
         return acc;
     }, {});
+
+    if (!isAllCaseScope) {
+        (assignedSchedules as any[]).forEach((schedule: any) => {
+            const studentId = schedule.studentId ?? schedule.student?.id;
+            if (!studentId) return;
+            const key = String(studentId);
+            if (baseStudentsMap[key]) return;
+            baseStudentsMap[key] = {
+                studentId,
+                id: schedule.studentSchoolId ?? schedule.student?.schoolId ?? "Not provided",
+                name: schedule.studentName ?? schedule.student?.fullName ?? "Nursing Student",
+                profileImageUrl: schedule.studentProfileImageUrl ?? schedule.student?.profileImageUrl,
+                section: schedule.studentSection ?? schedule.student?.sectionInfo ?? "Nursing Student",
+                levels: levelsFromRecord(schedule),
+                pending: 0,
+            };
+        });
+    }
 
     const students = Object.values((cases as any[]).reduce((acc: Record<string, any>, clinicalCase: any) => {
         const key = String(clinicalCase.studentId ?? clinicalCase.studentSchoolId ?? clinicalCase.studentName);
