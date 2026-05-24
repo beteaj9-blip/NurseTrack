@@ -205,13 +205,9 @@ export function InstructorStudentProgressContent({ basePath }: { basePath: strin
               <span className="flex-1 flex flex-col gap-[0.125rem] min-w-0"><strong className="!text-[#111827] !text-[1rem] !font-[850] leading-[1.25] truncate">{student.name}</strong><small className="!text-[#64748b] !text-[0.875rem] !font-[700] truncate">{student.section} - {student.schoolId || "No student ID"}</small></span>
               {isEnrollment && <span className={`inline-flex items-center w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-extrabold whitespace-nowrap max-[520px]:col-start-3 max-[520px]:mt-1 ${student.standing === 'Cleared' ? 'bg-[#e9f8ef] !text-[#03703c]' : student.standing === 'Checked' ? 'bg-[#e9f8ef] !text-[#03703c]' : 'bg-[#fff1f0] !text-[#b42318]'}`}>{student.standing}</span>}
               {isEnrollment && (
-                student.standing === 'Cleared' ? (
-                  <span className="grid h-9 w-9 place-items-center rounded-lg border border-[#86efac] bg-[#ecfdf3] !text-[#15803d] max-[680px]:col-start-4 max-[680px]:row-start-1" aria-label="Cleared"><svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M9.55 17.35 4.9 12.7l1.8-1.8 2.85 2.85 7.75-7.75 1.8 1.8-9.55 9.55Z" /></svg></span>
-                ) : (
-                  <button type="button" onClick={(e) => toggleCheck(e, String(student.studentId))} className={`grid h-9 w-9 place-items-center rounded-lg border max-[680px]:col-start-4 max-[680px]:row-start-1 cursor-pointer transition-colors ${student.standing === 'Checked' ? 'border-[#03703c] bg-[#03703c] !text-white' : 'border-[#dbe3ee] bg-white !text-transparent hover:border-[#03703c]'}`} aria-label="Toggle Check">
-                    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M9.55 17.35 4.9 12.7l1.8-1.8 2.85 2.85 7.75-7.75 1.8 1.8-9.55 9.55Z" /></svg>
-                  </button>
-                )
+                <button type="button" onClick={(e) => toggleCheck(e, String(student.studentId))} className={`grid h-9 w-9 place-items-center rounded-lg border max-[680px]:col-start-4 max-[680px]:row-start-1 cursor-pointer transition-colors ${manualChecks[String(student.studentId)] ? 'border-[#03703c] bg-[#03703c] !text-white' : 'border-[#dbe3ee] bg-white !text-transparent hover:border-[#03703c]'}`} aria-label="Toggle enrollment decision">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M9.55 17.35 4.9 12.7l1.8-1.8 2.85 2.85 7.75-7.75 1.8 1.8-9.55 9.55Z" /></svg>
+                </button>
               )}
             </Link>
           ))}

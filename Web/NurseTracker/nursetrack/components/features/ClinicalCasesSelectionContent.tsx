@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAllClinicalCases, useInstructorCases } from "@/core/api/hooks/useClinicalCases";
+import { useUserById } from "@/core/api/hooks/useUsers";
 import { useAuthStore } from "@/core/store/authStore";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ProfileAvatar } from "@/components/ui/ProfileAvatar";
@@ -125,10 +126,15 @@ export function ClinicalCasesSelectionContent({ basePath }: { basePath: string; 
   const scopedViewerId = (basePath === "/chair" || basePath === "/assistant") && user?.id != null ? String(user.id) : undefined;
   const { data: instructorCases = [], isLoading: isInstructorLoading } = useInstructorCases();
   const { data: allCases = [], isLoading: isAllLoading } = useAllClinicalCases(isAllCaseScope, scopedViewerId);
+  const { data: selectedStudent, isLoading: isStudentLoading } = useUserById(studentId ?? undefined);
   const cases = isAllCaseScope ? allCases : instructorCases;
-  const isLoading = isAllCaseScope ? isAllLoading : isInstructorLoading;
+  const isLoading = (isAllCaseScope ? isAllLoading : isInstructorLoading) || isStudentLoading;
   const studentCases = cases.filter((clinicalCase: any) => String(clinicalCase.studentId) === String(studentId));
   const firstCase = studentCases[0];
+  const studentName = firstCase?.studentName ?? selectedStudent?.fullName ?? "Nursing Student";
+  const studentProfileImageUrl = firstCase?.studentProfileImageUrl ?? selectedStudent?.profileImageUrl;
+  const studentSection = firstCase?.studentSection ?? selectedStudent?.sectionInfo ?? "No section";
+  const studentSchoolId = firstCase?.studentSchoolId ?? selectedStudent?.schoolId ?? "No student ID";
   const pendingCount = studentCases.filter((clinicalCase: any) => clinicalCase.status === "PENDING").length;
   const drCases = studentCases.filter(isDeliveryRoomCase);
   const orCases = studentCases.filter(isOperatingRoomCase);
@@ -142,16 +148,16 @@ export function ClinicalCasesSelectionContent({ basePath }: { basePath: string; 
             <span className="inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">{pendingCount} pending cases</span>
           </div>
 
-          {firstCase ? (
+          {!isLoading && (firstCase || selectedStudent) ? (
             <>
               <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-[16px] border border-[#e2e8f0] rounded-[8px] bg-[#f8fafc] mb-[14px] p-[14px] max-[680px]:grid-cols-1">
-                <ProfileAvatar name={firstCase.studentName} imageUrl={firstCase.studentProfileImageUrl} size={48} />
-                <div className="w-full"><strong className="block !text-[#111827] !text-[1rem] !font-[800] leading-[1.3] mb-[4px]">{firstCase.studentName}</strong><p className="m-0 !text-[#64748b] !text-[0.86rem] !font-[700]">{firstCase.studentSection} - ID {firstCase.studentSchoolId}</p></div>
+                <ProfileAvatar name={studentName} imageUrl={studentProfileImageUrl} size={48} />
+                <div className="w-full"><strong className="block !text-[#111827] !text-[1rem] !font-[800] leading-[1.3] mb-[4px]">{studentName}</strong><p className="m-0 !text-[#64748b] !text-[0.86rem] !font-[700]">{studentSection} - ID {studentSchoolId}</p></div>
                 <span className="inline-flex items-center justify-start w-max min-h-[28px] px-[10px] py-[6px] rounded-full !text-[0.76rem] !font-[800] whitespace-nowrap bg-[#fff8e1] !text-[#6c4c00]">For review</span>
               </div>
               <CaseSection title="DR" subtitle="Delivery Room Cases" records={drCases} basePath={basePath} />
               <CaseSection title="OR" subtitle="Operating Room Cases" records={orCases} basePath={basePath} />
-              <div className="flex items-center gap-[0.75rem] p-[1rem] rounded-[8px] !text-[#1e293b] !font-[500] bg-[#f8fafc] border border-[#e2e8f0] mt-[1.2rem]" role="status" aria-live="polite">Select a clinical case to continue validation.</div>
+              <div className="flex items-center gap-[0.75rem] p-[1rem] rounded-[8px] !text-[#1e293b] !font-[500] bg-[#f8fafc] border border-[#e2e8f0] mt-[1.2rem]" role="status" aria-live="polite">{studentCases.length > 0 ? "Select a clinical case to continue validation." : "This assigned student has no submitted clinical cases yet."}</div>
             </>
           ) : (
             isLoading ? <LoadingState message="Loading clinical cases..." className="rounded-lg border border-dashed border-[#cbd5e1] bg-[#f8fafc]" /> : <div className="border border-dashed border-[#cbd5e1] rounded-lg bg-[#f8fafc] p-[1.25rem] !text-[#64748b] !font-[800] text-center">No clinical cases found for this student.</div>

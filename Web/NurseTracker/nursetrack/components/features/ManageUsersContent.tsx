@@ -17,6 +17,17 @@ const stripLettersFromInput = (event: React.FormEvent<HTMLInputElement>) => {
   event.currentTarget.value = withoutLetters(event.currentTarget.value);
 };
 
+function apiErrorMessage(error: unknown, fallback: string) {
+  const response = (error as { response?: { data?: { message?: string } | string } })?.response;
+  if (typeof response?.data === "string" && response.data.trim()) return response.data;
+  if (typeof response?.data === "object" && response.data?.message) return response.data.message;
+  return fallback;
+}
+
+function FieldLabel({ children, required = false }: { children: React.ReactNode; required?: boolean }) {
+  return <span>{children} {required ? <span className="!text-[#b42318]">*</span> : <span className="!text-[#94a3b8] !font-[800]">(optional)</span>}</span>;
+}
+
 type ApiUser = {
   id: number;
   fullName: string;
@@ -257,11 +268,13 @@ export function ManageUsersContent() {
       setNewUserRole("student");
       setNewUserLevel("1");
       setIsAddUserModalOpen(false);
-    } catch {
+    } catch (error) {
+      const backendMessage = apiErrorMessage(error, "The account could not be saved.");
+      setMessage(backendMessage);
       showToast({
         variant: "error",
         title: "Add user failed",
-        message: "The account could not be saved.",
+        message: backendMessage,
       });
     }
   };
@@ -290,11 +303,13 @@ export function ManageUsersContent() {
         message: "Account details were saved.",
       });
       closeActionModal();
-    } catch {
+    } catch (error) {
+      const backendMessage = apiErrorMessage(error, "Account details could not be saved.");
+      setMessage(backendMessage);
       showToast({
         variant: "error",
         title: "Update failed",
-        message: "Account details could not be saved.",
+        message: backendMessage,
       });
     }
   };
@@ -317,11 +332,13 @@ export function ManageUsersContent() {
         message: "The account status was saved.",
       });
       closeActionModal();
-    } catch {
+    } catch (error) {
+      const backendMessage = apiErrorMessage(error, "The account status could not be saved.");
+      setMessage(backendMessage);
       showToast({
         variant: "error",
         title: "Status update failed",
-        message: "The account status could not be saved.",
+        message: backendMessage,
       });
     }
   };
@@ -343,11 +360,13 @@ export function ManageUsersContent() {
         message: nextPassword ? `Password was reset to: ${nextPassword}` : "Password was reset successfully.",
       });
       closeActionModal();
-    } catch {
+    } catch (error) {
+      const backendMessage = apiErrorMessage(error, "Password could not be reset.");
+      setMessage(backendMessage);
       showToast({
         variant: "error",
         title: "Reset failed",
-        message: "Password could not be reset.",
+        message: backendMessage,
       });
     }
   };
@@ -576,7 +595,7 @@ export function ManageUsersContent() {
             >
               <div className="grid grid-cols-2 gap-x-[1.1rem] gap-y-4 p-[1.25rem_1.35rem_0] max-[680px]:grid-cols-1">
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  Full name
+                  <FieldLabel required>Full name</FieldLabel>
                   <input
                     className={inputClass}
                     name="fullName"
@@ -586,7 +605,7 @@ export function ManageUsersContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  School email
+                  <FieldLabel required>School email</FieldLabel>
                   <input
                     className={inputClass}
                     name="email"
@@ -596,7 +615,7 @@ export function ManageUsersContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  Role
+                  <FieldLabel required>Role</FieldLabel>
                   <input type="hidden" name="role" value={newUserRole} />
                   <InlineSelect
                     value={newUserRole}
@@ -609,7 +628,7 @@ export function ManageUsersContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  ID
+                  <FieldLabel required>ID</FieldLabel>
                   <input
                     className={inputClass}
                     name="schoolId"
@@ -621,7 +640,7 @@ export function ManageUsersContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  Section
+                  <FieldLabel>Section</FieldLabel>
                   <input
                     className={inputClass}
                     name="sectionInfo"
@@ -630,7 +649,7 @@ export function ManageUsersContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  Group
+                  <FieldLabel>Group</FieldLabel>
                   <input
                     className={inputClass}
                     name="groupInfo"
@@ -639,12 +658,12 @@ export function ManageUsersContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  Assigned levels
+                  <FieldLabel required>Assigned levels</FieldLabel>
                   <input type="hidden" name="assignedLevels" value={hasAllLevels(newUserRole) ? "1,2,3,4" : newUserLevel} />
                   {hasAllLevels(newUserRole) ? <input className={inputClass} value="Levels 1, 2, 3, 4" readOnly /> : <InlineSelect value={newUserLevel} options={levelOptions} placeholder="Select level" onChange={setNewUserLevel} />}
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  Mobile number
+                  <FieldLabel>Mobile number</FieldLabel>
                   <input
                     className={inputClass}
                     name="mobileNumber"
@@ -655,7 +674,7 @@ export function ManageUsersContent() {
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 m-0 !text-sm !font-bold !text-[#344054]">
-                  Initial password
+                  <FieldLabel>Initial password</FieldLabel>
                   <input
                     className={inputClass}
                     name="password"

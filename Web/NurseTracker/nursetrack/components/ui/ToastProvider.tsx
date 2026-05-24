@@ -49,7 +49,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed right-5 top-[88px] z-[120] grid w-[min(420px,calc(100vw-40px))] gap-3 pointer-events-none max-[768px]:top-[76px]" aria-live="polite" aria-atomic="true">
+      <div className="fixed right-5 top-[88px] z-[1000] grid w-[min(420px,calc(100vw-40px))] gap-3 pointer-events-none max-[768px]:top-[76px]" aria-live="polite" aria-atomic="true">
         {toasts.map((toast) => (
           <section key={toast.id} className={`toast-card ${toast.exiting ? "toast-card-exit" : "toast-card-enter"} relative overflow-hidden rounded-xl border shadow-[0_18px_42px_rgba(15,23,42,0.14)] pointer-events-auto ${variantStyles(toast.variant)}`} role="status">
             <span className={`absolute inset-y-0 left-0 w-1.5 ${variantAccent(toast.variant)}`} />

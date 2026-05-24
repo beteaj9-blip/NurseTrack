@@ -33,7 +33,7 @@ function statusClass(status?: string) {
   return "bg-[#fff8e1] !text-[#6c4c00]";
 }
 
-type CaseCategoryOption = { value: string; label: string };
+type CaseCategoryOption = { value: string; label?: string; categoryName?: string };
 
 function getCaseType(category: string, dutyArea: string) {
   const combined = `${category} ${dutyArea}`.toLowerCase();
@@ -76,7 +76,7 @@ export function StudentClinicalCaseDetailContent() {
     queryKey: ["clinical-case-categories"],
     queryFn: async () => {
       const { data } = await apiClient.get("/cases/categories");
-      return data as CaseCategoryOption[];
+      return Array.isArray(data) && data.length > 0 ? data as CaseCategoryOption[] : [];
     },
   });
   const updateCase = useUpdateClinicalCase();
@@ -90,7 +90,19 @@ export function StudentClinicalCaseDetailContent() {
   const studentSection = clinicalCase?.studentSection || user?.sectionInfo || "Nursing Student";
   const studentSchoolId = clinicalCase?.studentSchoolId || user?.schoolId || "";
   const canEdit = clinicalCase?.status === "PENDING" && clinicalCase?.studentId != null && user?.id != null && Number(clinicalCase.studentId) === Number(user.id);
-  const categoryOptions = React.useMemo(() => categories.map((item) => ({ value: item.value, label: item.label })), [categories]);
+  const defaultCaseCategories = React.useMemo(() => [
+    { value: "Handled Cases", label: "Handled Case" },
+    { value: "Assisted Cases", label: "Assisted Case" },
+    { value: "Newborn Care", label: "Newborn Care" },
+    { value: "Labor Watch", label: "Labor Watch" },
+    { value: "Minor Cases", label: "Minor Case" },
+    { value: "Major Cases - Scrub", label: "Major Case - Scrub" },
+    { value: "Major Cases - Circulating", label: "Major Case - Circulate" },
+  ], []);
+  const categoryOptions = React.useMemo(() => {
+    const source = categories.length > 0 ? categories.map((item) => ({ value: item.value, label: item.label ?? item.categoryName ?? item.value })) : defaultCaseCategories;
+    return source;
+  }, [categories, defaultCaseCategories]);
 
   React.useEffect(() => {
     if (!clinicalCase) return;

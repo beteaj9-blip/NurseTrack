@@ -18,6 +18,23 @@ type CaseCategoryOption = {
   categoryName: string;
 };
 
+const defaultCaseCategories: CaseCategoryOption[] = [
+  { value: "Handled Cases", categoryName: "Handled Case" },
+  { value: "Assisted Cases", categoryName: "Assisted Case" },
+  { value: "Newborn Care", categoryName: "Newborn Care" },
+  { value: "Labor Watch", categoryName: "Labor Watch" },
+  { value: "Minor Cases", categoryName: "Minor Case" },
+  { value: "Major Cases - Scrub", categoryName: "Major Case - Scrub" },
+  { value: "Major Cases - Circulating", categoryName: "Major Case - Circulate" },
+];
+
+function errorMessage(error: unknown, fallback: string) {
+  const response = (error as { response?: { data?: { message?: string } | string } })?.response;
+  if (typeof response?.data === "string" && response.data.trim()) return response.data;
+  if (typeof response?.data === "object" && response.data?.message) return response.data.message;
+  return fallback;
+}
+
 function formatScheduleDate(date?: string) {
   if (!date) return "";
   const datePart = date.includes("T") ? date.split("T")[0] : date;
@@ -51,7 +68,7 @@ export default function AddClinicalCaseContent() {
     queryKey: ["clinical-case-categories"],
     queryFn: async () => {
       const { data } = await apiClient.get("/cases/categories");
-      return data as CaseCategoryOption[];
+      return Array.isArray(data) && data.length > 0 ? data as CaseCategoryOption[] : defaultCaseCategories;
     },
   });
   const submitCase = useSubmitCase();
@@ -95,7 +112,8 @@ export default function AddClinicalCaseContent() {
   }, [selectedHospital, allDutyAreas]);
   const hospitalOptions = useMemo(() => appendOption((hospitals as any[]).map((item: any) => ({ value: item.name, label: `${item.name}${item.fullName ? ` - ${item.fullName}` : ""}` })), hospital), [hospitals, hospital]);
   const wardOptions = useMemo(() => appendOption(wards.map((ward: string) => ({ value: ward, label: ward })), dutyArea), [wards, dutyArea]);
-  const categoryOptions = useMemo(() => categories.map((item) => ({ value: item.value, label: item.categoryName })), [categories]);
+  const categorySource = categories.length > 0 ? categories : defaultCaseCategories;
+  const categoryOptions = useMemo(() => categorySource.map((item) => ({ value: item.value, label: item.categoryName })), [categorySource]);
   const instructorOptions = useMemo(() => appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), instructorId, selectedSchedule?.instructorName ?? editCase?.instructorName), [instructors, instructorId, selectedSchedule?.instructorName, editCase?.instructorName]);
   const eligibleSchedules = useMemo(() => {
     const today = new Date();
@@ -147,9 +165,10 @@ export default function AddClinicalCaseContent() {
       setMessage(isEditMode ? "Clinical case updated for CI validation." : "Clinical case submitted for CI validation.");
       showToast({ variant: "success", title: isEditMode ? "Clinical case updated" : "Clinical case submitted", message: "Your case was sent for CI validation." });
       router.push("/nursing-student/clinical-cases");
-    } catch {
-      setMessage("Clinical case could not be submitted.");
-      showToast({ variant: "error", title: "Submission failed", message: "Clinical case could not be submitted." });
+    } catch (error) {
+      const backendMessage = errorMessage(error, "Clinical case could not be submitted.");
+      setMessage(backendMessage);
+      showToast({ variant: "error", title: "Submission failed", message: backendMessage });
     }
   };
 

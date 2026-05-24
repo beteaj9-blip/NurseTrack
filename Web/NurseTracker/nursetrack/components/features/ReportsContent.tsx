@@ -85,6 +85,7 @@ export function ReportsContent() {
   const groups = Array.from(new Set(reportPeople.map((person) => person.group).filter(Boolean))).sort();
   const reportScopeOptions = [
     { value: "person", label: "One student" },
+    { value: "section", label: "Whole section" },
   ];
   const sectionOptions = sections.map((section) => ({ value: section, label: section }));
   const siteOptions = sites.map((site) => ({ value: site, label: site }));
@@ -169,8 +170,34 @@ export function ReportsContent() {
         }
       }
     } else if (reportScope === "section") {
-      setMessage({ text: "Section report export is not available yet.", type: "is-error" });
-      showToast({ variant: "error", title: "Report unavailable", message: "Choose one student to generate a report." });
+      const sectionStudents = reportPeople.filter((person) => person.section === sectionTarget && person.role === "Student" && person.id);
+      if (!sectionTarget || sectionStudents.length === 0) {
+        setMessage({ text: "Choose a section with at least one student record.", type: "is-error" });
+        showToast({ variant: "error", title: "Choose section", message: "Choose a section with at least one student record." });
+        return;
+      }
+      try {
+        setIsGenerating(true);
+        for (const person of sectionStudents) {
+          const { data } = await apiClient.get('/reports/student/export-by-school-id', {
+            params: { schoolId: person.id, startDate, endDate },
+            responseType: "blob",
+          });
+          const url = window.URL.createObjectURL(data);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `student-report-${person.id || person.userId}.pdf`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+        }
+        setMessage({ text: `Generated ${sectionStudents.length} report(s) for ${sectionTarget}.`, type: "is-success" });
+        showToast({ variant: "success", title: "Reports downloaded", message: `${sectionStudents.length} student report(s) generated for ${sectionTarget}.` });
+      } catch {
+        setMessage({ text: "One or more section reports could not be generated. Please check the selected date range and try again.", type: "is-error" });
+        showToast({ variant: "error", title: "Report failed", message: "One or more section reports could not be generated." });
+      } finally {
+        setIsGenerating(false);
+      }
     } else if (reportScope === "site") {
       setMessage({ text: "Clinical-site report export is not available yet.", type: "is-error" });
       showToast({ variant: "error", title: "Report unavailable", message: "Choose one student to generate a report." });

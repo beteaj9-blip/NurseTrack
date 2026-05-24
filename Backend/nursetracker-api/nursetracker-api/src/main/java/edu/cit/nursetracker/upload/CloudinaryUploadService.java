@@ -53,6 +53,7 @@ public class CloudinaryUploadService {
         body.add("api_key", apiKey);
         body.add("timestamp", timestamp);
         body.add("folder", folder);
+        body.add("use_filename", true);
         body.add("signature", signature);
 
         HttpHeaders headers = new HttpHeaders();

@@ -26,6 +26,7 @@ public class ClinicalCaseService {
     private final UserRepository userRepository;
 
     public ClinicalCase submitCase(ClinicalCase clinicalCase) {
+        validateRequirementLimit(clinicalCase, null);
         clinicalCase.setStatus(CaseStatus.PENDING);
         return caseRepository.save(clinicalCase);
     }
@@ -144,6 +145,7 @@ public class ClinicalCaseService {
         ClinicalCase existingCase = getCaseById(id);
         if (existingCase != null) {
             validateStudentPendingMutation(existingCase, currentUserId, "edit");
+            validateRequirementLimit(updatedCase, existingCase.getId());
             existingCase.setCaseType(updatedCase.getCaseType());
             existingCase.setDiagnosis(updatedCase.getDiagnosis());
             existingCase.setProcedureDetails(updatedCase.getProcedureDetails());
@@ -169,5 +171,40 @@ public class ClinicalCaseService {
         if (existingCase.getStatus() != CaseStatus.PENDING) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only pending clinical cases can be " + action + (action.endsWith("e") ? "d." : "ed."));
         }
+    }
+
+    private void validateRequirementLimit(ClinicalCase clinicalCase, Long excludedCaseId) {
+        if (clinicalCase.getStudent() == null || clinicalCase.getStudent().getId() == null) return;
+        String category = clinicalCase.getCategory();
+        long limit = requirementLimit(category);
+        if (limit <= 0) return;
+        long existingCount = caseRepository.findByStudentIdOrderByCaseDateDesc(clinicalCase.getStudent().getId()).stream()
+                .filter(record -> excludedCaseId == null || !record.getId().equals(excludedCaseId))
+                .filter(record -> record.getStatus() != CaseStatus.RETURNED)
+                .filter(record -> labelMatches(record.getCategory(), category, displayRequirementLabel(category)))
+                .count();
+        if (existingCount >= limit) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, displayRequirementLabel(category) + " is limited to " + limit + " submitted case(s).");
+        }
+    }
+
+    private long requirementLimit(String category) {
+        if (category == null) return 0;
+        return switch (category.toLowerCase()) {
+            case "handled cases", "handled case", "assisted cases", "assisted case", "newborn care", "labor watch", "minor cases", "minor case", "major cases - scrub", "major case - scrub", "major cases - circulating", "major case - circulating" -> 3;
+            default -> 0;
+        };
+    }
+
+    private String displayRequirementLabel(String category) {
+        if (category == null) return "Clinical case";
+        return switch (category) {
+            case "Handled Cases" -> "Handled Case";
+            case "Assisted Cases" -> "Assisted Case";
+            case "Minor Cases" -> "Minor Case";
+            case "Major Cases - Scrub" -> "Major Case - Scrub";
+            case "Major Cases - Circulating" -> "Major Case - Circulate";
+            default -> category;
+        };
     }
 }
