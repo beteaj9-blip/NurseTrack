@@ -70,7 +70,7 @@ export function OvertimeDetailsContent({ basePath }: { basePath: string }) {
     const key = `student-${record.studentId}`;
     const current = acc[key] ?? {
       id: record.studentId,
-      role: record.studentId === record.instructorId ? "Instructor" : "Student",
+      role: record.studentId === record.instructorId ? "Clinical Instructor" : "Student",
       name: record.studentName || "Nursing Student",
       profileImageUrl: record.studentProfileImageUrl,
       identifier: record.studentSchoolId,

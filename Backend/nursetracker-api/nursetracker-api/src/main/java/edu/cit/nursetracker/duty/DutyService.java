@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 public class DutyService {
 
     private static final ZoneId APP_ZONE = ZoneId.of("Asia/Manila");
+    private static final String VERIFICATION_BLUETOOTH = "BLUETOOTH";
+    private static final String VERIFICATION_MANUAL = "MANUAL";
 
     private final DutyRepository dutyRepository;
     private final UserRepository userRepository;
@@ -48,6 +50,10 @@ public class DutyService {
                             .hospital(schedule.getHospital())
                             .ward(schedule.getWard())
                             .timeIn(LocalDateTime.now(APP_ZONE))
+                            .verificationMethod(VERIFICATION_BLUETOOTH)
+                            .locationVerified(true)
+                            .proximityEvidence(proximityEvidence(schedule))
+                            .bleSessionId(scheduleSessionKey(schedule))
                             .status(DutyStatus.VERIFIED)
                             .build());
                 }
@@ -57,6 +63,8 @@ public class DutyService {
 
     public DutyRecord timeIn(DutyRecord record) {
         record.setTimeIn(LocalDateTime.now(APP_ZONE));
+        record.setVerificationMethod(VERIFICATION_MANUAL);
+        record.setLocationVerified(false);
         record.setStatus(DutyStatus.PENDING);
         return dutyRepository.save(record);
     }
@@ -66,6 +74,8 @@ public class DutyService {
             long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
             record.setTotalHours(minutes / 60.0);
         }
+        record.setVerificationMethod(VERIFICATION_MANUAL);
+        record.setLocationVerified(false);
         record.setStatus(DutyStatus.PENDING);
         return dutyRepository.save(record);
     }
@@ -83,6 +93,8 @@ public class DutyService {
             long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
             record.setTotalHours(minutes / 60.0);
         }
+        record.setVerificationMethod(VERIFICATION_MANUAL);
+        record.setLocationVerified(false);
         record.setStatus(DutyStatus.PENDING);
         return dutyRepository.save(record);
     }
@@ -199,6 +211,10 @@ public class DutyService {
                     .hospital(schedule.getHospital())
                     .ward(schedule.getWard())
                     .timeIn(now)
+                    .verificationMethod(VERIFICATION_BLUETOOTH)
+                    .locationVerified(true)
+                    .proximityEvidence(proximityEvidence(schedule))
+                    .bleSessionId(scheduleSessionKey(schedule))
                     .status(DutyStatus.PENDING)
                     .build());
         }
@@ -228,6 +244,10 @@ public class DutyService {
 
         if (record.getTimeOut() == null) {
             record.setTimeOut(LocalDateTime.now(APP_ZONE));
+            record.setVerificationMethod(VERIFICATION_BLUETOOTH);
+            record.setLocationVerified(true);
+            record.setProximityEvidence(proximityEvidence(schedule));
+            record.setBleSessionId(scheduleSessionKey(schedule));
             long minutes = Duration.between(effectiveDutyStart(record, schedule), record.getTimeOut()).toMinutes();
             record.setTotalHours(minutes / 60.0);
             dutyRepository.save(record);
@@ -359,6 +379,10 @@ public class DutyService {
                 schedule.getStartTime().toString(),
                 schedule.getEndTime().toString()
         );
+    }
+
+    private String proximityEvidence(Schedule schedule) {
+        return "schedule-session:" + scheduleSessionKey(schedule);
     }
 
     private DutyAttendanceTodayResponse buildAttendanceResponse(Schedule schedule, Long currentStudentId, List<Schedule> scheduleOptions) {

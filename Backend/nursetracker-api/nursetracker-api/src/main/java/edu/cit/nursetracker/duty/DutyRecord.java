@@ -49,6 +49,16 @@ public class DutyRecord {
 
     private Double totalHours;
 
+    private String verificationMethod;
+
+    @Builder.Default
+    private Boolean locationVerified = false;
+
+    @Column(length = 1000)
+    private String proximityEvidence;
+
+    private String bleSessionId;
+
     public Double getTotalHours() {
         if (this.totalHours != null) {
             return this.totalHours;

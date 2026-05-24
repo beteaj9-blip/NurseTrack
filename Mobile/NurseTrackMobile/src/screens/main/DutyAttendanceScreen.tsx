@@ -497,7 +497,7 @@ export const DutyAttendanceScreen = () => {
       } else {
         setStudentStatus('ready');
         setAlertConfig({
-          title: 'Instructor Signal Not Found',
+          title: 'Clinical Instructor Signal Not Found',
           message: "We couldn't detect your Clinical Instructor's BLE signal. Keep your phone near the host device and make sure the Clinical Instructor tapped Start Hosting."
         });
       }
@@ -1276,7 +1276,7 @@ export const DutyAttendanceScreen = () => {
                 <>
                   <PersonAvatar name={selectedAttendance?.instructorName ?? selectedOption?.instructorName ?? 'CI'} imageUrl={undefined} size={48} />
                   <Text style={styles.ciNameLabel} numberOfLines={1}>
-                    {selectedAttendance?.instructorName ?? selectedOption?.instructorName ?? 'Assigned Instructor'}
+                    {selectedAttendance?.instructorName ?? selectedOption?.instructorName ?? 'Assigned Clinical Instructor'}
                   </Text>
                   <Text style={styles.ciSubLabel}>Clinical Instructor</Text>
                 </>
@@ -1284,7 +1284,7 @@ export const DutyAttendanceScreen = () => {
                 <>
                   <ActivityIndicator color="#8A252C" size="large" />
                   <Text style={styles.ciNameLabel}>Searching...</Text>
-                  <Text style={styles.ciSubLabel}>Scanning for Instructor signal</Text>
+                  <Text style={styles.ciSubLabel}>Scanning for Clinical Instructor signal</Text>
                 </>
               ) : isActiveSessionDisconnected ? (
                 <>
@@ -1335,7 +1335,7 @@ export const DutyAttendanceScreen = () => {
           <Text style={styles.infoKicker}>DUTY LOCATION</Text>
         </View>
         {isLoading ? <SkeletonBlock width="84%" height={22} radius={10} style={{ marginBottom: 12 }} /> : <Text style={styles.infoTitle}>{locationLabel}</Text>}
-        {isLoading ? <SkeletonBlock width="76%" height={15} radius={7} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>}
+        {isLoading ? <SkeletonBlock width="76%" height={15} radius={7} /> : <Text style={styles.infoBody}>{hasUsableSchedule ? `${scheduleTime} - Clinical Instructor: ${selectedAttendance?.instructorName || selectedOption?.instructorName || 'Assigned Clinical Instructor'}` : 'Attendance will use your assigned schedule when available.'}</Text>}
       </View>
     </ScrollView>
     </SlideUpView>

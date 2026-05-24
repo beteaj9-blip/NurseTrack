@@ -9,6 +9,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
@@ -53,6 +54,7 @@ public class StudentAppeal {
     private String evidenceNotes;
 
     @Column(name = "attachment_url")
+    @JsonAlias({"supporting_files", "attachmentUrl"})
     private String supportingFiles;
 
     @Enumerated(EnumType.STRING)
@@ -77,4 +79,19 @@ public class StudentAppeal {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @JsonProperty("supporting_files")
+    public String getSupportingFilesSnakeCase() {
+        return supportingFiles;
+    }
+
+    @JsonProperty("instructorRecommendation")
+    public String getInstructorRecommendation() {
+        return instructorRemarks;
+    }
+
+    @JsonProperty("instructor_recommendation")
+    public String getInstructorRecommendationSnakeCase() {
+        return instructorRemarks;
+    }
 }

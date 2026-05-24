@@ -1,5 +1,6 @@
 package edu.cit.nursetracker.notification;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.cit.nursetracker.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -40,6 +41,11 @@ public class Notification {
     @Column(nullable = false)
     @Builder.Default
     private boolean isRead = false;
+
+    @JsonProperty("isRead")
+    public boolean getIsRead() {
+        return isRead;
+    }
 
     @CreationTimestamp
     private LocalDateTime createdAt;

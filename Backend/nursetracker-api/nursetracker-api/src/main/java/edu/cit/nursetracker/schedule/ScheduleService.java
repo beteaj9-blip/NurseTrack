@@ -21,6 +21,7 @@ public class ScheduleService {
 
     public Schedule assignSchedule(Schedule schedule) {
         updateStudentSectionAndGroup(schedule.getStudent());
+        schedule.setGroupName(resolveStudentGroupName(schedule.getStudent()));
         return scheduleRepository.save(schedule);
     }
 
@@ -62,6 +63,7 @@ public class ScheduleService {
         schedule.setShiftDate(updatedSchedule.getShiftDate());
         schedule.setStartTime(updatedSchedule.getStartTime());
         schedule.setEndTime(updatedSchedule.getEndTime());
+        schedule.setGroupName(resolveStudentGroupName(schedule.getStudent()));
         if (updatedSchedule.getCanceled() != null) schedule.setCanceled(updatedSchedule.getCanceled());
         return scheduleRepository.save(schedule);
     }
@@ -102,5 +104,18 @@ public class ScheduleService {
                 }
             });
         }
+    }
+
+    private String resolveStudentGroupName(User studentPayload) {
+        if (studentPayload == null) return null;
+        if (studentPayload.getId() != null) {
+            return userRepository.findById(studentPayload.getId())
+                    .map(User::getGroupInfo)
+                    .filter(group -> group != null && !group.isBlank())
+                    .orElse(null);
+        }
+        return studentPayload.getGroupInfo() != null && !studentPayload.getGroupInfo().isBlank()
+                ? studentPayload.getGroupInfo().trim()
+                : null;
     }
 }

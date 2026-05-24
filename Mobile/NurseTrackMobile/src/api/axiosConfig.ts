@@ -3,6 +3,12 @@ import * as SecureStore from 'expo-secure-store';
 
 export const API_URL = process.env.EXPO_PUBLIC_BACKEND_API_URL;
 
+let sessionToken: string | null = null;
+
+export const setSessionToken = (token: string | null) => {
+  sessionToken = token;
+};
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -13,7 +19,7 @@ export const api = axios.create({
 
 api.interceptors.request.use(
   async (config) => {
-    const token = await SecureStore.getItemAsync('userToken');
+    const token = sessionToken ?? await SecureStore.getItemAsync('userToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

@@ -53,6 +53,16 @@ type ScheduleImportPreview = {
   skippedStudents: number;
 };
 
+type SchedulePublishResult = {
+  schedulesCreated: number;
+  duplicateSchedules: number;
+  studentsMatched: number;
+  studentsSkipped: number;
+  groupsPublished: number;
+  groupsSkipped: number;
+  level: number;
+};
+
 const dutyTypeOptions = [
   { value: "Regular", label: "Regular" },
   { value: "Completion", label: "Completion" },
@@ -190,6 +200,30 @@ function buildPublishPayload(groups: DraftGroup[], preview: ScheduleImportPrevie
   };
 }
 
+function noSchedulesPublishedReason(result: SchedulePublishResult) {
+  if (result.duplicateSchedules > 0 && result.groupsSkipped === 0 && result.studentsSkipped === 0) {
+    return `${result.duplicateSchedules} matching schedule(s) already exist, so there was nothing new to publish.`;
+  }
+  if (result.studentsMatched === 0) {
+    return "No matched student was available to receive a schedule. Review the student names in the roster.";
+  }
+
+  const reasons = [];
+  if (result.groupsSkipped > 0) {
+    reasons.push(`${result.groupsSkipped} group(s) were skipped because the level, date range, shift time, hospital/area, or CI could not be matched.`);
+  }
+  if (result.studentsSkipped > 0) {
+    reasons.push(`${result.studentsSkipped} student(s) were skipped because they were unmatched or removed from the publish roster.`);
+  }
+  if (result.duplicateSchedules > 0) {
+    reasons.push(`${result.duplicateSchedules} matching schedule(s) already exist.`);
+  }
+
+  return reasons.length > 0
+    ? reasons.join(" ")
+    : "No publishable duty dates were found. Check the date range and break dates.";
+}
+
 function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSection?: string; uploadedSection?: string }) {
   return (
     <span className="group relative inline-flex items-center align-middle ml-1">
@@ -282,7 +316,13 @@ export function SchedulesMakerContent({ basePath }: { basePath: string }) {
   async function publishSchedule() {
     if (publishBlockMessage) return;
     try {
-      const result = await publishImport.mutateAsync(buildPublishPayload(groups, preview, fileName));
+      const result: SchedulePublishResult = await publishImport.mutateAsync(buildPublishPayload(groups, preview, fileName));
+      if (result.schedulesCreated === 0) {
+        const reason = noSchedulesPublishedReason(result);
+        setMessage(`No schedules were published for level ${result.level}. ${reason}`);
+        showToast({ variant: "error", title: "No schedules published", message: reason });
+        return;
+      }
       setMessage(`${result.schedulesCreated} schedule(s) published for level ${result.level}. ${result.studentsMatched} student(s) matched, ${result.studentsSkipped} skipped, ${result.duplicateSchedules} duplicate(s) ignored.`);
       setPreview(null);
       setGroups([]);

@@ -65,15 +65,15 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
       <section className="bg-white rounded-xl border border-[#e2e8f0] shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-[1.6rem_1.75rem_1.75rem]">
         {isLoading ? <LoadingState message="Loading overtime records..." /> : first ? <div className="grid gap-5">
           <div className="grid grid-cols-4 gap-3 max-[980px]:grid-cols-2 max-[640px]:grid-cols-1">
-            <Summary label="Name" value={first.studentName || "Instructor / Student"} />
-            <Summary label="Role" value={first.instructorId === first.studentId ? "Instructor" : "Student"} />
+            <Summary label="Name" value={first.studentName || "Clinical Instructor / Student"} />
+            <Summary label="Role" value={first.instructorId === first.studentId ? "Clinical Instructor" : "Student"} />
             <Summary label="Period" value={period} />
             <Summary label="Total Overtime" value={formatHours(total)} />
           </div>
 
           <div className="rounded-xl border border-[#e2e8f0] overflow-hidden">
             <div className="min-h-[52px] flex items-center justify-center px-4 bg-[#fff8d6] !text-[#8A0000] !text-[0.95rem] !font-[900] text-center uppercase">
-              CNAHS Student / Instructor who rendered overtime for the period of {period}
+              CNAHS Student / Clinical Instructor who rendered overtime for the period of {period}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[920px] border-collapse text-left">
@@ -82,7 +82,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
                     <th className="p-5 text-center border-r border-white/40 w-[90px]">No.</th>
                     <th className="p-5 border-r border-white/40">Date</th>
                     <th className="p-5 border-r border-white/40">Schedule</th>
-                    <th className="p-5 border-r border-white/40">Instructor</th>
+                    <th className="p-5 border-r border-white/40">Clinical Instructor</th>
                     <th className="p-5 border-r border-white/40">Actual Time</th>
                     <th className="p-5">OT Hours</th>
                   </tr>
@@ -96,7 +96,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
                         <td className="p-4 text-center border-r border-[#e2e8f0]">{index + 1}</td>
                         <td className="p-4 border-r border-[#e2e8f0]">{formatTableDate(record.dutyDate)}</td>
                         <td className="p-4 border-r border-[#e2e8f0]">{scheduleTime}</td>
-                        <td className="p-4 border-r border-[#e2e8f0]">{record.instructorName || "No instructor"}</td>
+                        <td className="p-4 border-r border-[#e2e8f0]">{record.instructorName || "No Clinical Instructor"}</td>
                         <td className="p-4 border-r border-[#e2e8f0]">{formatTimeRange(record.timeInLabel, record.timeOutLabel)}</td>
                         <td className="p-4">{formatHours(overtimeHours(record))}</td>
                       </tr>

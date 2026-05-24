@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { api } from '../api/axiosConfig';
+import { api, setSessionToken } from '../api/axiosConfig';
 import { User, LoginResponse } from '../types';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (credentials: { userId: string; password: string }, beforeCommit?: () => Promise<void>) => Promise<void>;
+  login: (credentials: { userId: string; password: string }, beforeCommit?: () => Promise<void>, keepSignedIn?: boolean) => Promise<void>;
   register: (payload: any) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const userToken = await SecureStore.getItemAsync('userToken');
       if (userToken) {
+        setSessionToken(userToken);
         // Verify token by fetching me
         const response = await api.get<User>('/users/me');
         const restoredUser = response.data;
@@ -32,16 +33,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (e) {
       console.log('Restoring token failed', e);
+      setSessionToken(null);
       await SecureStore.deleteItemAsync('userToken');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (credentials: { userId: string; password: string }, beforeCommit?: () => Promise<void>) => {
+  const login = async (credentials: { userId: string; password: string }, beforeCommit?: () => Promise<void>, keepSignedIn = true) => {
     const response = await api.post<LoginResponse>('/users/login', credentials);
     const { token, user: loggedInUser } = response.data;
-    await SecureStore.setItemAsync('userToken', token);
+    setSessionToken(token);
+    if (keepSignedIn) await SecureStore.setItemAsync('userToken', token);
+    else await SecureStore.deleteItemAsync('userToken');
     if (beforeCommit) await beforeCommit();
     setUser(loggedInUser);
   };
@@ -55,6 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    setSessionToken(null);
     await SecureStore.deleteItemAsync('userToken');
     setUser(null);
   };

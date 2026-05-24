@@ -97,7 +97,7 @@ public class ScheduleImportService {
             int groupCreated = 0;
             Set<LocalDate> breaks = parseBreakDates(group.breakDates());
             for (String studentName : group.students()) {
-                Optional<User> student = resolveUser(studentName, students);
+                Optional<User> student = resolveStudentForPublish(studentName, group, students);
                 if (student.isEmpty()) {
                     skippedStudents++;
                     continue;
@@ -123,6 +123,7 @@ public class ScheduleImportService {
                                     .shiftDate(date)
                                     .startTime(startTime.get())
                                     .endTime(endTime.get())
+                                    .groupName(importGroup(group))
                                     .build());
                             created++;
                             groupCreated++;
@@ -459,6 +460,21 @@ public class ScheduleImportService {
         if (matches.isEmpty()) return Optional.empty();
         if (matches.size() > 1 && matches.get(0).getValue().equals(matches.get(1).getValue())) return Optional.empty();
         return Optional.of(matches.get(0).getKey());
+    }
+
+    private Optional<User> resolveStudentForPublish(String studentName, ScheduleImportGroup group, List<User> students) {
+        Optional<String> schoolId = group.studentRecords() == null ? Optional.empty() : group.studentRecords().stream()
+                .filter(record -> record.matched() && record.name().equals(studentName))
+                .map(ScheduleImportStudent::schoolId)
+                .filter(value -> value != null && !value.isBlank())
+                .findFirst();
+        if (schoolId.isPresent()) {
+            Optional<User> exactSchoolIdMatch = students.stream()
+                    .filter(user -> user.getSchoolId() != null && user.getSchoolId().equalsIgnoreCase(schoolId.get()))
+                    .findFirst();
+            if (exactSchoolIdMatch.isPresent()) return exactSchoolIdMatch;
+        }
+        return resolveUser(studentName, students);
     }
 
     private String studentAt(String[] row, int studentIndex, int instructorIndex) {

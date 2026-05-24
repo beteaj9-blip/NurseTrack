@@ -6,6 +6,7 @@ import { AppLoadingScreen } from '../../components/AppLoadingScreen';
 import { SlideUpView } from '../../components/SlideUpView';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { api } from '../../api/axiosConfig';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -49,7 +50,7 @@ const LoginScreen = ({ navigation }: Props) => {
       setIsLoading(true);
       setIsError(false);
       setFormMessage("Signing you in...");
-      await login({ userId, password }, playSuccessTransition);
+      await login({ userId, password }, playSuccessTransition, remember);
     } catch (error: any) {
       setShowSuccessTransition(false);
       transitionY.setValue(screenHeight);
@@ -59,6 +60,28 @@ const LoginScreen = ({ navigation }: Props) => {
       } else {
         setFormMessage("Unable to connect to the server. Please try again later.");
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const accountId = userId.trim();
+    if (!accountId) {
+      setIsError(true);
+      setFormMessage('Enter your school email or ID number first, then tap Forgot password.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setIsError(false);
+      setFormMessage('Resetting your password...');
+      const { data } = await api.post<{ password?: string; message?: string }>('/users/forgot-password', { accountId });
+      setFormMessage(data.password ? `Temporary password: ${data.password}` : 'Password reset completed. Check your account details.');
+    } catch (error: any) {
+      setIsError(true);
+      setFormMessage(error.response?.data?.message ?? 'Password reset failed. Please check the email or ID and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +162,7 @@ const LoginScreen = ({ navigation }: Props) => {
                   />
                   <Text style={styles.rememberText}>Keep me signed in</Text>
                 </View>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleForgotPassword} disabled={isLoading}>
                   <Text style={styles.forgotPasswordLink}>Forgot password?</Text>
                 </TouchableOpacity>
               </View>

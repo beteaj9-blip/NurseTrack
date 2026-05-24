@@ -46,6 +46,8 @@ public class Schedule {
     @Column(nullable = false)
     private LocalTime endTime;
 
+    private String groupName;
+
     @Builder.Default
     @Column(nullable = false)
     private Boolean canceled = false;
