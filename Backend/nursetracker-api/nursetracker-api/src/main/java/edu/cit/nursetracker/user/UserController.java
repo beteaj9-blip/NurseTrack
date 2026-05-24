@@ -66,15 +66,23 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody java.util.Map<String, String> payload) {
+    public ResponseEntity<?> createUser(@RequestBody java.util.Map<String, String> payload) {
+        String email = clean(payload.get("email"));
+        String schoolId = clean(payload.get("schoolId"));
+        if (userService.emailExists(email)) {
+            return ResponseEntity.status(409).body(java.util.Map.of("message", "An account with this school email already exists."));
+        }
+        if (userService.schoolIdExists(schoolId)) {
+            return ResponseEntity.status(409).body(java.util.Map.of("message", "An account with this School ID already exists."));
+        }
         User user = new User();
         UserRole role = payload.containsKey("role") ? UserRole.valueOf(payload.get("role")) : UserRole.STUDENT;
-        user.setFullName(payload.get("fullName"));
-        user.setEmail(payload.get("email"));
+        user.setFullName(clean(payload.get("fullName")));
+        user.setEmail(email);
         user.setMobileNumber(payload.get("mobileNumber"));
-        user.setSchoolId(payload.get("schoolId"));
-        user.setSectionInfo(payload.get("sectionInfo"));
-        user.setGroupInfo(payload.get("groupInfo"));
+        user.setSchoolId(schoolId);
+        user.setSectionInfo(clean(payload.get("sectionInfo")));
+        user.setGroupInfo(clean(payload.get("groupInfo")));
         user.setAssignedLevels(assignedLevelsForRole(role, payload.getOrDefault("assignedLevels", "1")));
         user.setPasswordHash(payload.getOrDefault("password", payload.getOrDefault("schoolId", "password")));
         user.setRole(role);

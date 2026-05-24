@@ -35,6 +35,13 @@ function errorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function toCategoryOptions(categories: CaseCategoryOption[]) {
+  const options = categories
+    .map((item) => ({ value: item.value || item.categoryName, label: item.categoryName || item.value }))
+    .filter((item): item is { value: string; label: string } => Boolean(item.value?.trim() && item.label?.trim()));
+  return options.length > 0 ? options : defaultCaseCategories.map((item) => ({ value: item.value, label: item.categoryName }));
+}
+
 function formatScheduleDate(date?: string) {
   if (!date) return "";
   const datePart = date.includes("T") ? date.split("T")[0] : date;
@@ -112,8 +119,7 @@ export default function AddClinicalCaseContent() {
   }, [selectedHospital, allDutyAreas]);
   const hospitalOptions = useMemo(() => appendOption((hospitals as any[]).map((item: any) => ({ value: item.name, label: `${item.name}${item.fullName ? ` - ${item.fullName}` : ""}` })), hospital), [hospitals, hospital]);
   const wardOptions = useMemo(() => appendOption(wards.map((ward: string) => ({ value: ward, label: ward })), dutyArea), [wards, dutyArea]);
-  const categorySource = categories.length > 0 ? categories : defaultCaseCategories;
-  const categoryOptions = useMemo(() => categorySource.map((item) => ({ value: item.value, label: item.categoryName })), [categorySource]);
+  const categoryOptions = useMemo(() => toCategoryOptions(categories), [categories]);
   const instructorOptions = useMemo(() => appendOption((instructors as any[]).map((instructor: any) => ({ value: String(instructor.id), label: instructor.fullName })), instructorId, selectedSchedule?.instructorName ?? editCase?.instructorName), [instructors, instructorId, selectedSchedule?.instructorName, editCase?.instructorName]);
   const eligibleSchedules = useMemo(() => {
     const today = new Date();

@@ -35,6 +35,13 @@ function statusClass(status?: string) {
 
 type CaseCategoryOption = { value: string; label?: string; categoryName?: string };
 
+function toCategoryOptions(categories: CaseCategoryOption[], fallback: { value: string; label: string }[]) {
+  const options = categories
+    .map((item) => ({ value: item.value || item.categoryName || item.label, label: item.label || item.categoryName || item.value }))
+    .filter((item): item is { value: string; label: string } => Boolean(item.value?.trim() && item.label?.trim()));
+  return options.length > 0 ? options : fallback;
+}
+
 function getCaseType(category: string, dutyArea: string) {
   const combined = `${category} ${dutyArea}`.toLowerCase();
   if (combined.includes("operating") || combined.includes("major") || combined.includes("minor")) return "OPERATING_ROOM";
@@ -100,8 +107,7 @@ export function StudentClinicalCaseDetailContent() {
     { value: "Major Cases - Circulating", label: "Major Case - Circulate" },
   ], []);
   const categoryOptions = React.useMemo(() => {
-    const source = categories.length > 0 ? categories.map((item) => ({ value: item.value, label: item.label ?? item.categoryName ?? item.value })) : defaultCaseCategories;
-    return source;
+    return toCategoryOptions(categories, defaultCaseCategories);
   }, [categories, defaultCaseCategories]);
 
   React.useEffect(() => {
