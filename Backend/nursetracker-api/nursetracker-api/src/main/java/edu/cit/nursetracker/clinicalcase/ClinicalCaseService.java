@@ -60,7 +60,8 @@ public class ClinicalCaseService {
                 new RequirementProgressGroup("OR", "Operating Room Cases", List.of(
                         requirementItem(records, "Minor Cases", "Minor Case", 3),
                         requirementItem(records, "Major Cases - Scrub", "Major Case - Scrub", 3),
-                        requirementItem(records, "Major Cases - Circulating", "Major Case - Circulating", 3)
+                        requirementItem(records, "Major Cases - Circulating", "Major Case - Circulating", 3),
+                        requirementItem(records, "Major Cases - Assist", "Major Case - Assist", 3)
                 ))
         );
     }

@@ -178,7 +178,7 @@ export function StudentAppealDetailContent() {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (form.supportingFiles) {
-      showToast({ variant: "error", subject: "Remove current file", message: "Only one supporting file can be attached. Remove the current file first." });
+      showToast({ variant: "error", title: "Remove current file", message: "Only one supporting file can be attached. Remove the current file first." });
       event.target.value = "";
       return;
     }
@@ -190,10 +190,10 @@ export function StudentAppealDetailContent() {
       const uploaded = await uploadAppealFile.mutateAsync(file);
       updateForm("supportingFiles", uploaded.secure_url ?? uploaded.url ?? file.name);
       setMessage("Supporting file uploaded.");
-      showToast({ variant: "success", subject: "File uploaded", message: "Supporting file was attached to the appeal." });
+      showToast({ variant: "success", title: "File uploaded", message: "Supporting file was attached successfully." });
     } catch {
       setMessage("Supporting file could not be uploaded. Check Cloudinary configuration.");
-      showToast({ variant: "error", subject: "Upload failed", message: "Check Cloudinary configuration and try again." });
+      showToast({ variant: "error", title: "Upload failed", message: "Check Cloudinary configuration or try again." });
     } finally {
       event.target.value = "";
     }
@@ -202,20 +202,20 @@ export function StudentAppealDetailContent() {
   const removeFile = () => {
     updateForm("supportingFiles", "");
     setMessage("Supporting file removed. Save changes to update the appeal.");
-    showToast({ variant: "success", subject: "File removed", message: "Save changes to remove it from this appeal." });
+    showToast({ variant: "success", title: "File removed", message: "Save changes to remove the file completely." });
   };
 
   const saveAppeal = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!canEdit) {
       setMessage("Accepted appeals can no longer be edited.");
-      showToast({ variant: "error", subject: "Appeal locked", message: "Accepted appeals can no longer be edited." });
+      showToast({ variant: "error", title: "Appeal locked", message: "Accepted appeals can no longer be edited." });
       return;
     }
     const isNotApplicable = selectedScheduleId === NOT_APPLICABLE_VALUE;
     if (!appealId || !user || !form.appealType || (!isNotApplicable && !form.relatedDutyDate) || !form.clinicalSite || !form.dutyArea || (!isNotApplicable && !form.instructorId) || !form.subject || !form.details) {
-      setMessage("Complete the appeal details before saving.");
-      showToast({ variant: "error", subject: "Missing appeal details", message: "Complete the appeal details before saving." });
+      setMessage("Complete the required appeal details before saving.");
+      showToast({ variant: "error", title: "Missing appeal details", message: "Complete the appeal details before saving." });
       return;
     }
 
@@ -237,10 +237,10 @@ export function StudentAppealDetailContent() {
       });
       setIsEditing(false);
       setMessage("Appeal changes saved.");
-      showToast({ variant: "success", subject: "Appeal updated", message: "Your appeal changes were saved." });
+      showToast({ variant: "success", title: "Appeal updated", message: "Your appeal changes were saved." });
     } catch {
       setMessage("Appeal changes could not be saved.");
-      showToast({ variant: "error", subject: "Update failed", message: "Appeal changes could not be saved." });
+      showToast({ variant: "error", title: "Update failed", message: "Appeal changes could not be saved." });
     }
   };
 
