@@ -34,7 +34,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .maxAge(3600);
 
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000", "http://localhost:3001", "https://nurse-track-ugang.vercel.app/") // Next.js ports
+                .allowedOrigins("http://localhost:3000", "http://localhost:3001", "https://nurse-track-beta.vercel.app/") // Next.js ports
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true)
