@@ -287,10 +287,10 @@ public class DutyService {
             if (record.getStatus() == DutyStatus.PENDING) {
                 record.setStatus(DutyStatus.VERIFIED);
             }
-            // If this is the instructor's own record, mark the time out
+            // The instructor's own record represents the hosted attendance session.
             if (record.getStudent().getId().equals(record.getInstructor().getId()) && record.getTimeOut() == null) {
                 record.setTimeOut(submittedAt);
-                long minutes = Duration.between(effectiveDutyStart(record, schedule), record.getTimeOut()).toMinutes();
+                long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
                 record.setTotalHours(minutes / 60.0);
             }
         });
@@ -399,11 +399,16 @@ public class DutyService {
 
         List<Long> rosterScheduleIds = rosterSchedules.stream().map(Schedule::getId).toList();
         List<Long> studentIds = rosterStudents.stream().map(User::getId).toList();
-        Map<Long, DutyRecord> presentRecords = dutyRepository.findByScheduleIdInOrderByTimeInAsc(rosterScheduleIds)
-                .stream()
+        List<DutyRecord> sessionRecords = dutyRepository.findByScheduleIdInOrderByTimeInAsc(rosterScheduleIds);
+        Map<Long, DutyRecord> presentRecords = sessionRecords.stream()
                 .filter(record -> isStudent(record.getStudent()))
                 .filter(record -> studentIds.contains(record.getStudent().getId()))
                 .collect(Collectors.toMap(record -> record.getStudent().getId(), Function.identity(), (first, second) -> first));
+        Optional<DutyRecord> instructorSessionRecord = sessionRecords.stream()
+                .filter(record -> record.getStudent() != null && record.getInstructor() != null)
+                .filter(record -> record.getStudent().getId().equals(record.getInstructor().getId()))
+                .filter(record -> record.getInstructor().getId().equals(schedule.getInstructor().getId()))
+                .min(Comparator.comparing(DutyRecord::getTimeIn));
 
         List<DutyAttendanceStudent> students = rosterStudents.stream()
                 .map(student -> toStudentDto(student, presentRecords.get(student.getId()), schedule))
@@ -412,17 +417,31 @@ public class DutyService {
         int timedOutStudentCount = (int) presentRecords.values().stream()
                 .filter(record -> record.getTimeOut() != null)
                 .count();
-        boolean submitted = !presentRecords.isEmpty() && presentRecords.values().stream()
-                .allMatch(record -> record.getAttendanceSubmittedAt() != null);
-        String sessionStartedAt = presentRecords.values().stream()
+        boolean submitted = instructorSessionRecord
+                .map(record -> record.getAttendanceSubmittedAt() != null)
+                .orElseGet(() -> !presentRecords.isEmpty() && presentRecords.values().stream()
+                        .allMatch(record -> record.getAttendanceSubmittedAt() != null));
+        String sessionStartedAt = instructorSessionRecord
                 .map(DutyRecord::getTimeIn)
-                .min(Comparator.naturalOrder())
-                .map(firstTimeIn -> {
-                    LocalDateTime scheduledStart = schedule.getShiftDate().atTime(schedule.getStartTime());
-                    return firstTimeIn.isBefore(scheduledStart) ? scheduledStart : firstTimeIn;
-                })
+                .or(() -> presentRecords.values().stream()
+                        .map(DutyRecord::getTimeIn)
+                        .min(Comparator.naturalOrder())
+                        .map(firstTimeIn -> {
+                            LocalDateTime scheduledStart = schedule.getShiftDate().atTime(schedule.getStartTime());
+                            return firstTimeIn.isBefore(scheduledStart) ? scheduledStart : firstTimeIn;
+                        }))
                 .map(LocalDateTime::toString)
                 .orElse(null);
+        String sessionEndedAt = instructorSessionRecord
+                .map(DutyRecord::getTimeOut)
+                .map(LocalDateTime::toString)
+                .orElse(null);
+        Long sessionDurationMinutes = instructorSessionRecord
+                .map(record -> {
+                    LocalDateTime end = record.getTimeOut() != null ? record.getTimeOut() : LocalDateTime.now(APP_ZONE);
+                    return Math.max(0L, Duration.between(record.getTimeIn(), end).toMinutes());
+                })
+                .orElse(0L);
 
         List<DutyAttendanceStudent> presentStudents = rosterStudents.stream()
                 .filter(student -> presentRecords.containsKey(student.getId()))
@@ -464,6 +483,8 @@ public class DutyService {
                 timeOutOpen,
                 submitted,
                 sessionStartedAt,
+                sessionEndedAt,
+                sessionDurationMinutes,
                 scheduleOptions.stream().map(this::toScheduleOption).toList(),
                 students,
                 presentStudents,

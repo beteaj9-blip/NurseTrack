@@ -49,6 +49,8 @@ interface AttendanceToday {
   timeOutOpen: boolean;
   submitted: boolean;
   sessionStartedAt: string | null;
+  sessionEndedAt?: string | null;
+  sessionDurationMinutes?: number;
   scheduleOptions: AttendanceScheduleOption[];
   students: AttendanceStudent[];
   presentStudents: AttendanceStudent[];
@@ -142,18 +144,10 @@ const mergeScheduleOptions = (fallbackOptions: AttendanceScheduleOption[], backe
 
 // isAttendanceForToday removed to trust backend filtering
 
-const calculateElapsedMinutes = (sessionStartedAt: string | null, shiftDate: string | null, startTime: string | null): number => {
+const calculateElapsedMinutes = (sessionStartedAt: string | null): number => {
   let startMs = 0;
   if (sessionStartedAt) {
     const parsed = Date.parse(sessionStartedAt);
-    if (!Number.isNaN(parsed)) {
-      startMs = parsed;
-    }
-  }
-  
-  if (startMs === 0 && shiftDate && startTime) {
-    const timePart = startTime.includes(':') ? startTime : '00:00';
-    const parsed = Date.parse(`${shiftDate}T${timePart}`);
     if (!Number.isNaN(parsed)) {
       startMs = parsed;
     }
@@ -656,6 +650,15 @@ export const DutyAttendanceScreen = () => {
       return current;
     });
     await updateTeacherBroadcasting(nextHosting, effectiveScheduleId);
+    try {
+      const updatedAttendance = await fetchAttendanceDetail(effectiveScheduleId);
+      setAttendance(updatedAttendance);
+      if (updatedAttendance.scheduleId) {
+        setAttendanceCache((current) => ({ ...current, [updatedAttendance.scheduleId as number]: updatedAttendance }));
+      }
+    } catch (error) {
+      console.log('Failed to refresh attendance after hosting update', error);
+    }
     setLoadingAction(null);
   };
 
@@ -716,17 +719,14 @@ export const DutyAttendanceScreen = () => {
         setElapsedMinutes(0);
         return;
       }
-      const sDate = selectedAttendance?.shiftDate ?? null;
-      const sTime = selectedAttendance?.startTime ?? null;
-      
-      const mins = calculateElapsedMinutes(startAt, sDate, sTime);
+      const mins = calculateElapsedMinutes(startAt);
       setElapsedMinutes(mins);
     };
 
     updateElapsed();
     const interval = setInterval(updateElapsed, 30000);
     return () => clearInterval(interval);
-  }, [selectedAttendance?.sessionStartedAt, selectedAttendance?.shiftDate, selectedAttendance?.startTime]);
+  }, [selectedAttendance?.sessionStartedAt]);
 
   useEffect(() => {
     if (isTeacher && !isBluetoothOn && effectiveScheduleId) {
@@ -793,7 +793,11 @@ export const DutyAttendanceScreen = () => {
   };
   const progressPercent = scheduledCount > 0 ? Math.min(100, (presentCount / scheduledCount) * 100) : 0;
   const isSubmitted = selectedAttendance?.submitted === true;
-  const teacherSubmitDisabled = isLoading || loadingAction !== null || !hasUsableSchedule || !hasChosenSchedule || presentCount === 0 || isSubmitted || !localTimeOutOpen;
+  const hasStartedSession = !!selectedAttendance?.sessionStartedAt;
+  const ciSessionStartLabel = selectedAttendance?.sessionStartedAt ? formatTime(selectedAttendance.sessionStartedAt) : '--';
+  const ciSessionDuration = isSubmitted ? (selectedAttendance?.sessionDurationMinutes ?? elapsedMinutes) : elapsedMinutes;
+  const ciSessionTimeLabel = hasStartedSession ? formatElapsed(ciSessionDuration) : '0m';
+  const teacherSubmitDisabled = isLoading || loadingAction !== null || !hasUsableSchedule || !hasChosenSchedule || !hasStartedSession || isSubmitted || !localTimeOutOpen;
 
   const isActiveSessionDisconnected = checkedIn && !checkedOut && studentStatus !== 'connected' && studentStatus !== 'found' && studentStatus !== 'scanning' && !isSubmitted;
 
@@ -1006,16 +1010,20 @@ export const DutyAttendanceScreen = () => {
 
         <View style={styles.teacherStatusCard}>
           <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>TIME IN</Text>
+            <Text style={styles.metricLabel}>STUDENT IN</Text>
             {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{presentCount}/{scheduledCount}</Text>}
           </View>
           <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>TIME OUT</Text>
+            <Text style={styles.metricLabel}>STUDENT OUT</Text>
             {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{timedOutCount}/{presentCount}</Text>}
           </View>
           <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>ELAPSED</Text>
-            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{isSubmitted ? 'Ended' : formatElapsed(elapsedMinutes)}</Text>}
+            <Text style={styles.metricLabel}>CI START</Text>
+            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{ciSessionStartLabel}</Text>}
+          </View>
+          <View style={styles.teacherMetric}>
+            <Text style={styles.metricLabel}>CI TIME</Text>
+            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{ciSessionTimeLabel}</Text>}
           </View>
           <View style={styles.progressTrack}>
             {isLoading ? (
