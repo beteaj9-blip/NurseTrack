@@ -59,7 +59,7 @@ public class ClinicalCaseService {
                         requirementItem(records, "Labor Watch", "Labor Watch", 3)
                 )),
                 new RequirementProgressGroup("OR", "Operating Room Cases", List.of(
-                        requirementItem(records, "Minor Cases", "Minor Case", 3),
+                        requirementItem(records, "Major Cases - Assist", "Major Case - Assist", 3),
                         requirementItem(records, "Major Cases - Scrub", "Major Case - Scrub", 3),
                         requirementItem(records, "Major Cases - Circulating", "Major Case - Circulating", 3)
                 ))
@@ -191,7 +191,7 @@ public class ClinicalCaseService {
     private long requirementLimit(String category) {
         if (category == null) return 0;
         return switch (category.toLowerCase()) {
-            case "handled cases", "handled case", "assisted cases", "assisted case", "newborn care", "labor watch", "minor cases", "minor case", "major cases - scrub", "major case - scrub", "major cases - circulating", "major case - circulating" -> 3;
+            case "handled cases", "handled case", "assisted cases", "assisted case", "newborn care", "labor watch", "major cases - assist", "major case - assist", "major cases - scrub", "major case - scrub", "major cases - circulating", "major case - circulating" -> 3;
             default -> 0;
         };
     }
@@ -201,7 +201,7 @@ public class ClinicalCaseService {
         return switch (category) {
             case "Handled Cases" -> "Handled Case";
             case "Assisted Cases" -> "Assisted Case";
-            case "Minor Cases" -> "Minor Case";
+            case "Major Cases - Assist" -> "Major Case - Assist";
             case "Major Cases - Scrub" -> "Major Case - Scrub";
             case "Major Cases - Circulating" -> "Major Case - Circulate";
             default -> category;

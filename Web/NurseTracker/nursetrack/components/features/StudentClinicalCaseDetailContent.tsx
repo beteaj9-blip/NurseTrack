@@ -102,7 +102,7 @@ export function StudentClinicalCaseDetailContent() {
     { value: "Assisted Cases", label: "Assisted Case" },
     { value: "Newborn Care", label: "Newborn Care" },
     { value: "Labor Watch", label: "Labor Watch" },
-    { value: "Minor Cases", label: "Minor Case" },
+    { value: "Major Cases - Assist", label: "Major Case - Assist" },
     { value: "Major Cases - Scrub", label: "Major Case - Scrub" },
     { value: "Major Cases - Circulating", label: "Major Case - Circulate" },
   ], []);

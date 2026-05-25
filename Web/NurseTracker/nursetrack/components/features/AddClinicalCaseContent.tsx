@@ -23,7 +23,7 @@ const defaultCaseCategories: CaseCategoryOption[] = [
   { value: "Assisted Cases", categoryName: "Assisted Case" },
   { value: "Newborn Care", categoryName: "Newborn Care" },
   { value: "Labor Watch", categoryName: "Labor Watch" },
-  { value: "Minor Cases", categoryName: "Minor Case" },
+  { value: "Major Cases - Assist", categoryName: "Major Case - Assist" },
   { value: "Major Cases - Scrub", categoryName: "Major Case - Scrub" },
   { value: "Major Cases - Circulating", categoryName: "Major Case - Circulate" },
 ];

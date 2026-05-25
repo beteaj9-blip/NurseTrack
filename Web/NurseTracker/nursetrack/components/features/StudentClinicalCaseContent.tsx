@@ -46,7 +46,6 @@ function statusClass(status?: string) {
 }
 
 function caseCategoryLabel(category?: string) {
-  if (category === "Major Cases - Assist") return "Major Case - Assist";
   if (category === "Major Cases - Scrub") return "Major Case - Scrub";
   if (category === "Major Cases - Circulating") return "Major Case - Circulate";
   if (category === "Handled Cases") return "Handled Case";

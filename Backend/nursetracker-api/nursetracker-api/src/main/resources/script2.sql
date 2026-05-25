@@ -14,10 +14,6 @@ SET level = (
 WHERE EXISTS (SELECT 1 FROM user_assigned_levels ual WHERE ual.user_id = u.id);
 
 INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Major Cases - Assist', 'Major Case - Assist'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Assist');
-
-INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Major Cases - Scrub', 'Major Case - Scrub'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Scrub');
 
@@ -26,8 +22,8 @@ SELECT 'Major Cases - Circulating', 'Major Case - Circulating'
 WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Circulating');
 
 INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Minor Case', 'Minor Case'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Minor Case');
+SELECT 'Major Cases - Assist', 'Major Case - Assist'
+WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Assist');
 
 INSERT INTO clinical_case_categories (value, category_name)
 SELECT 'Handled Cases', 'Handled Case'
