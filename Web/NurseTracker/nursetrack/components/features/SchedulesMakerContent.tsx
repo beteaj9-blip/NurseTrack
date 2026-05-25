@@ -204,9 +204,6 @@ function noSchedulesPublishedReason(result: SchedulePublishResult) {
   if (result.duplicateSchedules > 0 && result.groupsSkipped === 0 && result.studentsSkipped === 0) {
     return `${result.duplicateSchedules} matching schedule(s) already exist, so there was nothing new to publish.`;
   }
-  if (result.studentsMatched === 0) {
-    return "No matched student was available to receive a schedule. Review the student names in the roster.";
-  }
 
   const reasons = [];
   if (result.groupsSkipped > 0) {
@@ -219,9 +216,15 @@ function noSchedulesPublishedReason(result: SchedulePublishResult) {
     reasons.push(`${result.duplicateSchedules} matching schedule(s) already exist.`);
   }
 
-  return reasons.length > 0
-    ? reasons.join(" ")
-    : "No publishable duty dates were found. Check the date range and break dates.";
+  if (reasons.length > 0) {
+    return reasons.join(" ");
+  }
+
+  if (result.studentsMatched === 0) {
+    return "No matched student was available to receive a schedule. Review the student names in the roster.";
+  }
+
+  return "No publishable duty dates were found. Check the date range and break dates.";
 }
 
 function SectionMismatchIcon({ studentSection, uploadedSection }: { studentSection?: string; uploadedSection?: string }) {

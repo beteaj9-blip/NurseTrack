@@ -173,7 +173,9 @@ public class UserService {
             Optional<User> user = userRepository.findBySchoolId(student.schoolId());
             if (user.isEmpty()) continue;
             User target = user.get();
-            if (preview.section() != null && !preview.section().isBlank()) target.setSectionInfo(preview.section());
+            SectionGroup sectionGroup = splitSectionGroup(preview.section());
+            if (!sectionGroup.section().isBlank()) target.setSectionInfo(sectionGroup.section());
+            if (!sectionGroup.group().isBlank()) target.setGroupInfo(sectionGroup.group());
             Integer level = student.level() != null ? student.level() : preview.level();
             if (level != null) target.setAssignedLevels(new HashSet<>(Set.of(level)));
             userRepository.save(target);
@@ -330,7 +332,9 @@ public class UserService {
                 continue;
             }
             User target = user.get();
-            target.setSectionInfo(section);
+            SectionGroup sectionGroup = splitSectionGroup(section);
+            target.setSectionInfo(sectionGroup.section());
+            if (!sectionGroup.group().isBlank()) target.setGroupInfo(sectionGroup.group());
             Integer level = parseLevel(levelValue.isBlank() ? section : levelValue);
             if (level != null) target.setAssignedLevels(new HashSet<>(Set.of(level)));
             userRepository.save(target);
@@ -431,7 +435,9 @@ public class UserService {
                 continue;
             }
             User target = student.get();
-            target.setSectionInfo(block.section);
+            SectionGroup sectionGroup = splitSectionGroup(block.section);
+            target.setSectionInfo(sectionGroup.section());
+            if (!sectionGroup.group().isBlank()) target.setGroupInfo(sectionGroup.group());
             target.setAssignedLevels(new HashSet<>(Set.of(level)));
             userRepository.save(target);
             counters.matchedStudents++;
@@ -447,6 +453,7 @@ public class UserService {
                             .instructor(ci)
                             .hospital(block.hospital.getName())
                             .ward(ward.get())
+                            .groupName(sectionGroup.group().isBlank() ? null : sectionGroup.group())
                             .shiftDate(date)
                             .startTime(timeRange.get().start())
                             .endTime(timeRange.get().end())
@@ -760,8 +767,23 @@ public class UserService {
         return normalized.toLowerCase().replaceAll("[^a-z0-9/]+", " ").trim().replaceAll("\\s+", " ");
     }
 
+    private SectionGroup splitSectionGroup(String rawSection) {
+        String value = rawSection == null ? "" : rawSection.trim().replaceAll("\\s+", " ");
+        if (value.isBlank()) return new SectionGroup("", "");
+        String[] parts = value.split(" ");
+        if (parts.length >= 2) {
+            String last = parts[parts.length - 1];
+            if (last.matches("(?i)G[0-9A-Z]+")) {
+                String section = String.join(" ", java.util.Arrays.copyOf(parts, parts.length - 1)).trim();
+                return new SectionGroup(section, last.toUpperCase());
+            }
+        }
+        return new SectionGroup(value, "");
+    }
+
     private record DateRange(LocalDate start, LocalDate end) {}
     private record TimeRange(LocalTime start, LocalTime end) {}
+    private record SectionGroup(String section, String group) {}
 
     private static class DutyBlock {
         private String section;

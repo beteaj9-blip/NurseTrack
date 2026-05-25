@@ -52,7 +52,7 @@ public class ScheduleImportService {
             int level = findLevel(rows, headerIndex).orElse(0);
             List<Hospital> hospitals = hospitalRepository.findAll();
             List<User> students = userRepository.findByRole(UserRole.STUDENT);
-            List<User> instructors = userRepository.findByRole(UserRole.INSTRUCTOR);
+            List<User> instructors = userRepository.findByRoleNot(UserRole.STUDENT);
             List<RawGroup> rawGroups = parseRawGroups(rows, headerIndex, hospitals);
             List<ScheduleImportGroup> groups = rawGroups.stream()
                     .map(raw -> toPreviewGroup(raw, level, hospitals, students, instructors))
@@ -69,7 +69,7 @@ public class ScheduleImportService {
     public ScheduleImportResult publish(ScheduleImportPreview preview) {
         List<Hospital> hospitals = hospitalRepository.findAll();
         List<User> students = userRepository.findByRole(UserRole.STUDENT);
-        List<User> instructors = userRepository.findByRole(UserRole.INSTRUCTOR);
+        List<User> instructors = userRepository.findByRoleNot(UserRole.STUDENT);
         int created = 0;
         int duplicates = 0;
         int matched = 0;
@@ -84,15 +84,23 @@ public class ScheduleImportService {
             Optional<LocalTime> startTime = parseTimeInput(group.shiftStart());
             Optional<LocalTime> endTime = parseTimeInput(group.shiftEnd());
             if (preview.level() <= 0 || location.isEmpty() || instructor.isEmpty() || startDate.isEmpty() || endDate.isEmpty() || startTime.isEmpty() || endTime.isEmpty()) {
+                System.out.println("GROUP SKIPPED! Debug info:");
+                System.out.println("level: " + preview.level() + " > 0 ? " + (preview.level() > 0));
+                System.out.println("location: " + location.isPresent() + " (raw: " + group.hospitalArea() + ")");
+                System.out.println("instructor: " + instructor.isPresent() + " (raw: " + group.instructor() + ")");
+                System.out.println("startDate: " + startDate.isPresent() + " (raw: " + group.startDate() + ")");
+                System.out.println("endDate: " + endDate.isPresent() + " (raw: " + group.endDate() + ")");
+                System.out.println("startTime: " + startTime.isPresent() + " (raw: " + group.shiftStart() + ")");
+                System.out.println("endTime: " + endTime.isPresent() + " (raw: " + group.shiftEnd() + ")");
                 groupsSkipped++;
                 skippedStudents += group.students().size();
                 continue;
             }
             User ci = instructor.get();
-            Set<Integer> ciLevels = new HashSet<>(ci.getAssignedLevels() == null ? Set.of() : ci.getAssignedLevels());
-            ciLevels.add(preview.level());
-            ci.setAssignedLevels(ciLevels);
-            userRepository.save(ci);
+            if (ci.getRole() != UserRole.ADMIN && ci.getRole() != UserRole.COORDINATOR && ci.getRole() != UserRole.ENROLLMENT) {
+                ci.setAssignedLevels(new HashSet<>(Set.of(preview.level())));
+                userRepository.save(ci);
+            }
 
             int groupCreated = 0;
             Set<LocalDate> breaks = parseBreakDates(group.breakDates());
@@ -443,6 +451,9 @@ public class ScheduleImportService {
         Optional<Hospital> hospital = parts.length > 0 ? resolveHospital(parts[0], hospitals) : Optional.empty();
         if (hospital.isEmpty()) return Optional.empty();
         String wardValue = parts.length > 1 ? parts[1] : "";
+        if (wardValue.isBlank()) {
+            return Optional.of(new Location(hospital.get(), ""));
+        }
         List<String> wards = hospital.get().getWards() == null ? List.of() : hospital.get().getWards();
         return wards.stream().filter(ward -> name(ward).equals(name(wardValue))).findFirst().map(ward -> new Location(hospital.get(), ward));
     }

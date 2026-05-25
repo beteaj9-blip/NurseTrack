@@ -168,33 +168,54 @@ SET level = (
 WHERE EXISTS (SELECT 1 FROM user_assigned_levels ual WHERE ual.user_id = u.id);
 
 
-INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Major Cases - Scrub', 'Major Case - Scrub'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Scrub');
+INSERT INTO clinical_case_categories (value, category_name, required_count)
+SELECT 'Major Cases - Scrub', 'Major Case - Scrub', 3
+WHERE NOT EXISTS (
+  SELECT 1 FROM clinical_case_categories 
+  WHERE value = 'Major Cases - Scrub'
+);
 
-INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Major Cases - Circulating', 'Major Case - Circulating'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Circulating');
+INSERT INTO clinical_case_categories (value, category_name, required_count)
+SELECT 'Major Cases - Circulating', 'Major Case - Circulating', 3
+WHERE NOT EXISTS (
+  SELECT 1 FROM clinical_case_categories 
+  WHERE value = 'Major Cases - Circulating'
+);
 
-INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Major Cases - Assist', 'Major Case - Assist'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Major Cases - Assist');
+INSERT INTO clinical_case_categories (value, category_name, required_count)
+SELECT 'Major Cases - Assist', 'Major Case - Assist', 3
+WHERE NOT EXISTS (
+  SELECT 1 FROM clinical_case_categories 
+  WHERE value = 'Major Cases - Assist'
+);
 
-INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Handled Cases', 'Handled Case'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Handled Cases');
+INSERT INTO clinical_case_categories (value, category_name, required_count)
+SELECT 'Handled Cases', 'Handled Case', 3
+WHERE NOT EXISTS (
+  SELECT 1 FROM clinical_case_categories 
+  WHERE value = 'Handled Cases'
+);
 
-INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Assisted Case', 'Assisted Case'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Assisted Case');
+INSERT INTO clinical_case_categories (value, category_name, required_count)
+SELECT 'Assisted Case', 'Assisted Case', 3
+WHERE NOT EXISTS (
+  SELECT 1 FROM clinical_case_categories 
+  WHERE value = 'Assisted Case'
+);
 
-INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Newborn Care', 'Newborn Care'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Newborn Care');
+INSERT INTO clinical_case_categories (value, category_name, required_count)
+SELECT 'Newborn Care', 'Newborn Care', 3
+WHERE NOT EXISTS (
+  SELECT 1 FROM clinical_case_categories 
+  WHERE value = 'Newborn Care'
+);
 
-INSERT INTO clinical_case_categories (value, category_name)
-SELECT 'Labor Watch', 'Labor Watch'
-WHERE NOT EXISTS (SELECT 1 FROM clinical_case_categories WHERE value = 'Labor Watch');
+INSERT INTO clinical_case_categories (value, category_name, required_count)
+SELECT 'Labor Watch', 'Labor Watch', 3
+WHERE NOT EXISTS (
+  SELECT 1 FROM clinical_case_categories 
+  WHERE value = 'Labor Watch'
+);
 
 INSERT INTO users (school_id, full_name, email, mobile_number, password_hash, role, section_info, status, created_at, updated_at)
 SELECT 23-0509-324', Jay Yan C. Tiongzon', Jay Yan C. Tiongzon', 'jayyan.tiongzon@cit.edu', '+63 917 050 9324', 'NurseTrack123', 'STUDENT', 'BSN 3A', 'ACTIVE', NOW(), NOW()

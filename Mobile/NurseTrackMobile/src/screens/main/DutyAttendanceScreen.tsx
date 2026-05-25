@@ -521,7 +521,17 @@ export const DutyAttendanceScreen = () => {
 
   const handleRecordAttendance = async () => {
     if (!ensureBluetoothEnabled('student') || !effectiveScheduleId) return;
-    if (studentStatus !== 'connected') {
+    if (studentStatus === 'found') {
+      if (verifiedSignalScheduleId !== effectiveScheduleId) {
+        setStudentStatus('ready');
+        setAlertConfig({ title: 'BLE Signal Required', message: 'Scan and detect your Clinical Instructor\'s BLE signal.' });
+        return;
+      }
+      verifiedSignalScheduleIdRef.current = effectiveScheduleId;
+      setStudentStatus('connected');
+      studentStatusRef.current = 'connected';
+      setIsSessionDisconnected(false);
+    } else if (studentStatus !== 'connected') {
       setAlertConfig({ title: 'Connect First', message: 'Connect to your Clinical Instructor before recording attendance.' });
       return;
     }
@@ -816,7 +826,7 @@ export const DutyAttendanceScreen = () => {
     || studentStatus === 'found'
     || studentStatus === 'connected'
     || (needsTimeOut && !canTimeOut && studentStatus !== 'scanning');
-  const studentCanRecordAttendance = studentStatus === 'connected' && !checkedOut && (!checkedIn || canTimeOut);
+  const studentCanRecordAttendance = (studentStatus === 'connected' || studentStatus === 'found') && !checkedOut && (!checkedIn || canTimeOut);
 
   const getStudentHeroLabel = () => {
     if (isLoading) return 'Scan for Clinical Instructor';
@@ -879,8 +889,8 @@ export const DutyAttendanceScreen = () => {
         return 'Keep your phone nearby while NurseTrack searches for the active session.';
       case 'found':
         return needsTimeOut
-          ? 'A clinical instructor session is available. Connect first, then record your time out.'
-          : 'A clinical instructor session is available. Connect first, then record your time in.';
+          ? 'A clinical instructor session is available. Record your time out.'
+          : 'A clinical instructor session is available. Record your time in.';
       case 'connected':
         if (needsTimeOut && canTimeOut) return 'You are connected. Record your time out when ready.';
         if (checkedIn) return 'Your duty time in has been saved for this session.';
@@ -1334,11 +1344,7 @@ export const DutyAttendanceScreen = () => {
           <>
             <Text style={styles.infoTitle}>{getStudentInfoTitle()}</Text>
             <Text style={styles.infoBody}>{getStudentInfoBody()}</Text>
-            {studentStatus === 'found' && !isActiveSessionDisconnected && (
-              <TouchableOpacity style={styles.connectButton} onPress={handleConnect} disabled={loadingAction !== null}>
-                {loadingAction === 'connect' ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>Connect to Clinical Instructor</Text>}
-              </TouchableOpacity>
-            )}
+            {/* Connect button removed for 1-click attendance */}
             {studentCanRecordAttendance && (
               <TouchableOpacity style={styles.connectButton} onPress={handleRecordAttendance} disabled={loadingAction !== null}>
                 {loadingAction === 'record' ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.connectButtonText}>{needsTimeOut ? 'Time Out' : 'Time In'}</Text>}
