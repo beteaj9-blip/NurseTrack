@@ -303,7 +303,7 @@ export const DutyAttendanceScreen = () => {
             const currentStatus = studentStatusRef.current;
             const currentVerifiedId = verifiedSignalScheduleIdRef.current;
             const currentBluetooth = isBluetoothOnRef.current;
-            const stillConnected = isBroadcasting && currentVerifiedId === response.data.scheduleId && currentBluetooth;
+            const stillConnected = currentVerifiedId === response.data.scheduleId && currentBluetooth && (isBroadcasting || currentStatus === 'connected');
             
             if (currentStatus !== 'scanning' && currentStatus !== 'found') {
               if (stillConnected) {
@@ -322,7 +322,7 @@ export const DutyAttendanceScreen = () => {
           const currentStatus = studentStatusRef.current;
           const currentVerifiedId = verifiedSignalScheduleIdRef.current;
           const currentBluetooth = isBluetoothOnRef.current;
-          const stillConnected = isBroadcasting && currentVerifiedId === response.data.scheduleId && currentBluetooth;
+          const stillConnected = currentVerifiedId === response.data.scheduleId && currentBluetooth && (isBroadcasting || currentStatus === 'connected');
           
           if (currentStatus !== 'scanning' && currentStatus !== 'found') {
             if (stillConnected) {
@@ -513,7 +513,9 @@ export const DutyAttendanceScreen = () => {
       setAlertConfig({ title: 'BLE Signal Required', message: 'Scan and detect your Clinical Instructor\'s BLE signal before connecting.' });
       return;
     }
+    verifiedSignalScheduleIdRef.current = effectiveScheduleId;
     setStudentStatus('connected');
+    studentStatusRef.current = 'connected';
     setIsSessionDisconnected(false);
   };
 
@@ -541,10 +543,13 @@ export const DutyAttendanceScreen = () => {
         setAttendanceCache((current) => ({ ...current, [response.data.scheduleId as number]: response.data }));
       }
       if (response.data.checkedIn && !response.data.checkedOut) {
-        setVerifiedSignalScheduleId(null);
-        setStudentStatus('ready');
+        setVerifiedSignalScheduleId(effectiveScheduleId);
+        verifiedSignalScheduleIdRef.current = effectiveScheduleId;
+        setStudentStatus('connected');
+        studentStatusRef.current = 'connected';
       } else {
         setStudentStatus('connected');
+        studentStatusRef.current = 'connected';
       }
       setIsSessionDisconnected(false);
     } catch (error) {

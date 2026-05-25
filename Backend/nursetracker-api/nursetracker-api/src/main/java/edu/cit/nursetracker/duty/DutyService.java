@@ -201,7 +201,7 @@ public class DutyService {
         Schedule schedule = findRequestedSchedule(todaysSchedules, scheduleId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "No duty schedule today."));
 
-        Optional<DutyRecord> existingRecord = dutyRepository.findFirstByScheduleIdOrderByTimeInAsc(schedule.getId());
+        Optional<DutyRecord> existingRecord = dutyRepository.findFirstByScheduleIdAndStudentIdOrderByTimeInAsc(schedule.getId(), student.getId());
 
         if (existingRecord.isEmpty()) {
             LocalDateTime now = LocalDateTime.now(APP_ZONE);
@@ -240,7 +240,7 @@ public class DutyService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time out is not open yet.");
         }
 
-        DutyRecord record = dutyRepository.findFirstByScheduleIdOrderByTimeInAsc(schedule.getId())
+        DutyRecord record = dutyRepository.findFirstByScheduleIdAndStudentIdOrderByTimeInAsc(schedule.getId(), student.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time in first before timing out."));
 
         if (record.getTimeOut() == null) {
