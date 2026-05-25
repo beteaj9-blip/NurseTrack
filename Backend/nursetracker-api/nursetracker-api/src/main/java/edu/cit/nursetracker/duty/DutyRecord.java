@@ -1,6 +1,7 @@
 package edu.cit.nursetracker.duty;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.cit.nursetracker.schedule.Schedule;
 import edu.cit.nursetracker.user.User;
 import jakarta.persistence.*;
@@ -8,6 +9,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Entity
@@ -59,6 +61,15 @@ public class DutyRecord {
 
     private String bleSessionId;
 
+    @JsonProperty("scheduleId")
+    public Long getDutyScheduleId() {
+        try {
+            return this.schedule != null ? this.schedule.getId() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public Double getTotalHours() {
         if (this.totalHours != null) {
             return this.totalHours;
@@ -79,7 +90,7 @@ public class DutyRecord {
             if (now.isBefore(start)) {
                 return 0.0;
             }
-            return java.time.Duration.between(start, now).toMinutes() / 60.0;
+            return Duration.between(start, now).toMinutes() / 60.0;
         }
         return 0.0;
     }
@@ -91,10 +102,7 @@ public class DutyRecord {
         
         if (this.schedule != null) {
             try {
-                long scheduledMinutes = java.time.Duration.between(
-                    this.schedule.getStartTime(), 
-                    this.schedule.getEndTime()
-                ).toMinutes();
+                long scheduledMinutes = hasUsableSchedule() ? scheduledMinutes() : 8 * 60L;
                 double scheduledHours = scheduledMinutes / 60.0;
                 double overtime = total - scheduledHours;
                 return Math.max(0.0, overtime);
@@ -103,6 +111,22 @@ public class DutyRecord {
             }
         }
         return Math.max(0.0, total - 8.0);
+    }
+
+    private boolean hasUsableSchedule() {
+        return this.schedule != null
+                && this.schedule.getShiftDate() != null
+                && this.schedule.getStartTime() != null
+                && this.schedule.getEndTime() != null;
+    }
+
+    private long scheduledMinutes() {
+        LocalDateTime start = this.schedule.getShiftDate().atTime(this.schedule.getStartTime());
+        LocalDateTime end = this.schedule.getShiftDate().atTime(this.schedule.getEndTime());
+        if (this.schedule.getEndTime().isBefore(this.schedule.getStartTime())) {
+            end = end.plusDays(1);
+        }
+        return Duration.between(start, end).toMinutes();
     }
 
     private LocalDateTime attendanceSubmittedAt;

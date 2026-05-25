@@ -71,8 +71,7 @@ public class DutyService {
 
     public DutyRecord manualEntry(DutyRecord record) {
         if (record.getTimeIn() != null && record.getTimeOut() != null) {
-            long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
-            record.setTotalHours(minutes / 60.0);
+            record.setTotalHours(calculateRecordedHours(record));
         }
         record.setVerificationMethod(VERIFICATION_MANUAL);
         record.setLocationVerified(false);
@@ -90,8 +89,7 @@ public class DutyService {
         record.setTimeOut(updatedRecord.getTimeOut());
         record.setInstructorFeedback(updatedRecord.getInstructorFeedback());
         if (record.getTimeIn() != null && record.getTimeOut() != null) {
-            long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
-            record.setTotalHours(minutes / 60.0);
+            record.setTotalHours(calculateRecordedHours(record));
         }
         record.setVerificationMethod(VERIFICATION_MANUAL);
         record.setLocationVerified(false);
@@ -106,20 +104,20 @@ public class DutyService {
         record.setTimeOut(LocalDateTime.now(APP_ZONE));
         
         if (record.getTimeIn() != null) {
-            long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
-            record.setTotalHours(minutes / 60.0);
+            record.setTotalHours(calculateRecordedHours(record));
         }
         
         return dutyRepository.save(record);
     }
 
     public List<DutyRecord> getStudentDuties(Long studentId) {
-        return dutyRepository.findByStudentIdOrderByTimeInDesc(studentId);
+        return normalizeRecordedHours(dutyRepository.findByStudentIdOrderByTimeInDesc(studentId));
     }
 
     public List<DutyRecord> getInstructorValidations(Long instructorId) {
         return dutyRepository.findByInstructorIdOrderByTimeInDesc(instructorId).stream()
                 .filter(record -> record.getStudent() != null && record.getStudent().getRole() == UserRole.STUDENT)
+                .peek(this::normalizeRecordedHours)
                 .toList();
     }
 
@@ -132,6 +130,7 @@ public class DutyService {
             return dutyRepository.findByInstructorIdOrderByTimeInDesc(viewerId).stream()
                     .filter(record -> record.getStudent() != null && 
                            (record.getStudent().getRole() == UserRole.STUDENT || (includeInstructors && record.getStudent().getRole() == UserRole.INSTRUCTOR)))
+                    .peek(this::normalizeRecordedHours)
                     .toList();
         }
         
@@ -146,6 +145,7 @@ public class DutyService {
         return dutyRepository.findAll().stream()
                 .filter(record -> record.getStudent() != null && 
                        (record.getStudent().getRole() == UserRole.STUDENT || (includeInstructors && record.getStudent().getRole() == UserRole.INSTRUCTOR)))
+                .peek(this::normalizeRecordedHours)
                 .toList();
     }
 
@@ -153,6 +153,7 @@ public class DutyService {
         return userRepository.findById(viewerId)
                 .map(viewer -> getAllDuties().stream()
                         .filter(record -> AccessScope.canViewRecord(viewer, record.getStudent(), record.getInstructor()))
+                        .peek(this::normalizeRecordedHours)
                         .toList())
                 .orElse(List.of());
     }
@@ -290,8 +291,7 @@ public class DutyService {
             // The instructor's own record represents the hosted attendance session.
             if (record.getStudent().getId().equals(record.getInstructor().getId()) && record.getTimeOut() == null) {
                 record.setTimeOut(submittedAt);
-                long minutes = Duration.between(record.getTimeIn(), record.getTimeOut()).toMinutes();
-                record.setTotalHours(minutes / 60.0);
+                record.setTotalHours(calculateRecordedHours(record));
             }
         });
         dutyRepository.saveAll(records);
@@ -536,6 +536,41 @@ public class DutyService {
             return 0L;
         }
         return Duration.between(effectiveStart, endCalculation).toMinutes();
+    }
+
+    private List<DutyRecord> normalizeRecordedHours(List<DutyRecord> records) {
+        records.forEach(this::normalizeRecordedHours);
+        return records;
+    }
+
+    private void normalizeRecordedHours(DutyRecord record) {
+        if (record == null || record.getTimeIn() == null || record.getTimeOut() == null || !hasUsableSchedule(record.getSchedule())) {
+            return;
+        }
+        record.setTotalHours(calculateRecordedHours(record));
+    }
+
+    private double calculateRecordedHours(DutyRecord record) {
+        if (record == null || record.getTimeIn() == null || record.getTimeOut() == null) {
+            return 0.0;
+        }
+        Schedule schedule = record.getSchedule();
+        LocalDateTime start = hasUsableSchedule(schedule) ? effectiveDutyStart(record, schedule) : record.getTimeIn();
+        if (record.getTimeOut().isBefore(start)) {
+            return 0.0;
+        }
+        return Duration.between(start, record.getTimeOut()).toMinutes() / 60.0;
+    }
+
+    private boolean hasUsableSchedule(Schedule schedule) {
+        try {
+            return schedule != null
+                    && schedule.getShiftDate() != null
+                    && schedule.getStartTime() != null
+                    && schedule.getEndTime() != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private LocalDateTime effectiveDutyStart(DutyRecord record, Schedule schedule) {

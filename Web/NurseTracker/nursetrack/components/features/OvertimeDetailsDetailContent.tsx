@@ -39,6 +39,9 @@ function formatTimeRange(start?: string, end?: string) {
 }
 
 function matchingSchedule(record: any, schedules: any[]) {
+  const byId = schedules.find((schedule: any) => String(schedule.id) === String(record.scheduleId));
+  if (byId) return byId;
+
   return schedules.find((schedule: any) =>
     String(schedule.studentId) === String(record.studentId) &&
     schedule.date === record.dutyDate &&
@@ -90,7 +93,7 @@ export function OvertimeDetailsDetailContent({ basePath }: { basePath?: string; 
                 <tbody>
                   {records.map((record, index) => {
                     const schedule = matchingSchedule(record, schedules as any[]);
-                    const scheduleTime = schedule ? formatTimeRange(schedule.startTime, schedule.endTime) : "07:00 AM - 03:00 PM";
+                    const scheduleTime = schedule ? formatTimeRange(schedule.startTime, schedule.endTime) : "Schedule not found";
                     return (
                       <tr key={record.id} className="border-b border-[#e2e8f0] last:border-0 !text-[#344054] !font-[900]">
                         <td className="p-4 text-center border-r border-[#e2e8f0]">{index + 1}</td>
