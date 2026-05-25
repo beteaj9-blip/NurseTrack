@@ -24,6 +24,7 @@ public record DutyAttendanceTodayResponse(
         String sessionStartedAt,
         String sessionEndedAt,
         Long sessionDurationMinutes,
+        Long countedDutyDurationMinutes,
         List<DutyAttendanceScheduleOption> scheduleOptions,
         List<DutyAttendanceStudent> students,
         List<DutyAttendanceStudent> presentStudents,
@@ -33,6 +34,6 @@ public record DutyAttendanceTodayResponse(
         Long studentDutyDurationMinutes
 ) {
     public static DutyAttendanceTodayResponse empty() {
-        return new DutyAttendanceTodayResponse(false, null, null, null, null, null, null, null, null, 0, 0, 0, false, false, false, false, null, null, 0L, List.of(), List.of(), List.of(), false, null, null, 0L);
+        return new DutyAttendanceTodayResponse(false, null, null, null, null, null, null, null, null, 0, 0, 0, false, false, false, false, null, null, 0L, 0L, List.of(), List.of(), List.of(), false, null, null, 0L);
     }
 }

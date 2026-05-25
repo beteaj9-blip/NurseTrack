@@ -51,6 +51,7 @@ interface AttendanceToday {
   sessionStartedAt: string | null;
   sessionEndedAt?: string | null;
   sessionDurationMinutes?: number;
+  countedDutyDurationMinutes?: number;
   scheduleOptions: AttendanceScheduleOption[];
   students: AttendanceStudent[];
   presentStudents: AttendanceStudent[];
@@ -794,9 +795,10 @@ export const DutyAttendanceScreen = () => {
   const progressPercent = scheduledCount > 0 ? Math.min(100, (presentCount / scheduledCount) * 100) : 0;
   const isSubmitted = selectedAttendance?.submitted === true;
   const hasStartedSession = !!selectedAttendance?.sessionStartedAt;
-  const ciSessionStartLabel = selectedAttendance?.sessionStartedAt ? formatTime(selectedAttendance.sessionStartedAt) : '--';
   const ciSessionDuration = isSubmitted ? (selectedAttendance?.sessionDurationMinutes ?? elapsedMinutes) : elapsedMinutes;
+  const ciDutyDuration = selectedAttendance?.countedDutyDurationMinutes ?? 0;
   const ciSessionTimeLabel = hasStartedSession ? formatElapsed(ciSessionDuration) : '0m';
+  const ciDutyTimeLabel = hasStartedSession ? formatElapsed(ciDutyDuration) : '0m';
   const teacherSubmitDisabled = isLoading || loadingAction !== null || !hasUsableSchedule || !hasChosenSchedule || !hasStartedSession || isSubmitted || !localTimeOutOpen;
 
   const isActiveSessionDisconnected = checkedIn && !checkedOut && studentStatus !== 'connected' && studentStatus !== 'found' && studentStatus !== 'scanning' && !isSubmitted;
@@ -1018,11 +1020,11 @@ export const DutyAttendanceScreen = () => {
             {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{timedOutCount}/{presentCount}</Text>}
           </View>
           <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>CI START</Text>
-            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{ciSessionStartLabel}</Text>}
+            <Text style={styles.metricLabel}>DUTY TIME</Text>
+            {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{ciDutyTimeLabel}</Text>}
           </View>
           <View style={styles.teacherMetric}>
-            <Text style={styles.metricLabel}>CI TIME</Text>
+            <Text style={styles.metricLabel}>SESSION TIME</Text>
             {isLoading ? <SkeletonBlock width={42} height={18} /> : <Text style={styles.metricValue}>{ciSessionTimeLabel}</Text>}
           </View>
           <View style={styles.progressTrack}>

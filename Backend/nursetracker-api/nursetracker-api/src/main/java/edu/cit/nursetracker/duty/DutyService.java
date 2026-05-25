@@ -442,6 +442,14 @@ public class DutyService {
                     return Math.max(0L, Duration.between(record.getTimeIn(), end).toMinutes());
                 })
                 .orElse(0L);
+        Long countedDutyDurationMinutes = instructorSessionRecord
+                .map(record -> {
+                    LocalDateTime start = effectiveDutyStart(record, schedule);
+                    LocalDateTime end = record.getTimeOut() != null ? record.getTimeOut() : LocalDateTime.now(APP_ZONE);
+                    if (end.isBefore(start)) return 0L;
+                    return Duration.between(start, end).toMinutes();
+                })
+                .orElse(0L);
 
         List<DutyAttendanceStudent> presentStudents = rosterStudents.stream()
                 .filter(student -> presentRecords.containsKey(student.getId()))
@@ -485,6 +493,7 @@ public class DutyService {
                 sessionStartedAt,
                 sessionEndedAt,
                 sessionDurationMinutes,
+                countedDutyDurationMinutes,
                 scheduleOptions.stream().map(this::toScheduleOption).toList(),
                 students,
                 presentStudents,
