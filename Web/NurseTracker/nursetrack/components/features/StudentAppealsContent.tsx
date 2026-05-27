@@ -138,6 +138,24 @@ export function StudentAppealsContent() {
     setMessage("Edit the appeal details and submit changes for CI recommendation.");
   }, [editingAppeal, schedules]);
 
+  React.useEffect(() => {
+    if (editingAppealId) return;
+    try {
+      const savedForm = localStorage.getItem("studentAppealDraftForm");
+      const savedScheduleId = localStorage.getItem("studentAppealDraftScheduleId");
+      if (savedForm) setForm(JSON.parse(savedForm));
+      if (savedScheduleId) setSelectedScheduleId(savedScheduleId);
+    } catch (e) {
+      // ignore
+    }
+  }, [editingAppealId]);
+
+  React.useEffect(() => {
+    if (editingAppealId) return;
+    localStorage.setItem("studentAppealDraftForm", JSON.stringify(form));
+    localStorage.setItem("studentAppealDraftScheduleId", selectedScheduleId);
+  }, [editingAppealId, form, selectedScheduleId]);
+
   const selectedHospital = hospitals.find((hospital: any) => hospital.name === form.clinicalSite);
   const allDutyAreas = useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((hospital: any) => hospital.wards ?? []).filter(Boolean))).sort(), [hospitals]);
   const dutyAreas = selectedHospital?.wards?.length ? selectedHospital.wards : allDutyAreas;
@@ -259,6 +277,8 @@ export function StudentAppealsContent() {
         await updateAppeal.mutateAsync({ appealId: editingAppealId, appeal: appealPayload });
       } else {
         await createAppeal.mutateAsync(appealPayload);
+        localStorage.removeItem("studentAppealDraftForm");
+        localStorage.removeItem("studentAppealDraftScheduleId");
       }
       clearForm();
       setMessage(editingAppealId ? "Appeal changes submitted for CI recommendation." : "Appeal submitted for CI recommendation.");

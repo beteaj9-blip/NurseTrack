@@ -40,7 +40,7 @@ function getScheduleStatus(date?: string) {
 
 function getScheduleStatusClass(status: string) {
   if (status === "Canceled") return "bg-[#fef2f2] !text-[#991b1b]";
-  if (status === "Completed") return "bg-[#dcfce7] !text-[#166534]";
+  if (status === "Completed" || status === "Published" || status === "Assigned") return "bg-[#dcfce7] !text-[#166534]";
   if (status === "Upcoming" || status === "Today") return "bg-[#fff8e1] !text-[#6c4c00]";
   return "bg-[#f1f5f9] !text-[#475569]";
 }
@@ -508,8 +508,8 @@ export function SchedulesDayContent({ basePath }: { basePath: string }) {
                 <span className="inline-flex items-center justify-center px-4 py-1.5 bg-white border border-[#e2e8f0] rounded-full !text-[#334155] !font-extrabold !text-[0.8rem]">
                   {formatDisplayDate(selectedSchedule.date)}
                 </span>
-                <span className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full !font-extrabold !text-[0.8rem] ${getScheduleStatusClass(selectedScheduleCanceled ? "Canceled" : getScheduleStatus(selectedSchedule.date))}`}>
-                  {selectedScheduleCanceled ? "Canceled" : getScheduleStatus(selectedSchedule.date)}
+                <span className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full !font-extrabold !text-[0.8rem] ${getScheduleStatusClass(selectedScheduleCanceled ? "Canceled" : routeRole === "STUDENT" ? "Assigned" : "Published")}`}>
+                  {selectedScheduleCanceled ? "Canceled" : routeRole === "STUDENT" ? "Assigned" : "Published"}
                 </span>
               </div>
             </div>

@@ -23,7 +23,7 @@ type Permission = {
 const coordinatorPermissionItems = [
   { id: "scheduleMaker", title: "Schedule Maker", desc: "Allow creating and publishing schedule imports." },
   { id: "extensionDays", title: "Extension Days", desc: "Allow adding, editing, or canceling extension-day records." },
-  { id: "manualBackup", title: "Manual Backup", desc: "Allow approving or returning encoded attendance." },
+  { id: "manualBackup", title: "Manual Attendance", desc: "Allow approving or returning encoded attendance." },
   { id: "clearance", title: "Clearance", desc: "Allow approving or canceling clearance approval." },
   { id: "clinicalCases", title: "Clinical Cases View", desc: "Allow editing approval or rejection decisions." },
   { id: "ciRecommendations", title: "CI Recommendations", desc: "Allow accepting, rejecting, or editing decisions." },

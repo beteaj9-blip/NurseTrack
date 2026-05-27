@@ -64,7 +64,7 @@ export function ManualBackupReviewDetailContent({ basePath = "/chair" }: { baseP
 
   const submitDecision = async (status: "VERIFIED" | "REJECTED") => {
     if (!canEdit) {
-      showToast({ variant: "error", title: "Action unavailable", message: "Manual backup review is not enabled for your role." });
+      showToast({ variant: "error", title: "Action unavailable", message: "Manual attendance review is not enabled for your role." });
       return;
     }
     if (!recordId) return;

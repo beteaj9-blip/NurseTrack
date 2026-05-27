@@ -72,7 +72,7 @@ export function ManualBackupReviewContent({ basePath }: { basePath: string }) {
   return (
     <main className="p-[clamp(24px,4vw,42px)] min-h-[calc(100vh-64px)] grid gap-[28px] content-start">
       <section className="bg-white rounded-xl border border-[#e2e8f0] shadow-[0_14px_34px_rgba(15,23,42,0.06)] p-[1.6rem_1.75rem_1.75rem]">
-        <h2 className="m-0 mb-[1.15rem] !text-[#111827] !text-[1.24rem] !font-[850] tracking-[-0.03em]">Manual Backup</h2>
+        <h2 className="m-0 mb-[1.15rem] !text-[#111827] !text-[1.24rem] !font-[850] tracking-[-0.03em]">Manual Attendance</h2>
         <div className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-[12px] border border-[#dbe3ee] rounded-lg bg-[#f8fafc] p-[14px]">
           <ProfileAvatar name={instructorName} imageUrl={firstRecord?.instructorProfileImageUrl} size={42} />
           <span className="min-w-0"><strong className="block !text-[#111827] !text-[1rem] !font-[850] leading-[1.25]">{instructorName}</strong><small className="block mt-[0.35rem] !text-[#64748b] !text-[0.86rem] !font-[800]">{records.length} encoded attendance records - {pendingCount} pending</small></span>

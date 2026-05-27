@@ -213,7 +213,7 @@ export function SchedulesContent({ basePath }: { basePath: string }) {
                       </p>
                     </div>
                     <div className="flex items-center gap-4 max-[600px]:w-full max-[600px]:flex-col max-[600px]:items-stretch">
-                      <span className={`inline-flex items-center justify-center px-3 py-1 !text-[0.75rem] !font-[800] rounded-full whitespace-nowrap ${item.activeStudents?.length === 0 ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#fef3c7] !text-[#92400e]"}`}>{item.activeStudents?.length === 0 ? "Canceled" : item.status ?? "Scheduled"}</span>
+                      <span className={`inline-flex items-center justify-center px-3 py-1 !text-[0.75rem] !font-[800] rounded-full whitespace-nowrap ${item.activeStudents?.length === 0 ? "bg-[#fef2f2] !text-[#991b1b]" : "bg-[#dcfce7] !text-[#166534]"}`}>{item.activeStudents?.length === 0 ? "Canceled" : routeRole === "STUDENT" ? "Assigned" : "Published"}</span>
                       <button type="button" onClick={() => router.push(`${basePath}/schedules/day?date=${item.date}&schedule=${item.id}`)} className="bg-transparent border-none p-0 !text-[#8A252C] !text-[0.85rem] !font-[800] cursor-pointer hover:underline whitespace-nowrap max-[600px]:min-h-[38px] max-[600px]:w-full max-[600px]:rounded-lg max-[600px]:border max-[600px]:border-[#e2e8f0] max-[600px]:bg-white">View roster</button>
                     </div>
                   </div>

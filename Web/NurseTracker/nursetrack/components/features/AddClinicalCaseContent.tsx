@@ -110,6 +110,29 @@ export default function AddClinicalCaseContent() {
     setMessage("Update the pending case details before resubmitting.");
   }, [editCase, router, showToast]);
 
+  React.useEffect(() => {
+    if (isEditMode) return;
+    try {
+      const saved = localStorage.getItem("clinicalCaseDraft");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.selectedScheduleId) setSelectedScheduleId(parsed.selectedScheduleId);
+        if (parsed.patientInitials) setPatientInitials(parsed.patientInitials);
+        if (parsed.category) setCategory(parsed.category);
+        if (parsed.procedureDetails) setProcedureDetails(parsed.procedureDetails);
+        if (parsed.studentReflection) setStudentReflection(parsed.studentReflection);
+      }
+    } catch (e) {
+      // ignore parse error
+    }
+  }, [isEditMode]);
+
+  React.useEffect(() => {
+    if (isEditMode) return;
+    const draft = { selectedScheduleId, patientInitials, category, procedureDetails, studentReflection };
+    localStorage.setItem("clinicalCaseDraft", JSON.stringify(draft));
+  }, [isEditMode, selectedScheduleId, patientInitials, category, procedureDetails, studentReflection]);
+
   const selectedSchedule = schedules.find((schedule: any) => String(schedule.id) === selectedScheduleId);
   const selectedHospital = hospitals.find((item: any) => item.name === hospital);
   const allDutyAreas = useMemo(() => Array.from(new Set((hospitals as any[]).flatMap((item: any) => item.wards ?? []).filter(Boolean))).sort(), [hospitals]);
@@ -166,8 +189,12 @@ export default function AddClinicalCaseContent() {
         procedureDetails,
         studentReflection,
       };
-      if (isEditMode) await updateCase.mutateAsync({ caseId: editCaseId, caseData: payload });
-      else await submitCase.mutateAsync(payload);
+      if (isEditMode) {
+        await updateCase.mutateAsync({ caseId: editCaseId, caseData: payload });
+      } else {
+        await submitCase.mutateAsync(payload);
+        localStorage.removeItem("clinicalCaseDraft");
+      }
       setMessage(isEditMode ? "Clinical case updated for CI validation." : "Clinical case submitted for CI validation.");
       showToast({ variant: "success", title: isEditMode ? "Clinical case updated" : "Clinical case submitted", message: "Your case was sent for CI validation." });
       router.push("/nursing-student/clinical-cases");

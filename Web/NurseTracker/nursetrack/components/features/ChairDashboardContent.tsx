@@ -7,6 +7,13 @@ import { useOverallMetrics } from "@/core/api/hooks/useMetrics";
 import { useAllAppeals } from "@/core/api/hooks/useStudentAppeals";
 import { useAuthStore } from "@/core/store/authStore";
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good Morning";
+  if (h < 18) return "Good Afternoon";
+  return "Good Evening";
+}
+
 export function ChairDashboardContent() {
   const user = useAuthStore((state) => state.user);
   const { data: metrics, isLoading } = useOverallMetrics();
@@ -20,7 +27,7 @@ export function ChairDashboardContent() {
       <section className="flex items-center justify-between gap-7 p-[clamp(24px,4vw,34px)] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] animate-[fadeUp_520ms_ease_both] max-[760px]:flex-col max-[760px]:items-stretch max-[760px]:gap-5">
         <div className="min-w-0">
           <h2 className="mb-2 !text-[clamp(1.55rem,3vw,2.15rem)] !font-[800] !text-[#111827] break-words max-[760px]:!text-[1.65rem]">
-            Good Evening, {chairName}.
+            {getGreeting()}, {chairName}.
           </h2>
           <p className="max-w-[650px] mb-0 text-[#64748b] font-semibold leading-relaxed max-[760px]:max-w-none">
             Welcome back! Here is an overview of today's active schedules and pending appeals.

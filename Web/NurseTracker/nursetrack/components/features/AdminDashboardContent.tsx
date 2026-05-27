@@ -36,6 +36,14 @@ const isActionLog = (log: AuditLog) => {
   return action !== "logged in" && action !== "registered account" && !record.includes("/login") && !record.includes(" - login");
 };
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good Morning";
+  if (h < 18) return "Good Afternoon";
+  return "Good Evening";
+}
+
+
 export function AdminDashboardContent() {
   const { user } = useAuthStore();
   const { data = [], isLoading } = useAuditLogs();
@@ -45,7 +53,7 @@ export function AdminDashboardContent() {
   return (
     <main className="p-[clamp(24px,4vw,42px)] content-start">
       <section className="flex items-center justify-between gap-7 p-[clamp(24px,4vw,34px)] rounded-lg border border-[#e2e8f0] bg-white shadow-[0_16px_44px_rgba(32,33,36,0.07)] animate-[fadeUp_520ms_ease_both] max-[760px]:flex-col max-[760px]:items-stretch max-[760px]:gap-5">
-        <div className="min-w-0"><h2 className="mb-2 !text-[clamp(1.55rem,3vw,2.15rem)] font-bold text-[#111827] break-words max-[760px]:!text-[1.65rem]">Good Evening, {firstName}.</h2><p className="max-w-[650px] mb-0 text-[#64748b] font-semibold leading-relaxed max-[760px]:max-w-none">Welcome back! Here is an overview of system setup and recent audit activity.</p></div>
+        <div className="min-w-0"><h2 className="mb-2 !text-[clamp(1.55rem,3vw,2.15rem)] font-bold text-[#111827] break-words max-[760px]:!text-[1.65rem]">{getGreeting()}, {firstName}.</h2><p className="max-w-[650px] mb-0 text-[#64748b] font-semibold leading-relaxed max-[760px]:max-w-none">Welcome back! Here is an overview of system setup and recent audit activity.</p></div>
         <Link href="/admin/section-import" className="inline-flex items-center justify-center min-w-[180px] h-[46px] px-6 rounded-lg bg-[#8A252C] !text-white font-bold text-[0.95rem] whitespace-nowrap shadow-[0_12px_24px_rgba(138,37,44,0.22)] hover:bg-[#6d1d23] transition-colors no-underline cursor-pointer max-[760px]:w-full max-[760px]:min-w-0">Upload Section File</Link>
       </section>
 
